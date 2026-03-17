@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader } from "@/components/ui/loader";
@@ -24,6 +25,7 @@ interface AuthModalProps {
 type AuthStep = "email" | "password" | "signup-password" | "username" | "success";
 
 export function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalProps) {
+  const router = useRouter();
   const [step, setStep] = useState<AuthStep>("email");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -112,7 +114,7 @@ export function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalProps) {
       setAuthToken(result.token);
       setStep("success");
       onAuthSuccess?.(result.user, result.token);
-      
+
       // Store token in localStorage
       localStorage.setItem("auth_token", result.token);
       localStorage.setItem("user", JSON.stringify(result.user));
@@ -120,6 +122,7 @@ export function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalProps) {
       toast.success("Welcome back!");
       setTimeout(() => {
         onClose();
+        router.push("/app");
       }, 2000);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to login");
@@ -202,6 +205,7 @@ export function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalProps) {
       toast.success("Username set successfully!");
       setTimeout(() => {
         onClose();
+        router.push("/app");
       }, 2000);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to set username");
