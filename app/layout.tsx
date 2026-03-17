@@ -2,6 +2,7 @@ import React from "react"
 import type { Metadata } from 'next'
 import { Ubuntu, JetBrains_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import { Toaster } from 'sonner'
 import './globals.css'
 
 const ubuntu = Ubuntu({ 
@@ -62,6 +63,19 @@ export default function RootLayout({
       <body className={`${ubuntu.variable} ${jetbrainsMono.variable} font-sans antialiased bg-black text-white`}>
         {children}
         <Analytics />
+        <Toaster
+          position="top-center"
+          toastOptions={{
+            className: 'bg-gray-900 border border-gray-800 text-white',
+            duration: 4000,
+            success: {
+              className: 'bg-gray-900 border border-green-500/50 text-white',
+            },
+            error: {
+              className: 'bg-gray-900 border border-red-500/50 text-white',
+            },
+          }}
+        />
       </body>
     </html>
   )

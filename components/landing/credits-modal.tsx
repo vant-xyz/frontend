@@ -14,6 +14,16 @@ export function CreditsModal({ isOpen, onClose }: CreditsModalProps) {
       name: "NIKNOK",
       link: "https://www.tiktok.com/@niknok000?_r=1&_t=ZS-94jrZiCDdt2",
     },
+    {
+      category: "Waitlist Image",
+      name: "Abstract techno background by kjpargeter",
+      link: "https://www.freepik.com/free-vector/abstract-techno-background-with-flowing-particles-design_13587321.htm#fromView=keyword&page=1&position=1&uuid=e97a9431-a488-48c7-9e5f-297dac294216&query=Red+tech+background",
+    },
+    {
+      category: "Authenticate Image",
+      name: "Red speed light line by upklyak",
+      link: "https://www.freepik.com/free-vector/red-speed-light-horizontal-straight-line_318403435.htm#fromView=keyword&page=2&position=40&uuid=55fe9d1e-1e20-4e32-8947-64cbc96cec62&query=Red+tech+background",
+    },
   ];
 
   if (!isOpen) return null;

@@ -76,7 +76,7 @@ export function WaitlistModal({ isOpen, onClose, defaultReferralCode }: Waitlist
 
       {/* Desktop Modal */}
       <div className="hidden md:flex fixed inset-0 z-50 items-center justify-center p-4">
-        <div className="bg-black border border-black rounded-xl p-8 max-w-md w-full relative">
+        <div className="bg-black border border-gray-800 rounded-xl p-8 max-w-md w-full relative">
           <button
             onClick={onClose}
             className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
@@ -93,7 +93,7 @@ export function WaitlistModal({ isOpen, onClose, defaultReferralCode }: Waitlist
                   src="/media/images/waitlist_media.jpg"
                   alt="VANT waitlist"
                   loading="lazy"
-                  className="w-full h-auto object-cover rounded-lg"
+                  className="w-full h-48 object-cover rounded-lg"
                 />
               </div>
 
@@ -182,7 +182,7 @@ export function WaitlistModal({ isOpen, onClose, defaultReferralCode }: Waitlist
       </div>
 
       {/* Mobile Drawer */}
-      <div className="md:hidden fixed inset-x-0 bottom-0 z-50 bg-black border-t border-black rounded-t-2xl p-6 max-h-[90vh] overflow-y-auto">
+      <div className="md:hidden fixed inset-x-0 bottom-0 z-50 bg-black rounded-t-2xl p-6 max-h-[90vh] overflow-y-auto">
         <div className="mb-6 flex justify-between items-center">
           <div />
           <button
@@ -202,7 +202,7 @@ export function WaitlistModal({ isOpen, onClose, defaultReferralCode }: Waitlist
                 src="/media/images/waitlist_media.jpg"
                 alt="VANT waitlist"
                 loading="lazy"
-                className="w-full h-auto object-cover rounded-lg"
+                className="w-full h-48 object-cover rounded-lg"
               />
             </div>
 
