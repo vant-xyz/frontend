@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import {
   Dialog,
   DialogContent,
@@ -55,6 +56,7 @@ export function SellCryptoModal({
   isDemoMode,
   onSuccess,
 }: SellCryptoModalProps) {
+  const router = useRouter();
   const [step, setStep] = useState<Step>("select");
   const [selectedAsset, setSelectedAsset] = useState<AssetOption | null>(null);
   const [amount, setAmount] = useState<number>(0);
@@ -127,6 +129,7 @@ export function SellCryptoModal({
       });
       toast.success(res.message);
       onClose(); // Close modal immediately
+      router.push("/app/history");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Transaction failed");
     } finally {
@@ -315,7 +318,7 @@ export function SellCryptoModal({
             </div>
             <div className="text-center space-y-2">
               <h3 className="text-2xl font-black text-white uppercase tracking-tighter">Sale Successful</h3>
-              <p className="text-sm text-gray-500 font-medium">Your balance will update shortly.</p>
+              <p className="text-sm font-medium">Your balance will update shortly.</p>
             </div>
           </div>
         );

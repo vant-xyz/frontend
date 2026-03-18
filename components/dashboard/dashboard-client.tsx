@@ -8,6 +8,8 @@ import { DashboardNav } from "./nav";
 import { BalanceWidget } from "./balance-widget";
 import { BalanceModal } from "./balance-modal";
 import { SellCryptoModal } from "./sell-crypto-modal";
+import { History } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface DashboardClientProps {
@@ -41,6 +43,7 @@ export function DashboardClient({ children }: DashboardClientProps) {
     else if (pathname.startsWith("/app/vs")) setActiveTab("vs");
     else if (pathname.startsWith("/app/general")) setActiveTab("general");
     else if (pathname.startsWith("/app/account")) setActiveTab("account");
+    else if (pathname.startsWith("/app/history")) setActiveTab("history");
   }, [pathname]);
 
   const handleNavClick = (path: string, tabId: string) => {
@@ -84,12 +87,23 @@ export function DashboardClient({ children }: DashboardClientProps) {
           <div className="w-8 h-8 bg-red-600 rounded transition-transform group-hover:scale-105 shadow-lg shadow-red-600/20"></div>
         </div>
 
-        {/* Right side: Desktop Nav + Balance */}
+        {/* Right side: Desktop Nav + Balance + History */}
         <div className="flex items-center gap-4 lg:gap-8">
           <div className="hidden lg:flex items-center gap-4">
             <DashboardNav activeTab={activeTab} onTabChange={handleNavClick} />
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => router.push("/app/history")}
+              className={cn(
+                "h-10 w-10 rounded-xl transition-all shadow-none",
+                pathname === "/app/history" ? "bg-red-600 text-white" : "hover:bg-white/5 text-gray-400 hover:text-white"
+              )}
+            >
+              <History size={20} />
+            </Button>
             <BalanceWidget 
               totalBalance={totalBalance ?? null} 
               onClick={() => setIsBalanceModalOpen(true)} 

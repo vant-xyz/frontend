@@ -339,6 +339,23 @@ export interface SellCryptoResponse {
   exchange_rate: number;
 }
 
+export interface Transaction {
+  id: string;
+  user_email: string;
+  amount: number;
+  currency: string;
+  nature: string;
+  type: string;
+  status: string;
+  tx_hash?: string;
+  created_at: string;
+}
+
+export interface TransactionsResponse {
+  success: boolean;
+  transactions: Transaction[];
+}
+
 // Dashboard API functions
 export async function getUserProfile(token: string): Promise<UserResponse> {
   const response = await fetch(`${API_BASE_URL}/user`, {
@@ -461,6 +478,22 @@ export async function sellCrypto(token: string, data: SellCryptoRequest): Promis
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.message || "Failed to sell crypto");
+  }
+
+  return response.json();
+}
+
+export async function getTransactions(token: string): Promise<TransactionsResponse> {
+  const response = await fetch(`${API_BASE_URL}/transactions`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch transactions");
   }
 
   return response.json();
