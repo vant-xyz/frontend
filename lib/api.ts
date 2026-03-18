@@ -196,18 +196,20 @@ export interface AssetVantPriceResponse {
 
 // Price API functions
 export function connectToPriceFeed(
-  onPriceUpdate: (price: PriceUpdate) => void,
+  token: string,
+  onMessage: (data: any) => void,
   onError?: (error: Event) => void
 ): WebSocket {
   const wsUrl = process.env.NEXT_PUBLIC_WS_URL || `ws://localhost:8080/ws`;
-  const ws = new WebSocket(wsUrl);
+  const authedWsUrl = `${wsUrl}?token=${token}`;
+  const ws = new WebSocket(authedWsUrl);
 
   ws.onmessage = (event) => {
     try {
-      const price: PriceUpdate = JSON.parse(event.data);
-      onPriceUpdate(price);
+      const data = JSON.parse(event.data);
+      onMessage(data);
     } catch (err) {
-      console.error("Failed to parse price update:", err);
+      console.error("Failed to parse ws message:", err);
     }
   };
 

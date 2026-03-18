@@ -1,13 +1,18 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   getUserProfile,
   getBalance,
   syncBalance,
   fundDemoAccount,
+  connectToPriceFeed,
+  getLatestPrices,
+  getVantRate,
   UserProfile,
   BalanceInfo,
+  PriceData,
+  PriceUpdate,
 } from "@/lib/api";
 
 export function useDashboard() {
@@ -22,8 +27,36 @@ export function useDashboard() {
     }
     return false;
   });
+  const [prices, setPrices] = useState<PriceData & { vant_rate: number | null }>({
+    BTC: null, ETH: null, SOL: null, NGN: null, USDC: null, USDT: null, vant_rate: null,
+  });
 
+  const wsRef = useRef<WebSocket | null>(null);
   const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
+
+  const handlePriceUpdate = useCallback((priceUpdate: PriceUpdate) => {
+    setPrices((prev) => {
+      const symbol = priceUpdate.symbol.replace("-USD", "").replace("USD-", "") as keyof PriceData;
+      const validSymbols: (keyof PriceData)[] = ["BTC", "ETH", "SOL", "NGN", "USDC", "USDT"];
+      if (validSymbols.includes(symbol)) {
+        return { ...prev, [symbol]: priceUpdate };
+      }
+      return prev;
+    });
+  }, []);
+  
+  const sync = useCallback(async () => {
+    if (!token) return;
+    try {
+      setIsSyncing(true);
+      const res = await syncBalance(token);
+      setBalance(res.balance);
+    } catch (err) {
+      console.error("Failed to sync balance:", err);
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [token]);
 
   const fetchData = useCallback(async () => {
     if (!token) {
@@ -36,20 +69,50 @@ export function useDashboard() {
       setIsLoading(true);
       setError(null);
 
-      const [userRes, balanceRes] = await Promise.all([
+      const [userRes, balanceRes, pricesRes, vantRes] = await Promise.all([
         getUserProfile(token),
         getBalance(token),
+        getLatestPrices(),
+        getVantRate(),
       ]);
 
       setUserProfile(userRes.user);
       setBalance(balanceRes.balance);
+
+      const rawPrices = (pricesRes as any).prices || {};
+      const mappedPrices: Partial<PriceData> = {
+        BTC: rawPrices["BTC-USD"], ETH: rawPrices["ETH-USD"], SOL: rawPrices["SOL-USD"],
+        NGN: rawPrices["USD-NGN"], USDC: rawPrices["USDC-USD"], USDT: rawPrices["USDT-USD"],
+      };
+      setPrices((prev) => ({ ...prev, ...mappedPrices, vant_rate: vantRes.buy_rate }));
+      
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch dashboard data");
+      setError(err instanceof Error ? err.message : "Failed to fetch initial data");
     } finally {
       setIsLoading(false);
     }
   }, [token]);
 
+  useEffect(() => {
+    fetchData();
+    if (!token) return;
+
+    const handleWsMessage = (data: any) => {
+      if (data.type === "BALANCE_UPDATE") {
+        console.log("Balance update received! Re-syncing...");
+        sync();
+      } else if (data.type === "PRICE_UPDATE" || (data.symbol && data.price)) {
+        handlePriceUpdate(data);
+      }
+    };
+    
+    wsRef.current = connectToPriceFeed(token, handleWsMessage);
+    
+    return () => {
+      wsRef.current?.close();
+    };
+  }, [token, sync, fetchData, handlePriceUpdate]);
+  
   const toggleDemoReal = useCallback(() => {
     setIsDemoMode((prev) => {
       const next = !prev;
@@ -59,35 +122,16 @@ export function useDashboard() {
   }, []);
 
   const handleFundDemo = useCallback(async (amount: number = 20000) => {
-    if (!token) return;
-
+    if (!token) return Promise.reject("No token");
     try {
       const res = await fundDemoAccount(token, amount);
-      await fetchData();
+      await sync(); // Use sync instead of full fetchData
       return res;
     } catch (err) {
       console.error("Failed to fund demo account:", err);
       throw err;
     }
-  }, [token, fetchData]);
-
-  const handleSyncBalance = useCallback(async () => {
-    if (!token) return;
-
-    try {
-      setIsSyncing(true);
-      const res = await syncBalance(token);
-      setBalance(res.balance);
-    } catch (err) {
-      console.error("Failed to sync balance:", err);
-    } finally {
-      setIsSyncing(false);
-    }
-  }, [token]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  }, [token, sync]);
 
   const currentBalance = balance
     ? isDemoMode
@@ -95,20 +139,18 @@ export function useDashboard() {
       : balance.total_naira
     : null;
 
-  const wallets = userProfile?.vant_id ? [userProfile.vant_id] : [];
-
   return {
     isLoading,
     isSyncing,
     error,
     userProfile,
     balance,
+    prices,
     currentBalance,
     isDemoMode,
-    wallets,
     toggleDemoReal,
     fundDemo: handleFundDemo,
-    sync: handleSyncBalance,
+    sync,
     refresh: fetchData,
   };
 }

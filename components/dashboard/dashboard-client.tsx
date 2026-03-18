@@ -22,6 +22,7 @@ export function DashboardClient({ children }: DashboardClientProps) {
     isSyncing, 
     error, 
     balance, 
+    prices,
     isDemoMode, 
     toggleDemoReal, 
     sync, 
@@ -126,8 +127,11 @@ export function DashboardClient({ children }: DashboardClientProps) {
         isOpen={isSellModalOpen} 
         onClose={() => setIsSellModalOpen(false)}
         balance={balance}
+        prices={prices}
         isDemoMode={isDemoMode}
-        onSuccess={() => sync()}
+        onSuccess={() => {
+          // No manual sync needed, handled by WebSocket
+        }}
       />
     </div>
   );

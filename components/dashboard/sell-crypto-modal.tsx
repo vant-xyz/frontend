@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Loader } from "@/components/ui/loader";
 import { cn } from "@/lib/utils";
-import { sellCrypto, getAssetVantPrice, type BalanceInfo, type SellCryptoResponse } from "@/lib/api";
+import { sellCrypto, getAssetVantPrice, type BalanceInfo, type PriceData, type SellCryptoResponse } from "@/lib/api";
 import { 
   ArrowLeft, 
   CheckCircle2, 
@@ -32,6 +32,7 @@ interface SellCryptoModalProps {
   isOpen: boolean;
   onClose: () => void;
   balance: BalanceInfo | null;
+  prices: PriceData & { vant_rate: number | null };
   isDemoMode: boolean;
   onSuccess: () => void;
 }
@@ -50,6 +51,7 @@ export function SellCryptoModal({
   isOpen,
   onClose,
   balance,
+  prices,
   isDemoMode,
   onSuccess,
 }: SellCryptoModalProps) {
@@ -60,7 +62,6 @@ export function SellCryptoModal({
   const [fetchingPrice, setFetchingPrice] = useState(false);
   const [assetPrice, setAssetPrice] = useState<number | null>(null);
   const [isMobile, setIsMobile] = useState(false);
-  const [sellResponse, setSellResponse] = useState<SellCryptoResponse | null>(null);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 1024);
@@ -75,7 +76,6 @@ export function SellCryptoModal({
       setSelectedAsset(null);
       setAmount(0);
       setAssetPrice(null);
-      setSellResponse(null);
     }
   }, [isOpen]);
 
@@ -92,7 +92,6 @@ export function SellCryptoModal({
     return list.filter(a => isDemoMode ? a.key.startsWith("demo_") && a.balance > 0 : !a.key.startsWith("demo_") && a.balance > 0);
   }, [balance, isDemoMode]);
 
-  // Fetch specific asset price when moving to amount step
   const fetchPrice = async (asset: AssetOption) => {
     setFetchingPrice(true);
     try {
@@ -102,16 +101,16 @@ export function SellCryptoModal({
       setStep("amount");
     } catch (err) {
       toast.error("Failed to fetch current rate. Using fallback.");
-      // Fallback logic if necessary
       setStep("amount");
     } finally {
       setFetchingPrice(false);
     }
   };
 
-  const estimatedNaira = useMemo(() => {
-    if (!amount || !assetPrice) return 0;
-    return amount * assetPrice;
+  const exchangeDetails = useMemo(() => {
+    const rate = assetPrice || 0;
+    const received = amount * rate;
+    return { rate, received };
   }, [amount, assetPrice]);
 
   const handleSell = async () => {
@@ -126,10 +125,8 @@ export function SellCryptoModal({
         amount: amount,
         nature: isDemoMode ? "demo" : "real",
       });
-      setSellResponse(res);
-      setStep("success");
-      onSuccess();
-      setTimeout(onClose, 2500);
+      toast.success(res.message);
+      onClose(); // Close modal immediately
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Transaction failed");
     } finally {
@@ -285,7 +282,7 @@ export function SellCryptoModal({
                 </div>
                 <div className="flex items-center justify-between">
                   <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">You Receive</p>
-                  <p className="text-xl font-black text-green-500">{formatNaira(estimatedNaira)}</p>
+                  <p className="text-xl font-black text-green-500">{formatNaira(exchangeDetails.received)}</p>
                 </div>
               </div>
 
@@ -302,7 +299,7 @@ export function SellCryptoModal({
             <Button
               onClick={handleSell}
               type="button"
-              disabled={loading || estimatedNaira <= 0}
+              disabled={loading || exchangeDetails.received <= 0}
               className="w-full h-10 rounded-xl bg-red-600 hover:bg-red-500 text-white font-black uppercase tracking-widest gap-2 disabled:opacity-50 text-[10px] shadow-none"
             >
               {loading ? <Loader className="text-black" /> : "Confirm Sale"}
@@ -318,13 +315,8 @@ export function SellCryptoModal({
             </div>
             <div className="text-center space-y-2">
               <h3 className="text-2xl font-black text-white uppercase tracking-tighter">Sale Successful</h3>
-              <p className="text-sm text-gray-500 font-medium">Funds added to your Naira balance.</p>
+              <p className="text-sm text-gray-500 font-medium">Your balance will update shortly.</p>
             </div>
-            {sellResponse && (
-              <div className="px-6 py-3 rounded-2xl bg-white/5 border border-white/5 text-[10px] font-bold uppercase tracking-[0.2em] text-green-500">
-                + {formatNaira(sellResponse.naira_received)}
-              </div>
-            )}
           </div>
         );
     }
