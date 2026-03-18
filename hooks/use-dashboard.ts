@@ -4,18 +4,24 @@ import { useState, useEffect, useCallback } from "react";
 import {
   getUserProfile,
   getBalance,
+  syncBalance,
   fundDemoAccount,
   UserProfile,
   BalanceInfo,
-  WalletInfo,
 } from "@/lib/api";
 
 export function useDashboard() {
   const [isLoading, setIsLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [balance, setBalance] = useState<BalanceInfo | null>(null);
-  const [isDemoMode, setIsDemoMode] = useState(false);
+  const [isDemoMode, setIsDemoMode] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("vant_mode") === "demo";
+    }
+    return false;
+  });
 
   const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
 
@@ -45,20 +51,39 @@ export function useDashboard() {
   }, [token]);
 
   const toggleDemoReal = useCallback(() => {
-    setIsDemoMode((prev) => !prev);
+    setIsDemoMode((prev) => {
+      const next = !prev;
+      localStorage.setItem("vant_mode", next ? "demo" : "real");
+      return next;
+    });
   }, []);
 
-  const handleFundDemo = useCallback(async () => {
+  const handleFundDemo = useCallback(async (amount: number = 20000) => {
     if (!token) return;
 
     try {
-      await fundDemoAccount(token);
+      const res = await fundDemoAccount(token, amount);
       await fetchData();
+      return res;
     } catch (err) {
       console.error("Failed to fund demo account:", err);
       throw err;
     }
   }, [token, fetchData]);
+
+  const handleSyncBalance = useCallback(async () => {
+    if (!token) return;
+
+    try {
+      setIsSyncing(true);
+      const res = await syncBalance(token);
+      setBalance(res.balance);
+    } catch (err) {
+      console.error("Failed to sync balance:", err);
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [token]);
 
   useEffect(() => {
     fetchData();
@@ -66,14 +91,15 @@ export function useDashboard() {
 
   const currentBalance = balance
     ? isDemoMode
-      ? balance.demo
-      : balance.real
+      ? balance.total_demo_naira
+      : balance.total_naira
     : null;
 
-  const wallets = userProfile?.wallets ?? [];
+  const wallets = userProfile?.vant_id ? [userProfile.vant_id] : [];
 
   return {
     isLoading,
+    isSyncing,
     error,
     userProfile,
     balance,
@@ -82,6 +108,7 @@ export function useDashboard() {
     wallets,
     toggleDemoReal,
     fundDemo: handleFundDemo,
+    sync: handleSyncBalance,
     refresh: fetchData,
   };
 }

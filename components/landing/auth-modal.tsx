@@ -115,15 +115,16 @@ export function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalProps) {
       setStep("success");
       onAuthSuccess?.(result.user, result.token);
 
-      // Store token in localStorage
+      // Store token in localStorage and cookies for middleware
       localStorage.setItem("auth_token", result.token);
       localStorage.setItem("user", JSON.stringify(result.user));
+      document.cookie = `auth_token=${result.token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
 
       toast.success("Welcome back!");
       setTimeout(() => {
         onClose();
-        router.push("/app");
-      }, 2000);
+        window.location.href = "/app";
+      }, 1500);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to login");
     } finally {
@@ -187,7 +188,7 @@ export function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalProps) {
 
       const result = await setUsername(`@${cleanUsername}`, email, token);
       
-      // Update stored user data
+      // Update stored user data and set cookie
       const user = {
         vant_id: result.user.vant_id,
         email: result.user.email,
@@ -196,6 +197,7 @@ export function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalProps) {
       };
       localStorage.setItem("user", JSON.stringify(user));
       localStorage.setItem("auth_token", token);
+      document.cookie = `auth_token=${token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
       localStorage.removeItem("auth_token_temp");
 
       setAuthToken(token);
@@ -205,8 +207,8 @@ export function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalProps) {
       toast.success("Username set successfully!");
       setTimeout(() => {
         onClose();
-        router.push("/app");
-      }, 2000);
+        window.location.href = "/app";
+      }, 1500);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to set username");
     } finally {

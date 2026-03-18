@@ -1,44 +1,38 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 interface BalanceWidgetProps {
   totalBalance: number | null;
   onClick?: () => void;
   className?: string;
-  variant?: "desktop" | "mobile";
 }
 
 export function BalanceWidget({
   totalBalance,
   onClick,
   className,
-  variant = "desktop",
 }: BalanceWidgetProps) {
   const formatCurrency = (value: number | null) => {
     if (value === null || value === undefined) return "₦0.00";
     return new Intl.NumberFormat("en-NG", {
       style: "currency",
       currency: "NGN",
+      minimumFractionDigits: 2,
     }).format(value);
   };
 
   return (
-    <button
+    <Button
+      variant="outline"
       onClick={onClick}
       className={cn(
-        "flex flex-col items-end gap-1 rounded-lg bg-gray-900/50 border border-gray-800 hover:bg-gray-800/50 transition-all cursor-pointer",
-        variant === "desktop" ? "p-3" : "p-2",
+        "h-10 px-6 rounded-xl border-white/10 bg-white/5 hover:bg-white/10 text-white font-black tabular-nums tracking-tight text-lg shadow-lg shadow-black/20 transition-all",
         className
       )}
     >
-      <span className="text-xs text-gray-400 font-medium">Balance</span>
-      <span className={cn(
-        "font-bold text-white tabular-nums",
-        variant === "desktop" ? "text-lg" : "text-sm"
-      )}>
-        {formatCurrency(totalBalance)}
-      </span>
-    </button>
+      {formatCurrency(totalBalance)}
+    </Button>
   );
 }

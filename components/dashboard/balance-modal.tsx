@@ -6,40 +6,77 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Drawer,
   DrawerContent,
   DrawerHeader,
   DrawerTitle,
+  DrawerDescription,
 } from "@/components/ui/drawer";
-import { Switch } from "@/components/ui/switch";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
+import { DemoRealToggle } from "./demo-real-toggle";
+import { SellCryptoModal } from "./sell-crypto-modal";
+import { Loader } from "@/components/ui/loader";
 import { cn } from "@/lib/utils";
+import type { BalanceInfo } from "@/lib/api";
+import { Fuel, Copy, ExternalLink, ArrowDownLeft, Landmark } from "lucide-react";
+import { toast } from "sonner";
 
 interface BalanceModalProps {
   isOpen: boolean;
   onClose: () => void;
-  totalBalance: number | null;
+  balance: BalanceInfo | null;
   isDemoMode: boolean;
   onToggle: () => void;
+  onSync: () => void;
+  onFundDemo: (amount: number) => Promise<any>;
+  onOpenSell: () => void;
+  isSyncing: boolean;
 }
 
-const cryptoAssets = [
-  { asset: "SOL", name: "Solana", icon: "◎" },
-  { asset: "USDC", name: "USD Coin", icon: "$" },
-  { asset: "USDT", name: "Tether", icon: "₮" },
-  { asset: "BTC", name: "Bitcoin", icon: "₿" },
-  { asset: "ETH", name: "Ethereum", icon: "Ξ" },
+interface AssetConfig {
+  key: keyof BalanceInfo;
+  label: string;
+  symbol: string;
+  icon?: string;
+  isNaira?: boolean;
+  isVNaira?: boolean;
+}
+
+const REAL_ASSETS: AssetConfig[] = [
+  { key: "naira", label: "Naira", symbol: "NGN", isNaira: true },
+  { key: "vnaira", label: "vNaira", symbol: "vNGN", isVNaira: true },
+  { key: "sol", label: "Solana", symbol: "SOL", icon: "/media/images/token_icons/solana.png" },
+  { key: "eth_base", label: "Ethereum (Base)", symbol: "ETH", icon: "/media/images/token_icons/eth.png" },
+  { key: "usdc_sol", label: "USDC (Solana)", symbol: "USDC", icon: "/media/images/token_icons/usdc.png" },
+  { key: "usdc_base", label: "USDC (Base)", symbol: "USDC", icon: "/media/images/token_icons/usdc.png" },
+  { key: "usdt_sol", label: "USDT (Solana)", symbol: "USDT", icon: "/media/images/token_icons/usdt.png" },
+  { key: "usdg_sol", label: "USDG (Solana)", symbol: "USDG", icon: "/media/images/token_icons/usdg.png" },
+];
+
+const DEMO_ASSETS: AssetConfig[] = [
+  { key: "demo_naira", label: "Demo Naira", symbol: "NGN", isNaira: true },
+  { key: "demo_sol", label: "Demo Solana", symbol: "SOL", icon: "/media/images/token_icons/solana.png" },
+  { key: "demo_usdc_sol", label: "Demo USDC", symbol: "USDC", icon: "/media/images/token_icons/usdc.png" },
 ];
 
 export function BalanceModal({
   isOpen,
   onClose,
-  totalBalance,
+  balance,
   isDemoMode,
   onToggle,
+  onSync,
+  onFundDemo,
+  onOpenSell,
+  isSyncing,
 }: BalanceModalProps) {
   const [isMobile, setIsMobile] = useState(false);
+  const [isFunding, setIsFunding] = useState(false);
+  const [isSellModalOpen, setIsSellModalOpen] = useState(false);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -50,100 +87,180 @@ export function BalanceModal({
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  const formatCurrency = (value: number | null) => {
-    if (value === null || value === undefined) return "₦0.00";
+  // Sync balance when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      onSync();
+    }
+  }, [isOpen, onSync]);
+
+  const formatNaira = (value: number | undefined) => {
+    if (value === undefined) return "₦0.00";
     return new Intl.NumberFormat("en-NG", {
       style: "currency",
       currency: "NGN",
+      minimumFractionDigits: 2,
     }).format(value);
   };
 
-  const getWalletAddress = (asset: string): string => {
-    const baseAddress = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb";
-    return `${baseAddress.slice(0, 2)}${asset}${baseAddress.slice(4)}`;
+  const formatCrypto = (value: number | undefined) => {
+    if (value === undefined) return "0.00";
+    return value.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 6,
+    });
   };
 
-  const formatAddress = (address: string) => {
-    if (!address) return "";
-    return `${address.slice(0, 4)}...${address.slice(-4)}`;
+  const assetsToShow = isDemoMode ? DEMO_ASSETS : REAL_ASSETS;
+  const totalBalance = isDemoMode ? balance?.total_demo_naira : balance?.total_naira;
+  const canFundDemo = isDemoMode && (balance?.total_demo_naira ?? 0) < 100;
+
+  const handleRequestDemoFunds = async () => {
+    setIsFunding(true);
+    try {
+      const res = await onFundDemo(20000);
+      toast.success(res.message || "Account funded successfully");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to request funds");
+    } finally {
+      setIsFunding(false);
+    }
+  };
+
+  const renderAsset = (asset: AssetConfig) => {
+    const value = balance?.[asset.key] as number | undefined;
+    const isNairaType = asset.isNaira || asset.isVNaira;
+    
+    return (
+      <div
+        key={asset.key}
+        className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.03] border border-white/5 hover:bg-white/[0.05] transition-all"
+      >
+        <div className="flex items-center gap-4">
+          <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center overflow-hidden">
+            {asset.icon ? (
+              <img src={asset.icon} alt={asset.label} className="w-6 h-6 object-contain" />
+            ) : (
+              <span className={cn(
+                "font-bold text-lg",
+                asset.isNaira ? "text-green-500" : asset.isVNaira ? "text-red-500" : "text-white"
+              )}>
+                ₦
+              </span>
+            )}
+          </div>
+          <div>
+            <p className="text-sm font-bold text-white uppercase">{asset.label}</p>
+            <p className="text-[10px] text-gray-500 uppercase tracking-widest">Asset</p>
+          </div>
+        </div>
+        <div className="text-right">
+          <p className={cn(
+            "text-base font-bold tabular-nums",
+            asset.isNaira ? "text-green-500" : asset.isVNaira ? "text-red-500" : "text-white"
+          )}>
+            {isNairaType ? formatNaira(value) : formatCrypto(value)}
+          </p>
+          <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
+            {asset.symbol}
+          </p>
+        </div>
+      </div>
+    );
   };
 
   const modalContent = (
-    <div className="flex flex-col gap-6 p-4">
-      {/* Balance Section */}
-      <div className="flex flex-col items-center gap-4">
-        <div className="text-center">
-          <p className="text-sm text-gray-400 mb-1">
-            {isDemoMode ? "Demo" : "Real"} Balance
-          </p>
-          <p className="text-3xl font-bold text-white">
-            {formatCurrency(totalBalance)}
-          </p>
+    <div className="flex flex-col gap-8 py-4 overflow-y-auto">
+      {/* Balance Overview */}
+      <div className="flex flex-col items-center gap-2 px-4 text-center shrink-0">
+        <div className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] flex items-center gap-2">
+          {isSyncing && <Loader className="w-2.5 h-2.5 text-red-600" />}
+          Portfolio
         </div>
-
-        {/* Demo/Real Toggle */}
-        <div className="flex items-center gap-3">
-          <span className={cn("text-sm font-medium", !isDemoMode ? "text-white" : "text-gray-400")}>
-            Real
-          </span>
-          <Switch
-            checked={isDemoMode}
-            onCheckedChange={onToggle}
-            className="data-[state=checked]:bg-red-600"
-          />
-          <span className={cn("text-sm font-medium", isDemoMode ? "text-white" : "text-gray-400")}>
-            Demo
-          </span>
-        </div>
+        <h2 className={cn(
+          "text-4xl font-black text-white tracking-tight transition-opacity",
+          isSyncing ? "opacity-50" : "opacity-100"
+        )}>
+          {formatNaira(totalBalance)}
+        </h2>
       </div>
 
-      {/* Crypto Assets List */}
-      <div className="flex flex-col gap-3">
-        <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">
-          Funding Addresses
-        </h3>
-        <div className="flex flex-col gap-2">
-          {cryptoAssets.map((crypto) => {
-            const walletAddress = getWalletAddress(crypto.asset);
+      {/* Action Buttons */}
+      <div className="px-4 flex flex-row gap-2 shrink-0">
+        {isDemoMode && (
+          <Button 
+            className="flex-1 bg-blue-600 text-white hover:bg-blue-500 font-black h-10 rounded-xl gap-2 disabled:opacity-50 disabled:cursor-not-allowed uppercase text-[10px] tracking-widest"
+            onClick={handleRequestDemoFunds}
+            disabled={!canFundDemo || isFunding}
+          >
+            {isFunding ? (
+              <Loader className="text-white" />
+            ) : (
+              <>
+                <Fuel size={14} fill="currentColor" />
+                Refill
+              </>
+            )}
+          </Button>
+        )}
+        
+        <Button 
+          className="flex-1 bg-red-600 text-white hover:bg-red-500 font-black h-10 rounded-xl gap-2 uppercase text-[10px] tracking-widest"
+          onClick={onOpenSell}
+        >
+          <Landmark size={14} />
+          Sell
+        </Button>
 
-            return (
-              <div
-                key={crypto.asset}
-                className="flex items-center justify-between p-3 rounded-lg bg-gray-900 border border-gray-800"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-lg">
-                    {crypto.icon}
-                  </div>
-                  <div>
-                    <p className="font-semibold text-white">{crypto.name}</p>
-                    <p className="text-xs text-gray-400">{crypto.asset}</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-medium text-white">
-                    0 {crypto.asset}
-                  </p>
-                  <p className="text-xs text-gray-500 font-mono">
-                    {formatAddress(walletAddress)}
-                  </p>
-                </div>
-              </div>
-            );
-          })}
+        {!isDemoMode && (
+          <Button className="flex-1 bg-white text-black hover:bg-gray-200 font-black h-10 rounded-xl uppercase text-[10px] tracking-widest shadow-none">
+            Withdraw
+          </Button>
+        )}
+      </div>
+
+      {isDemoMode && !canFundDemo && (
+        <div className="px-4 -mt-4 shrink-0">
+          <p className="text-[10px] text-center text-gray-400 font-bold uppercase tracking-widest">
+            Refill available when balance &lt; ₦100
+          </p>
         </div>
+      )}
+
+      {/* Assets List */}
+      <div className="space-y-4 shrink-0">
+        <div className="px-4">
+          <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+            Your Assets
+          </h3>
+        </div>
+        
+        <ScrollArea className="h-[300px] px-4">
+          <div className="space-y-3 pb-4">
+            {assetsToShow.map(renderAsset)}
+          </div>
+        </ScrollArea>
       </div>
     </div>
   );
 
+  const title = isDemoMode ? "Demo Account" : "Real Account";
+  const description = "Overview of your digital assets and balances.";
+
   if (isMobile) {
     return (
       <Drawer open={isOpen} onOpenChange={onClose}>
-        <DrawerContent className="max-h-[85vh]">
-          <DrawerHeader>
-            <DrawerTitle>Your Balance</DrawerTitle>
+        <DrawerContent className="bg-black border-white/10 max-h-[95vh]">
+          <DrawerHeader className="text-left relative px-6 shrink-0">
+            <div className="flex items-start justify-between">
+              <div className="text-left">
+                <DrawerTitle className="text-xl font-black tracking-tight text-left text-white uppercase">{title}</DrawerTitle>
+                <DrawerDescription className="text-gray-500 text-left text-xs font-medium">{description}</DrawerDescription>
+              </div>
+              <DemoRealToggle isDemoMode={isDemoMode} onToggle={onToggle} className="mt-1" />
+            </div>
           </DrawerHeader>
-          <div className="overflow-y-auto">{modalContent}</div>
+          {modalContent}
         </DrawerContent>
       </Drawer>
     );
@@ -151,7 +268,16 @@ export function BalanceModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md bg-black border-white/10 p-0 overflow-hidden rounded-3xl shadow-2xl outline-none">
+        <DialogHeader className="px-6 pt-6 text-left relative shrink-0">
+          <div className="flex items-start justify-between">
+            <div>
+              <DialogTitle className="text-2xl font-black tracking-tight text-white uppercase">{title}</DialogTitle>
+              <DialogDescription className="text-gray-500 text-sm font-medium">{description}</DialogDescription>
+            </div>
+            <DemoRealToggle isDemoMode={isDemoMode} onToggle={onToggle} className="mt-1 mr-8" />
+          </div>
+        </DialogHeader>
         {modalContent}
       </DialogContent>
     </Dialog>

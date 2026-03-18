@@ -178,6 +178,20 @@ export interface PriceData {
   BTC: PriceUpdate | null;
   ETH: PriceUpdate | null;
   SOL: PriceUpdate | null;
+  NGN?: PriceUpdate | null;
+  USDC?: PriceUpdate | null;
+  USDT?: PriceUpdate | null;
+}
+
+export interface VantRateResponse {
+  success: boolean;
+  buy_rate: number;
+}
+
+export interface AssetVantPriceResponse {
+  success: boolean;
+  asset: string;
+  price: number;
 }
 
 // Price API functions
@@ -224,42 +238,79 @@ export async function getLatestPrices(): Promise<PriceData> {
   return response.json();
 }
 
+export async function getVantRate(): Promise<VantRateResponse> {
+  const response = await fetch(`${API_BASE_URL}/prices/vant`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch Vant rates");
+  }
+
+  return response.json();
+}
+
+export async function getAssetVantPrice(asset: string): Promise<AssetVantPriceResponse> {
+  const response = await fetch(`${API_BASE_URL}/prices/vant/${asset}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch Vant price for ${asset}`);
+  }
+
+  return response.json();
+}
+
 // Dashboard types
 export interface UserProfile {
   vant_id: string;
   email: string;
   username: string;
+  full_name?: string;
   balance_id: string;
+  socials?: string[];
   profile_image_url?: string;
-  wallets?: WalletInfo[];
+  created_at?: string;
 }
 
-export interface WalletInfo {
-  asset: string;
-  address: string;
-  chain?: string;
+export interface WalletDetails {
+  sol_public_key: string;
+  base_public_key: string;
+  naira_account_number: string;
+  account_id: string;
 }
 
 export interface UserResponse {
   success: boolean;
   user: UserProfile;
+  wallet: WalletDetails;
 }
 
 export interface BalanceInfo {
-  real: {
-    total_ngn: number;
-    assets: AssetBalance[];
-  };
-  demo: {
-    total_ngn: number;
-    assets: AssetBalance[];
-  };
-}
-
-export interface AssetBalance {
-  asset: string;
-  amount: string;
-  ngn_value: number;
+  id: string;
+  email: string;
+  total_naira: number;
+  total_demo_naira: number;
+  vnaira: number;
+  // Real assets
+  usdc_sol: number;
+  usdc_base: number;
+  usdt_sol: number;
+  usdg_sol: number;
+  sol: number;
+  eth_base: number;
+  naira: number;
+  // Demo assets
+  demo_usdc_sol: number;
+  demo_sol: number;
+  demo_naira: number;
 }
 
 export interface BalanceResponse {
@@ -270,6 +321,20 @@ export interface BalanceResponse {
 export interface DemoFundResponse {
   success: boolean;
   message: string;
+  tx_hash?: string;
+}
+
+export interface SellCryptoRequest {
+  asset: string;
+  amount: number;
+  nature: "demo" | "real";
+}
+
+export interface SellCryptoResponse {
+  success: boolean;
+  message: string;
+  naira_received: number;
+  exchange_rate: number;
 }
 
 // Dashboard API functions
@@ -347,9 +412,9 @@ export async function getBalance(token: string): Promise<BalanceResponse> {
   return response.json();
 }
 
-export async function fundDemoAccount(token: string): Promise<DemoFundResponse> {
-  const response = await fetch(`${API_BASE_URL}/demo/fund`, {
-    method: "POST",
+export async function syncBalance(token: string): Promise<BalanceResponse> {
+  const response = await fetch(`${API_BASE_URL}/balance/sync`, {
+    method: "GET",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
@@ -357,7 +422,43 @@ export async function fundDemoAccount(token: string): Promise<DemoFundResponse> 
   });
 
   if (!response.ok) {
-    throw new Error("Failed to fund demo account");
+    throw new Error("Failed to sync balance");
+  }
+
+  return response.json();
+}
+
+export async function fundDemoAccount(token: string, amount: number = 20000): Promise<DemoFundResponse> {
+  const response = await fetch(`${API_BASE_URL}/demo/fund`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ amount }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Failed to fund demo account");
+  }
+
+  return response.json();
+}
+
+export async function sellCrypto(token: string, data: SellCryptoRequest): Promise<SellCryptoResponse> {
+  const response = await fetch(`${API_BASE_URL}/balance/sell`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Failed to sell crypto");
   }
 
   return response.json();

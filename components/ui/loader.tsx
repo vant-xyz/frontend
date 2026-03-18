@@ -1,5 +1,10 @@
+import { cn } from "@/lib/utils";
 import "./loader.css";
 
-export function Loader() {
-  return <div className="loader" />;
+interface LoaderProps {
+  className?: string;
+}
+
+export function Loader({ className }: LoaderProps) {
+  return <div className={cn("loader", className)} />;
 }

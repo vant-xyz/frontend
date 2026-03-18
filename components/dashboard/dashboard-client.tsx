@@ -1,28 +1,55 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import { useDashboard } from "@/hooks/use-dashboard";
 import { Loader } from "@/components/ui/loader";
 import { DashboardNav } from "./nav";
 import { BalanceWidget } from "./balance-widget";
-import { DemoRealToggle } from "./demo-real-toggle";
 import { BalanceModal } from "./balance-modal";
+import { SellCryptoModal } from "./sell-crypto-modal";
+import { cn } from "@/lib/utils";
 
 interface DashboardClientProps {
   children: React.ReactNode;
 }
 
 export function DashboardClient({ children }: DashboardClientProps) {
-  const { isLoading, error, balance, isDemoMode, toggleDemoReal } = useDashboard();
+  const router = useRouter();
+  const pathname = usePathname();
+  const { 
+    isLoading, 
+    isSyncing, 
+    error, 
+    balance, 
+    isDemoMode, 
+    toggleDemoReal, 
+    sync, 
+    fundDemo 
+  } = useDashboard();
+  
   const [isBalanceModalOpen, setIsBalanceModalOpen] = useState(false);
+  const [isSellModalOpen, setIsSellModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("crypto");
 
-  const currentBalance = isDemoMode ? balance?.demo : balance?.real;
-  const totalBalance = currentBalance?.total_ngn ?? null;
+  const totalBalance = isDemoMode ? balance?.total_demo_naira : balance?.total_naira;
+
+  // Sync active tab with pathname
+  useEffect(() => {
+    if (pathname === "/app") setActiveTab("crypto");
+    else if (pathname.startsWith("/app/vs")) setActiveTab("vs");
+    else if (pathname.startsWith("/app/general")) setActiveTab("general");
+    else if (pathname.startsWith("/app/account")) setActiveTab("account");
+  }, [pathname]);
 
   const handleNavClick = (path: string, tabId: string) => {
     setActiveTab(tabId);
-    window.location.href = path;
+    router.push(path);
+  };
+
+  const handleOpenSellModal = () => {
+    setIsBalanceModalOpen(false);
+    setIsSellModalOpen(true);
   };
 
   if (isLoading) {
@@ -45,73 +72,62 @@ export function DashboardClient({ children }: DashboardClientProps) {
   }
 
   return (
-    <div className="min-h-screen bg-black">
-      {/* Desktop Header */}
-      <header className="hidden lg:flex items-center justify-between px-6 py-4 border-b border-gray-800">
-        {/* Logo */}
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-red-600 rounded"></div>
-          <span className="text-2xl font-bold text-white">VANT</span>
+    <div className="min-h-screen bg-black text-white selection:bg-red-500/30">
+      {/* Header */}
+      <header className="sticky top-0 z-40 bg-black/80 backdrop-blur-xl border-b border-white/5 h-20 px-4 lg:px-8 flex items-center justify-between">
+        {/* Logo - Red Box */}
+        <div 
+          className="flex items-center gap-3 cursor-pointer group" 
+          onClick={() => router.push("/")}
+        >
+          <div className="w-8 h-8 bg-red-600 rounded transition-transform group-hover:scale-105 shadow-lg shadow-red-600/20"></div>
         </div>
 
-        {/* Desktop Nav + Balance + Toggle */}
-        <div className="flex items-center gap-4">
-          <BalanceWidget
-            totalBalance={totalBalance}
-            onClick={() => setIsBalanceModalOpen(true)}
-            variant="desktop"
-          />
-          <DemoRealToggle
-            isDemoMode={isDemoMode}
-            onToggle={toggleDemoReal}
-            variant="desktop"
-          />
-          <DashboardNav
-            activeTab={activeTab}
-            onTabChange={handleNavClick}
-            variant="desktop"
-          />
+        {/* Right side: Desktop Nav + Balance */}
+        <div className="flex items-center gap-4 lg:gap-8">
+          <div className="hidden lg:flex items-center gap-4">
+            <DashboardNav activeTab={activeTab} onTabChange={handleNavClick} />
+          </div>
+          <div className="flex items-center gap-4">
+            <BalanceWidget 
+              totalBalance={totalBalance ?? null} 
+              onClick={() => setIsBalanceModalOpen(true)} 
+              variant="desktop" 
+            />
+          </div>
         </div>
       </header>
 
-      {/* Mobile Header */}
-      <header className="lg:hidden flex items-center justify-between px-4 py-3 border-b border-gray-800">
-        <BalanceWidget
-          totalBalance={totalBalance}
-          onClick={() => setIsBalanceModalOpen(true)}
-          variant="mobile"
-        />
-        <DemoRealToggle
-          isDemoMode={isDemoMode}
-          onToggle={toggleDemoReal}
-          variant="mobile"
-        />
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-red-600 rounded"></div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="pb-24 lg:pb-6">
+      {/* Main Content Area */}
+      <main className="max-w-7xl mx-auto p-4 lg:p-8 pb-32 lg:pb-8">
         {children}
       </main>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur-md border-t border-gray-800 px-4 py-3">
-        <DashboardNav
-          activeTab={activeTab}
-          onTabChange={handleNavClick}
-          variant="mobile"
-        />
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 px-4 pb-6 pt-2">
+        <div className="bg-black/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl shadow-black p-2">
+          <DashboardNav activeTab={activeTab} onTabChange={handleNavClick} variant="mobile" />
+        </div>
       </nav>
 
-      {/* Balance Modal/Drawer */}
       <BalanceModal
         isOpen={isBalanceModalOpen}
         onClose={() => setIsBalanceModalOpen(false)}
-        totalBalance={totalBalance}
+        balance={balance}
         isDemoMode={isDemoMode}
         onToggle={toggleDemoReal}
+        onSync={sync}
+        onFundDemo={fundDemo}
+        onOpenSell={handleOpenSellModal}
+        isSyncing={isSyncing}
+      />
+
+      <SellCryptoModal 
+        isOpen={isSellModalOpen} 
+        onClose={() => setIsSellModalOpen(false)}
+        balance={balance}
+        isDemoMode={isDemoMode}
+        onSuccess={() => sync()}
       />
     </div>
   );

@@ -1,53 +1,37 @@
 "use client";
 
-import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 interface DemoRealToggleProps {
   isDemoMode: boolean;
   onToggle: () => void;
   className?: string;
-  variant?: "desktop" | "mobile";
 }
 
 export function DemoRealToggle({
   isDemoMode,
   onToggle,
   className,
-  variant = "desktop",
 }: DemoRealToggleProps) {
   return (
-    <div
-      className={cn(
-        "flex items-center gap-3 rounded-full bg-gray-900/80 border border-gray-800",
-        variant === "desktop" ? "p-2" : "p-2",
-        className
-      )}
-    >
-      <span
+    <div className={cn("flex items-center space-x-2", className)}>
+      <Label 
+        htmlFor="mode-toggle" 
         className={cn(
-          "text-sm font-medium transition-colors",
-          !isDemoMode ? "text-white" : "text-gray-400",
-          variant === "mobile" && "text-xs"
+          "text-[10px] font-bold uppercase tracking-widest transition-colors",
+          isDemoMode ? "text-red-500" : "text-gray-500"
         )}
       >
-        Real
-      </span>
+        Demo Mode
+      </Label>
       <Switch
+        id="mode-toggle"
         checked={isDemoMode}
         onCheckedChange={onToggle}
         className="data-[state=checked]:bg-red-600"
-        style={variant === "mobile" ? { transform: "scale(0.75)" } : undefined}
       />
-      <span
-        className={cn(
-          "text-sm font-medium transition-colors",
-          isDemoMode ? "text-white" : "text-gray-400",
-          variant === "mobile" && "text-xs"
-        )}
-      >
-        Demo
-      </span>
     </div>
   );
 }
