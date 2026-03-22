@@ -86,7 +86,7 @@ export function HeroSection() {
             isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
           }`}
         >
-          The fastest prediction terminal for crypto assets. 1000x faster execution. 
+          The fastest prediction terminal for crypto assets with up to 10x faster execution. 
         </p>
 
         {/* CTA Button */}
