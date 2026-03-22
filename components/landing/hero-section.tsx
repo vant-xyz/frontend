@@ -86,7 +86,7 @@ export function HeroSection() {
             isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
           }`}
         >
-          The fastest prediction terminal for BTC, ETH, and SOL. Built for the Nigerian market.
+          The fastest prediction terminal for crypto assets. 1000x faster execution. 
         </p>
 
         {/* CTA Button */}
