@@ -1,13 +1,12 @@
 "use client";
 
 import { DashboardClient } from "@/components/dashboard/dashboard-client";
+import { CryptoTab } from "@/components/dashboard/crypto/crypto-tab";
 
 export default function DashboardPage() {
   return (
     <DashboardClient>
-      <div className="flex items-center justify-center h-full text-gray-500">
-        Dashboard content will appear here
-      </div>
+      <CryptoTab />
     </DashboardClient>
   );
 }

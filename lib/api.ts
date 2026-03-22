@@ -202,27 +202,34 @@ export function connectToPriceFeed(
 ): WebSocket {
   const wsUrl = process.env.NEXT_PUBLIC_WS_URL || `ws://localhost:8080/ws`;
   const authedWsUrl = `${wsUrl}?token=${token}`;
-  const ws = new WebSocket(authedWsUrl);
+  
+  try {
+    const ws = new WebSocket(authedWsUrl);
 
-  ws.onmessage = (event) => {
-    try {
-      const data = JSON.parse(event.data);
-      onMessage(data);
-    } catch (err) {
-      console.error("Failed to parse ws message:", err);
-    }
-  };
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        onMessage(data);
+      } catch (err) {
+        console.error("Failed to parse ws message:", err);
+      }
+    };
 
-  ws.onerror = (error) => {
-    console.error("WebSocket error:", error);
-    onError?.(error);
-  };
+    ws.onerror = (error) => {
+      console.warn("WebSocket error - will fallback to polling");
+      onError?.(error);
+    };
 
-  ws.onclose = () => {
-    console.log("WebSocket connection closed");
-  };
+    ws.onclose = () => {
+      console.log("WebSocket connection closed");
+    };
 
-  return ws;
+    return ws;
+  } catch (err) {
+    console.warn("Failed to create WebSocket - will fallback to polling");
+    onError?.(err as Event);
+    return {} as WebSocket;
+  }
 }
 
 export async function getLatestPrices(): Promise<PriceData> {
@@ -497,4 +504,289 @@ export async function getTransactions(token: string): Promise<TransactionsRespon
   }
 
   return response.json();
+}
+
+// Markets types
+export type MarketType = "CAPPM" | "GEM";
+export type MarketStatus = "active" | "resolved";
+export type MarketDirection = "Above" | "Below";
+export type MarketOutcome = "YES" | "NO";
+
+export interface Market {
+  id: string;
+  market_type: MarketType;
+  status: MarketStatus;
+  quote_currency: string;
+  title: string;
+  description: string;
+  data_provider: string;
+  creator_address: string;
+  market_pda: string;
+  start_time_utc: string;
+  end_time_utc: string;
+  duration_seconds: number;
+  created_at: string;
+  creation_tx_hash: string;
+  asset?: string;
+  direction?: MarketDirection;
+  target_price?: number;
+  current_price?: number;
+  outcome?: MarketOutcome;
+  outcome_description?: string;
+  end_price?: number;
+  settlement_tx_hash?: string;
+  resolved_at?: string;
+}
+
+export interface MarketsResponse {
+  success: boolean;
+  markets: Market[];
+  count: number;
+}
+
+export interface MarketResponse {
+  success: boolean;
+  market: Market;
+}
+
+export interface OrderbookLevel {
+  price: number;
+  quantity: number;
+  orders: number;
+}
+
+export interface OrderbookSnapshot {
+  market_id: string;
+  yes_bids: OrderbookLevel[];
+  yes_asks: OrderbookLevel[];
+  no_bids: OrderbookLevel[];
+  no_asks: OrderbookLevel[];
+  last_traded_price: number;
+  spread: number;
+  fetched_at: string;
+}
+
+export interface OrderbookResponse {
+  success: boolean;
+  orderbook: OrderbookSnapshot;
+}
+
+export type OrderSide = "YES" | "NO";
+export type OrderType = "MARKET" | "LIMIT";
+export type OrderStatus = "OPEN" | "PARTIALLY_FILLED" | "FILLED" | "CANCELLED";
+
+export interface Order {
+  id: string;
+  user_email: string;
+  market_id: string;
+  side: OrderSide;
+  type: OrderType;
+  price: number;
+  quantity: number;
+  filled_qty: number;
+  remaining_qty: number;
+  status: OrderStatus;
+  quote_currency: string;
+  created_at: string;
+  updated_at: string;
+  expires_at?: string;
+}
+
+export interface OrdersResponse {
+  success: boolean;
+  orders: Order[];
+  count: number;
+}
+
+export interface PlaceOrderRequest {
+  market_id: string;
+  side: OrderSide;
+  type: OrderType;
+  price?: number;
+  quantity: number;
+  expires_at?: number;
+}
+
+export interface PlaceOrderResponse {
+  success: boolean;
+  order: Order;
+}
+
+export interface Position {
+  id: string;
+  user_email: string;
+  market_id: string;
+  side: OrderSide;
+  shares: number;
+  avg_entry_price: number;
+  total_cost: number;
+  realized_pnl: number;
+  status: string;
+  quote_currency: string;
+  created_at: string;
+  settled_at?: string;
+}
+
+export interface PositionsResponse {
+  success: boolean;
+  positions: Position[];
+  count: number;
+}
+
+// Markets API functions
+export async function getMarkets(
+  type?: MarketType,
+  status?: MarketStatus,
+  asset?: string,
+  limit: number = 50
+): Promise<MarketsResponse> {
+  const params = new URLSearchParams();
+  if (type) params.append("type", type);
+  if (status) params.append("status", status);
+  if (asset) params.append("asset", asset);
+  params.append("limit", limit.toString());
+
+  const response = await fetch(`${API_BASE_URL}/markets?${params.toString()}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch markets");
+  }
+
+  return response.json();
+}
+
+export async function getMarket(marketId: string): Promise<MarketResponse> {
+  const response = await fetch(`${API_BASE_URL}/markets/${marketId}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch market");
+  }
+
+  return response.json();
+}
+
+export async function getOrderbook(marketId: string): Promise<OrderbookResponse> {
+  const response = await fetch(`${API_BASE_URL}/markets/${marketId}/orderbook`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch orderbook");
+  }
+
+  return response.json();
+}
+
+export async function placeOrder(token: string, data: PlaceOrderRequest): Promise<PlaceOrderResponse> {
+  const response = await fetch(`${API_BASE_URL}/orders`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Failed to place order");
+  }
+
+  return response.json();
+}
+
+export async function cancelOrder(token: string, orderId: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/orders/${orderId}`, {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to cancel order");
+  }
+}
+
+export async function getUserOrders(token: string, marketId?: string): Promise<OrdersResponse> {
+  const params = new URLSearchParams();
+  if (marketId) params.append("market_id", marketId);
+
+  const response = await fetch(`${API_BASE_URL}/orders?${params.toString()}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch orders");
+  }
+
+  return response.json();
+}
+
+export async function getUserPositions(token: string, marketId?: string): Promise<PositionsResponse> {
+  const params = new URLSearchParams();
+  if (marketId) params.append("market_id", marketId);
+
+  const response = await fetch(`${API_BASE_URL}/positions?${params.toString()}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch positions");
+  }
+
+  return response.json();
+}
+
+export function connectToOrderbookFeed(
+  token: string,
+  marketId: string,
+  onMessage: (data: any) => void,
+  onError?: (error: Event) => void
+): WebSocket {
+  const wsUrl = process.env.NEXT_PUBLIC_WS_URL || `ws://localhost:8080/ws`;
+  const authedWsUrl = `${wsUrl}/markets/${marketId}/orderbook?token=${token}`;
+  const ws = new WebSocket(authedWsUrl);
+
+  ws.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data);
+      onMessage(data);
+    } catch (err) {
+      console.error("Failed to parse ws message:", err);
+    }
+  };
+
+  ws.onerror = (error) => {
+    console.error("WebSocket error:", error);
+    onError?.(error);
+  };
+
+  ws.onclose = () => {
+    console.log("Orderbook WebSocket connection closed");
+  };
+
+  return ws;
 }

@@ -20,11 +20,12 @@ interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAuthSuccess?: (user: AuthResponse["user"], token: string) => void;
+  onSuccess?: () => void;
 }
 
 type AuthStep = "email" | "password" | "signup-password" | "username" | "success";
 
-export function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalProps) {
+export function AuthModal({ isOpen, onClose, onAuthSuccess, onSuccess }: AuthModalProps) {
   const router = useRouter();
   const [step, setStep] = useState<AuthStep>("email");
   const [email, setEmail] = useState("");
@@ -114,6 +115,7 @@ export function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalProps) {
       setAuthToken(result.token);
       setStep("success");
       onAuthSuccess?.(result.user, result.token);
+      onSuccess?.();
 
       // Store token in localStorage and cookies for middleware
       localStorage.setItem("auth_token", result.token);
@@ -203,6 +205,7 @@ export function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalProps) {
       setAuthToken(token);
       setStep("success");
       onAuthSuccess?.(user, token);
+      onSuccess?.();
 
       toast.success("Username set successfully!");
       setTimeout(() => {

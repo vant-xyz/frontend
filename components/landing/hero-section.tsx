@@ -4,11 +4,32 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ReelAnimation } from "./reel-animation";
 import { WaitlistModal } from "./waitlist-modal";
+import { AuthModal } from "./auth-modal";
+import { useRouter } from "next/navigation";
 
 export function HeroSection() {
+  const router = useRouter();
   const [isVisible, setIsVisible] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [animatedStats, setAnimatedStats] = useState([false, false, false]);
+
+  const enableAuth = process.env.NEXT_PUBLIC_ENABLE_AUTH === "true";
+
+  const handleStartTrading = () => {
+    if (!enableAuth) {
+      setIsModalOpen(true);
+      return;
+    }
+
+    const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
+    
+    if (token) {
+      router.push("/app");
+    } else {
+      setIsAuthModalOpen(true);
+    }
+  };
 
   useEffect(() => {
     setIsVisible(true);
@@ -48,26 +69,26 @@ export function HeroSection() {
       {/* Red glow effect */}
       <div className="absolute -top-40 -right-40 w-80 h-80 bg-red-600 rounded-full opacity-10 blur-3xl" />
       <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-red-600 rounded-full opacity-10 blur-3xl" />
-      
+
       <div className="relative z-10 max-w-6xl mx-auto px-6 py-32 text-center">
         {/* Main headline with reel animation */}
-        <h1 
+        <h1
           className={`text-6xl lg:text-8xl font-bold text-white mb-6 transition-all duration-1000 ${
             isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
           }`}
         >
           <ReelAnimation />
         </h1>
-        
+
         {/* Subheading */}
-        <p 
+        <p
           className={`text-2xl lg:text-3xl text-gray-300 mb-8 max-w-3xl mx-auto transition-all duration-1000 delay-200 ${
             isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
           }`}
         >
           The fastest prediction terminal for BTC, ETH, and SOL. Built for the Nigerian market.
         </p>
-        
+
         {/* CTA Button */}
         <div
           className={`transition-all duration-1000 delay-300 ${
@@ -75,7 +96,7 @@ export function HeroSection() {
           }`}
         >
           <Button
-            onClick={() => setIsModalOpen(true)}
+            onClick={handleStartTrading}
             size="lg"
             className="px-10 py-6 bg-red-600 text-white text-xl font-bold rounded hover:bg-red-500 transition-colors shadow-lg"
           >
@@ -157,6 +178,16 @@ export function HeroSection() {
       </div>
 
       <WaitlistModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      {enableAuth && (
+        <AuthModal 
+          isOpen={isAuthModalOpen} 
+          onClose={() => setIsAuthModalOpen(false)}
+          onSuccess={() => {
+            setIsAuthModalOpen(false);
+            router.push("/app");
+          }} 
+        />
+      )}
     </section>
   );
 }
