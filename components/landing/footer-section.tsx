@@ -37,7 +37,7 @@ export function FooterSection() {
                 </div>
 
                 <p className="text-gray-400 leading-relaxed mb-8 max-w-xs">
-                  The fastest prediction market terminal for West Africa. Trade crypto, sports, and custom wagers on Solana.
+                  The fastest prediction market terminal for opinions. Trade crypto, sports, and custom wagers on the fastest execution engine.
                 </p>
 
                 {/* Social Links */}
