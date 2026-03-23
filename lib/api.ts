@@ -549,6 +549,45 @@ export interface MarketResponse {
   market: Market;
 }
 
+export interface OnchainMarket {
+  MarketID: string;
+  MarketType: number;
+  IsResolved: boolean;
+  Creator: string;
+  ApprovedSettler: string;
+  Title: string;
+  Description: string;
+  StartTimeUTC: number;
+  EndTimeUTC: number;
+  DurationSeconds: number;
+  DataProvider: string;
+  CreatedAt: number;
+  Asset: string;
+  Direction: number | null;
+  TargetPrice: number | null;
+  CurrentPrice: number | null;
+  EndPrice: number | null;
+  Outcome: number | null;
+  OutcomeDescription: string;
+}
+
+export interface MarketOnchainResponse {
+  success: boolean;
+  market: Market;
+  onchain: OnchainMarket;
+  explorer_urls: {
+    creation: string;
+    settlement: string;
+    account: string;
+  };
+}
+
+export interface MarketsOnchainResponse {
+  success: boolean;
+  markets: OnchainMarket[];
+  count: number;
+}
+
 export interface OrderbookLevel {
   price: number;
   quantity: number;
@@ -670,6 +709,39 @@ export async function getMarket(marketId: string): Promise<MarketResponse> {
 
   if (!response.ok) {
     throw new Error("Failed to fetch market");
+  }
+
+  return response.json();
+}
+
+export async function getMarketOnchain(marketId: string): Promise<MarketOnchainResponse> {
+  const response = await fetch(`${API_BASE_URL}/markets/${marketId}/onchain`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch onchain market data");
+  }
+
+  return response.json();
+}
+
+export async function getMarketsOnchain(status?: MarketStatus): Promise<MarketsOnchainResponse> {
+  const params = new URLSearchParams();
+  if (status) params.append("status", status);
+
+  const response = await fetch(`${API_BASE_URL}/markets/onchain?${params.toString()}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch onchain markets");
   }
 
   return response.json();
