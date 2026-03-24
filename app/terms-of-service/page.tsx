@@ -1,5 +1,15 @@
+import { Metadata } from 'next'
 import { Navigation } from "@/components/landing/navigation";
 import { FooterSection } from "@/components/landing/footer-section";
+
+export const metadata: Metadata = {
+  title: 'Terms of Service',
+  description: 'Terms of Service for Vantic - Read our terms and conditions for using the prediction and wagering platform.',
+  robots: {
+    index: true,
+    follow: true,
+  },
+}
 
 export default function TermsOfServicePage() {
   return (
@@ -18,13 +28,13 @@ export default function TermsOfServicePage() {
             <section className="mb-12">
               <h2 className="text-2xl font-bold text-white mb-4">1. Agreement to Terms</h2>
               <p className="text-gray-300 leading-relaxed mb-4">
-                By accessing or using Vant (the "Service"), you agree to be bound by these 
-                Terms of Service ("Terms"). If you do not agree to these Terms, do not access 
+                By accessing or using Vantic (the "Service"), you agree to be bound by these
+                Terms of Service ("Terms"). If you do not agree to these Terms, do not access
                 or use the Service.
               </p>
               <p className="text-gray-300 leading-relaxed">
-                These Terms constitute a legally binding agreement between you and Vant. 
-                We reserve the right to modify these Terms at any time. Your continued use 
+                These Terms constitute a legally binding agreement between you and Vantic.
+                We reserve the right to modify these Terms at any time. Your continued use
                 of the Service after changes constitutes acceptance of the new Terms.
               </p>
             </section>
@@ -32,26 +42,26 @@ export default function TermsOfServicePage() {
             <section className="mb-12">
               <h2 className="text-2xl font-bold text-white mb-4">2. Description of Service</h2>
               <p className="text-gray-300 leading-relaxed mb-4">
-                Vant is a prediction and wagering platform built on blockchain technology, 
+                Vantic is a prediction and wagering platform built on blockchain technology,
                 offering the following services:
               </p>
               <ul className="list-disc list-inside text-gray-300 space-y-2 ml-4">
                 <li>
-                  <strong>Vant Crypto:</strong> Minute-interval price predictions for BTC, 
+                  <strong>Vantic Crypto:</strong> Minute-interval price predictions for BTC,
                   ETH, and SOL using real-time data from Coinbase and Kalshi.
                 </li>
                 <li>
-                  <strong>Vant Sports:</strong> Sports-based outcome predictions localized 
+                  <strong>Vantic Sports:</strong> Sports-based outcome predictions localized
                   for the Nigerian and West African markets.
                 </li>
                 <li>
-                  <strong>Vant VS:</strong> A peer-to-peer wagering protocol allowing users 
+                  <strong>Vantic VS:</strong> A peer-to-peer wagering protocol allowing users
                   to create custom wagers on any event with decentralized escrow protection.
                 </li>
               </ul>
               <p className="text-gray-300 leading-relaxed mt-4">
-                The Service displays all balances in Nigerian Naira (NGN) through our 
-                Naira-first abstraction layer, regardless of the underlying cryptocurrency 
+                The Service displays all balances in Nigerian Naira (NGN) through our
+                Naira-first abstraction layer, regardless of the underlying cryptocurrency
                 (SOL, USDC, USDT) used for transactions.
               </p>
             </section>
@@ -59,7 +69,7 @@ export default function TermsOfServicePage() {
             <section className="mb-12">
               <h2 className="text-2xl font-bold text-white mb-4">3. Eligibility</h2>
               <p className="text-gray-300 leading-relaxed mb-4">
-                To use the Vant Service, you must:
+                To use the Vantic Service, you must:
               </p>
               <ul className="list-disc list-inside text-gray-300 space-y-2 ml-4">
                 <li>Be at least 18 years of age</li>
@@ -68,7 +78,7 @@ export default function TermsOfServicePage() {
                 <li>Not be located in a jurisdiction where prediction markets or wagering are prohibited</li>
               </ul>
               <p className="text-gray-300 leading-relaxed mt-4">
-                By using the Service, you represent and warrant that you meet all eligibility 
+                By using the Service, you represent and warrant that you meet all eligibility
                 requirements.
               </p>
             </section>
@@ -85,7 +95,7 @@ export default function TermsOfServicePage() {
                 <li>Ensuring your wallet has sufficient funds for transactions</li>
               </ul>
               <p className="text-gray-300 leading-relaxed mt-4">
-                Vant does not have access to your private keys and cannot recover lost or 
+                Vantic does not have access to your private keys and cannot recover lost or
                 stolen wallets. You are solely responsible for your wallet security.
               </p>
             </section>
@@ -109,13 +119,13 @@ export default function TermsOfServicePage() {
             <section className="mb-12">
               <h2 className="text-2xl font-bold text-white mb-4">6. Prediction Markets and Wagering</h2>
               <p className="text-gray-300 leading-relaxed mb-4">
-                <strong>6.1 Nature of Predictions:</strong> Vant Crypto and Vant Sports involve 
-                predicting outcomes of future events. These are not investments or financial 
+                <strong>6.1 Nature of Predictions:</strong> Vantic Crypto and Vantic Sports involve
+                predicting outcomes of future events. These are not investments or financial
                 instruments. Past performance does not guarantee future results.
               </p>
               <p className="text-gray-300 leading-relaxed mb-4">
-                <strong>6.2 Vant VS (Peer-to-Peer Wagering):</strong> Users may create custom 
-                wagers on any event. Both parties must agree to terms before funds are locked 
+                <strong>6.2 Vantic VS (Peer-to-Peer Wagering):</strong> Users may create custom
+                wagers on any event. Both parties must agree to terms before funds are locked
                 in escrow. Settlement occurs based on:
               </p>
               <ul className="list-disc list-inside text-gray-300 space-y-2 ml-4">
@@ -124,11 +134,11 @@ export default function TermsOfServicePage() {
                 <li>Predefined settlement conditions</li>
               </ul>
               <p className="text-gray-300 leading-relaxed mt-4">
-                <strong>6.3 Fees:</strong> Vant charges fees on certain transactions. Fee 
+                <strong>6.3 Fees:</strong> Vantic charges fees on certain transactions. Fee
                 structures are displayed before you confirm any transaction.
               </p>
               <p className="text-gray-300 leading-relaxed mt-4">
-                <strong>6.4 Finality:</strong> All wagers settled on-chain are final and 
+                <strong>6.4 Finality:</strong> All wagers settled on-chain are final and
                 cannot be reversed.
               </p>
             </section>
@@ -163,7 +173,7 @@ export default function TermsOfServicePage() {
                 </li>
               </ul>
               <p className="text-gray-300 leading-relaxed mt-4 font-semibold">
-                YOU ASSUME ALL RISKS ASSOCIATED WITH USING THE SERVICE. VANT DOES NOT GUARANTEE 
+                YOU ASSUME ALL RISKS ASSOCIATED WITH USING THE SERVICE. VANTIC DOES NOT GUARANTEE
                 PROFITS OR PROTECT AGAINST LOSSES.
               </p>
             </section>
@@ -178,7 +188,7 @@ export default function TermsOfServicePage() {
                 <li>Manipulate prediction markets or wagering outcomes</li>
                 <li>Engage in fraudulent, deceptive, or misleading conduct</li>
                 <li>Use bots, scripts, or automated systems to exploit the Service</li>
-                <li>Attempt to gain unauthorized access to Vant's systems</li>
+                <li>Attempt to gain unauthorized access to Vantic's systems</li>
                 <li>Interfere with or disrupt the Service</li>
                 <li>Use the Service if you are located in a prohibited jurisdiction</li>
                 <li>Transfer or attempt to transfer your account to another party</li>
@@ -188,10 +198,10 @@ export default function TermsOfServicePage() {
             <section className="mb-12">
               <h2 className="text-2xl font-bold text-white mb-4">9. Intellectual Property</h2>
               <p className="text-gray-300 leading-relaxed mb-4">
-                All content, features, and functionality of the Vant Service, including but 
-                not limited to text, graphics, logos, code, and design, are owned by Vant 
-                and protected by intellectual property laws. You are granted a limited, 
-                non-exclusive, non-transferable license to use the Service for personal, 
+                All content, features, and functionality of the Vantic Service, including but
+                not limited to text, graphics, logos, code, and design, are owned by Vantic
+                and protected by intellectual property laws. You are granted a limited,
+                non-exclusive, non-transferable license to use the Service for personal,
                 non-commercial purposes.
               </p>
             </section>
@@ -199,13 +209,13 @@ export default function TermsOfServicePage() {
             <section className="mb-12">
               <h2 className="text-2xl font-bold text-white mb-4">10. Disclaimer of Warranties</h2>
               <p className="text-gray-300 leading-relaxed mb-4">
-                THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY 
-                KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO IMPLIED 
-                WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND 
+                THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY
+                KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO IMPLIED
+                WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND
                 NON-INFRINGEMENT.
               </p>
               <p className="text-gray-300 leading-relaxed">
-                VANT DOES NOT WARRANT THAT THE SERVICE WILL BE UNINTERRUPTED, SECURE, OR 
+                VANTIC DOES NOT WARRANT THAT THE SERVICE WILL BE UNINTERRUPTED, SECURE, OR
                 ERROR-FREE.
               </p>
             </section>
@@ -213,8 +223,8 @@ export default function TermsOfServicePage() {
             <section className="mb-12">
               <h2 className="text-2xl font-bold text-white mb-4">11. Limitation of Liability</h2>
               <p className="text-gray-300 leading-relaxed mb-4">
-                TO THE MAXIMUM EXTENT PERMITTED BY LAW, VANT SHALL NOT BE LIABLE FOR ANY 
-                INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING 
+                TO THE MAXIMUM EXTENT PERMITTED BY LAW, VANTIC SHALL NOT BE LIABLE FOR ANY
+                INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING
                 BUT NOT LIMITED TO:
               </p>
               <ul className="list-disc list-inside text-gray-300 space-y-2 ml-4">
@@ -224,17 +234,17 @@ export default function TermsOfServicePage() {
                 <li>Actions or omissions of third parties</li>
               </ul>
               <p className="text-gray-300 leading-relaxed mt-4">
-                OUR TOTAL LIABILITY TO YOU FOR ANY CLAIM SHALL NOT EXCEED THE AMOUNT YOU 
-                PAID TO VANT IN THE SIX MONTHS PRECEDING THE CLAIM.
+                OUR TOTAL LIABILITY TO YOU FOR ANY CLAIM SHALL NOT EXCEED THE AMOUNT YOU
+                PAID TO VANTIC IN THE SIX MONTHS PRECEDING THE CLAIM.
               </p>
             </section>
 
             <section className="mb-12">
               <h2 className="text-2xl font-bold text-white mb-4">12. Indemnification</h2>
               <p className="text-gray-300 leading-relaxed mb-4">
-                You agree to indemnify, defend, and hold harmless Vant and its officers, 
-                directors, employees, and agents from any claims, liabilities, damages, 
-                losses, or expenses arising out of your use of the Service, violation of 
+                You agree to indemnify, defend, and hold harmless Vantic and its officers,
+                directors, employees, and agents from any claims, liabilities, damages,
+                losses, or expenses arising out of your use of the Service, violation of
                 these Terms, or infringement of any rights of another party.
               </p>
             </section>
@@ -284,7 +294,7 @@ export default function TermsOfServicePage() {
             <section className="mb-12">
               <h2 className="text-2xl font-bold text-white mb-4">17. Acknowledgment</h2>
               <p className="text-gray-300 leading-relaxed">
-                BY USING THE VANT SERVICE, YOU ACKNOWLEDGE THAT YOU HAVE READ, UNDERSTOOD, 
+                BY USING THE VANTIC SERVICE, YOU ACKNOWLEDGE THAT YOU HAVE READ, UNDERSTOOD,
                 AND AGREE TO BE BOUND BY THESE TERMS OF SERVICE.
               </p>
             </section>

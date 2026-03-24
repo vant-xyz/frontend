@@ -88,7 +88,7 @@ export default function ExplorerPage() {
           onClick={() => router.push("/")}
         >
           <div className="w-8 h-8 bg-red-600 rounded transition-transform group-hover:scale-105 shadow-lg shadow-red-600/20"></div>
-          <span className="text-xl font-bold text-white">VANT</span>
+          <span className="text-xl font-bold text-white">Vantic</span>
         </div>
         <div className="flex items-center gap-4">
           <Button
@@ -137,7 +137,7 @@ export default function ExplorerPage() {
                 <li>Market creation is recorded on-chain for immutability and persistence</li>
                 <li>Settlement results are submitted and are verifiable on-chain</li>
                 <li>Anyone can verify market outcomes by checking the transaction on either the OVM explorer or Solana block explorers</li>
-                <li>Due to the on-chain nature, Vant markets ensures no hidden manipulation as all state transitions are publicly auditable</li>
+                <li>Due to the on-chain nature, Vantic markets ensures no hidden manipulation as all state transitions are publicly auditable</li>
               </ul>
               <p className="text-gray-400 pt-2">
                 Each market below has onchain data you can verify via the Solana explorer links.

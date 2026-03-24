@@ -273,13 +273,13 @@ export function AuthModal({ isOpen, onClose, onAuthSuccess, onSuccess }: AuthMod
               <div className="mb-6">
                 <img
                   src="/media/images/authenticate_media.jpg"
-                  alt="VANT authenticate"
+                  alt="Vantic authenticate"
                   loading="lazy"
                   className="w-full h-48 object-cover rounded-lg"
                 />
               </div>
 
-              <h2 className="text-3xl font-bold text-white mb-3">Welcome to VANT</h2>
+              <h2 className="text-3xl font-bold text-white mb-3">Welcome to Vantic</h2>
               <p className="text-gray-400 mb-6 leading-relaxed">
                 Enter your email to continue
               </p>
@@ -507,13 +507,13 @@ export function AuthModal({ isOpen, onClose, onAuthSuccess, onSuccess }: AuthMod
             <div className="mb-6">
               <img
                 src="/media/images/authenticate_media.jpg"
-                alt="VANT authenticate"
+                alt="Vantic authenticate"
                 loading="lazy"
                 className="w-full h-48 object-cover rounded-lg"
               />
             </div>
 
-            <h2 className="text-2xl font-bold text-white mb-3">Welcome to VANT</h2>
+            <h2 className="text-2xl font-bold text-white mb-3">Welcome to Vantic</h2>
             <p className="text-gray-400 mb-6 text-sm leading-relaxed">
               Enter your email to continue
             </p>

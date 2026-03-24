@@ -7,10 +7,6 @@ import { CreditsModal } from "./credits-modal";
 export function FooterSection() {
   const [isCreditsOpen, setIsCreditsOpen] = useState(false);
 
-  const socialLinks = [
-    { name: "X (Twitter)", href: "#" },
-  ];
-
   const footerLinks = [
     { name: "Privacy Policy", href: "/privacy-policy" },
     { name: "Terms of Service", href: "/terms-of-service" },
@@ -20,9 +16,9 @@ export function FooterSection() {
   return (
     <>
       <footer className="relative border-t border-red-900/30 bg-black overflow-hidden">
-        {/* Faded VANT text background */}
+        {/* Faded VANTIC text background */}
         <div className="absolute inset-0 flex items-center justify-center opacity-3 pointer-events-none overflow-hidden">
-          <span className="text-9xl font-bold text-red-600 whitespace-nowrap select-none">VANT VANT VANT</span>
+          <span className="text-9xl font-bold text-red-600 whitespace-nowrap select-none">VANTIC VANTIC VANTIC</span>
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-12">
@@ -33,7 +29,7 @@ export function FooterSection() {
               <div>
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-8 h-8 bg-red-600 rounded"></div>
-                  <span className="text-2xl font-bold text-white">VANT</span>
+                  <span className="text-2xl font-bold text-white">Vantic</span>
                 </div>
 
                 <p className="text-gray-400 leading-relaxed mb-8 max-w-xs">
@@ -41,16 +37,18 @@ export function FooterSection() {
                 </p>
 
                 {/* Social Links */}
-                <div className="flex gap-6">
-                  {socialLinks.map((link) => (
-                    <a
-                      key={link.name}
-                      href={link.href}
-                      className="text-sm text-gray-400 hover:text-red-500 transition-colors"
-                    >
-                      {link.name}
-                    </a>
-                  ))}
+                <div className="flex gap-4">
+                  <a
+                    href="https://x.com/vanticxyz"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-gray-400 hover:text-red-500 transition-colors"
+                    aria-label="X (Twitter)"
+                  >
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                    </svg>
+                  </a>
                 </div>
               </div>
 
@@ -91,11 +89,11 @@ export function FooterSection() {
           {/* Bottom Bar */}
           <div className="py-6 border-t border-red-900/30 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-gray-500">
             <p>
-              2025 VANT. All rights reserved.
+              2025 Vantic. All rights reserved.
             </p>
 
             <p>
-              Built for the Nigerian market. Made on Solana.
+              Built for speedy execution.
             </p>
           </div>
         </div>

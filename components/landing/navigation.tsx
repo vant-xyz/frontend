@@ -65,7 +65,7 @@ export function Navigation({ onWaitlistOpen }: NavigationProps) {
           {/* Logo */}
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-red-600 rounded"></div>
-            <span className="text-2xl font-bold text-white">VANT</span>
+            <span className="text-2xl font-bold text-white">Vantic</span>
           </div>
 
           {/* Desktop Navigation Links */}
@@ -80,7 +80,7 @@ export function Navigation({ onWaitlistOpen }: NavigationProps) {
               href="#vant-vs"
               className="text-sm text-gray-400 hover:text-red-500 transition-colors"
             >
-              Vant VS
+              Vantic VS
             </a>
           </div>
 
@@ -135,7 +135,7 @@ export function Navigation({ onWaitlistOpen }: NavigationProps) {
               <div className="flex justify-between items-center mb-6">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-red-600 rounded"></div>
-                  <span className="text-xl font-bold text-white">VANT</span>
+                  <span className="text-xl font-bold text-white">Vantic</span>
                 </div>
                 <button
                   onClick={() => setIsMobileDrawerOpen(false)}
@@ -214,7 +214,7 @@ export function Navigation({ onWaitlistOpen }: NavigationProps) {
                   onClick={() => setIsMobileDrawerOpen(false)}
                   className="block py-3 text-gray-400 hover:text-red-500 transition-colors"
                 >
-                  Vant VS
+                  Vantic VS
                 </a>
               </div>
             </div>

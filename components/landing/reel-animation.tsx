@@ -11,8 +11,8 @@ interface ReelAnimationProps {
   animateOnHover?: boolean;
 }
 
-export function ReelAnimation({ 
-  text = "VANT", 
+export function ReelAnimation({
+  text = "Vantic",
   texts,
   className = "",
   rotateInterval = 3000,

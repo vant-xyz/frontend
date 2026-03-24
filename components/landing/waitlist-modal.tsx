@@ -91,13 +91,13 @@ export function WaitlistModal({ isOpen, onClose, defaultReferralCode }: Waitlist
               <div className="mb-6">
                 <img
                   src="/media/images/waitlist_media.jpg"
-                  alt="VANT waitlist"
+                  alt="Vantic waitlist"
                   loading="lazy"
                   className="w-full h-48 object-cover rounded-lg"
                 />
               </div>
 
-              <h2 className="text-3xl font-bold text-white mb-3">Join VANT</h2>
+              <h2 className="text-3xl font-bold text-white mb-3">Join Vantic</h2>
               <p className="text-gray-400 mb-6 leading-relaxed">
                 Be the first to access the fastest prediction terminal for West Africa. Early access coming soon.
               </p>
@@ -200,13 +200,13 @@ export function WaitlistModal({ isOpen, onClose, defaultReferralCode }: Waitlist
             <div className="mb-6">
               <img
                 src="/media/images/waitlist_media.jpg"
-                alt="VANT waitlist"
+                alt="Vantic waitlist"
                 loading="lazy"
                 className="w-full h-48 object-cover rounded-lg"
               />
             </div>
 
-            <h2 className="text-2xl font-bold text-white mb-3">Join VANT</h2>
+            <h2 className="text-2xl font-bold text-white mb-3">Join Vantic</h2>
             <p className="text-gray-400 mb-6 text-sm leading-relaxed">
               Be the first to access the fastest prediction terminal for West Africa.
             </p>

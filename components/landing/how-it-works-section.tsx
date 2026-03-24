@@ -20,7 +20,7 @@ const steps = [
   },
   {
     number: "3",
-    title: "Stake & Vant",
+    title: "Stake & Vantic",
     description: "Place your prediction. Low fees, high speed, and absolute transparency on Solana.",
     icon: "zap",
   },

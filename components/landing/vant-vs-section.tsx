@@ -37,7 +37,7 @@ export function VantVsSection() {
               isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             }`}
           >
-            <ReelAnimation text="Vant VS" />
+            <ReelAnimation text="Vantic VS" />
           </h2>
           <p className="text-xl text-gray-400 max-w-2xl">
             The Wager Engine. Set a custom event (COD matches, gaming, etc.), stake against a friend, and the winner takes all.

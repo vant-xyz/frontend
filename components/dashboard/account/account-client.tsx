@@ -183,7 +183,7 @@ export function AccountClient({ initialData, token }: AccountClientProps) {
                 )}
               </div>
               <div className="text-center sm:text-left space-y-1">
-                <h3 className="text-xl font-black text-white">{user.full_name || "Vant User"}</h3>
+                <h3 className="text-xl font-black text-white">{user.full_name || "Vantic User"}</h3>
                 <div className="flex items-center gap-2 justify-center sm:justify-start">
                   <span className="text-xs text-red-500 font-bold tracking-widest">{user.username}</span>
                   <div className="w-1 h-1 rounded-full bg-gray-700" />
@@ -399,7 +399,7 @@ export function AccountClient({ initialData, token }: AccountClientProps) {
                 </div>
                 <div className="mt-2 pl-1">
                   <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Account Name</p>
-                  <p className="text-sm font-bold text-white truncate uppercase">VANT / {user.full_name || user.username.replace("@", "")}</p>
+                  <p className="text-sm font-bold text-white truncate uppercase">VANTIC / {user.full_name || user.username.replace("@", "")}</p>
                 </div>
               </div>
             </div>

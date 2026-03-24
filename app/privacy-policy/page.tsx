@@ -1,5 +1,15 @@
+import { Metadata } from 'next'
 import { Navigation } from "@/components/landing/navigation";
 import { FooterSection } from "@/components/landing/footer-section";
+
+export const metadata: Metadata = {
+  title: 'Privacy Policy',
+  description: 'Privacy Policy for Vantic - Learn how we collect, use, and protect your personal information.',
+  robots: {
+    index: true,
+    follow: true,
+  },
+}
 
 export default function PrivacyPolicyPage() {
   return (
@@ -18,14 +28,14 @@ export default function PrivacyPolicyPage() {
             <section className="mb-12">
               <h2 className="text-2xl font-bold text-white mb-4">1. Introduction</h2>
               <p className="text-gray-300 leading-relaxed mb-4">
-                Vant ("we," "our," or "us") operates the Vant prediction and wagering platform. 
-                This Privacy Policy explains how we collect, use, disclose, and safeguard your 
-                information when you use our services, including our website, mobile application, 
+                Vantic ("we," "our," or "us") operates the Vantic prediction and wagering platform.
+                This Privacy Policy explains how we collect, use, disclose, and safeguard your
+                information when you use our services, including our website, mobile application,
                 and related services (collectively, the "Service").
               </p>
               <p className="text-gray-300 leading-relaxed">
-                We are committed to protecting your privacy and ensuring the security of your 
-                personal information. By accessing or using Vant, you agree to the terms of 
+                We are committed to protecting your privacy and ensuring the security of your
+                personal information. By accessing or using Vantic, you agree to the terms of
                 this Privacy Policy.
               </p>
             </section>
@@ -75,7 +85,7 @@ export default function PrivacyPolicyPage() {
                 We use the information we collect to:
               </p>
               <ul className="list-disc list-inside text-gray-300 space-y-2 ml-4">
-                <li>Provide, maintain, and improve the Vant Service</li>
+                <li>Provide, maintain, and improve the Vantic Service</li>
                 <li>Process transactions and manage wagers</li>
                 <li>Display balances in NGN through our Naira-first abstraction layer</li>
                 <li>Send technical notices and support messages</li>
@@ -107,8 +117,8 @@ export default function PrivacyPolicyPage() {
                   or sale of assets, your information may be transferred as part of the transaction.
                 </li>
                 <li>
-                  <strong>Protection of Rights:</strong> We may disclose information to protect 
-                  the rights, property, or safety of Vant, our users, or others.
+                  <strong>Protection of Rights:</strong> We may disclose information to protect
+                  the rights, property, or safety of Vantic, our users, or others.
                 </li>
               </ul>
             </section>
@@ -116,10 +126,10 @@ export default function PrivacyPolicyPage() {
             <section className="mb-12">
               <h2 className="text-2xl font-bold text-white mb-4">5. Blockchain and Public Information</h2>
               <p className="text-gray-300 leading-relaxed mb-4">
-                Please note that blockchain transactions are inherently public and immutable. 
-                Information recorded on the Solana or Base blockchains, including wallet 
-                addresses and transaction details, cannot be deleted or modified. This data 
-                is visible to anyone and is not controlled by Vant.
+                Please note that blockchain transactions are inherently public and immutable.
+                Information recorded on the Solana or Base blockchains, including wallet
+                addresses and transaction details, cannot be deleted or modified. This data
+                is visible to anyone and is not controlled by Vantic.
               </p>
             </section>
 
@@ -165,8 +175,8 @@ export default function PrivacyPolicyPage() {
             <section className="mb-12">
               <h2 className="text-2xl font-bold text-white mb-4">8. International Data Transfers</h2>
               <p className="text-gray-300 leading-relaxed mb-4">
-                Vant operates globally, and your information may be transferred to and processed 
-                in countries other than your own. We ensure appropriate safeguards are in place 
+                Vantic operates globally, and your information may be transferred to and processed
+                in countries other than your own. We ensure appropriate safeguards are in place
                 to protect your information in accordance with this Privacy Policy.
               </p>
             </section>
@@ -174,8 +184,8 @@ export default function PrivacyPolicyPage() {
             <section className="mb-12">
               <h2 className="text-2xl font-bold text-white mb-4">9. Children's Privacy</h2>
               <p className="text-gray-300 leading-relaxed mb-4">
-                The Vant Service is not intended for individuals under the age of 18. We do not 
-                knowingly collect personal information from children. If we become aware that we 
+                The Vantic Service is not intended for individuals under the age of 18. We do not
+                knowingly collect personal information from children. If we become aware that we
                 have collected information from a child, we will take steps to delete it.
               </p>
             </section>
