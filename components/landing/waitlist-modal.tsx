@@ -208,7 +208,7 @@ export function WaitlistModal({ isOpen, onClose, defaultReferralCode }: Waitlist
 
             <h2 className="text-2xl font-bold text-white mb-3">Join Vantic</h2>
             <p className="text-gray-400 mb-6 text-sm leading-relaxed">
-              Be the first to access the fastest prediction terminal for West Africa.
+              Be the first to access the fastest prediction terminal on Solana.
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-4">
