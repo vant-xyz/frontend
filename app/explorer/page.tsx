@@ -23,8 +23,10 @@ import {
   CommandItem,
 } from "@/components/ui/command";
 import { Loader } from "@/components/ui/loader";
-import { History, Clock, ExternalLink, ChevronRight, HelpCircle } from "lucide-react";
-import { getMarketsOnchain, OnchainMarket } from "@/lib/api";
+import { History, Clock, ExternalLink, ChevronRight, HelpCircle, Search, Wallet, ArrowUpRight, ArrowDownLeft, RefreshCw } from "lucide-react";
+import { getBalances, getTransactions, type BalancesData, type TransactionsData } from "@/lib/explorer-api";
+import { getMarketsOnchain, getMarketOnchain, OnchainMarket, Market } from "@/lib/api";
+import { getTransaction, type SingleTransactionData } from "@/lib/explorer-api";
 import { formatTimeAgo } from "@/lib/utils";
 import { ReelAnimation } from "@/components/landing/reel-animation";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -118,6 +120,15 @@ export default function ExplorerPage() {
           <p className="text-gray-400 text-lg">
             Browse and analyze onchain verifiable markets
           </p>
+          <a
+            href="https://goldrush.dev"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 mt-3 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 hover:border-white/20 transition-colors w-fit"
+          >
+            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Powered by</span>
+            <img src="/media/images/attributions/goldrush-logo.png" alt="GoldRush" className="h-4 object-contain" />
+          </a>
         </div>
 
         {/* OVM Explanation Accordion */}
@@ -145,6 +156,9 @@ export default function ExplorerPage() {
             </AccordionContent>
           </AccordionItem>
         </Accordion>
+
+        {/* Wallet Portfolio (GoldRush) */}
+        <WalletPortfolio />
 
         {/* Search and Filter Bar */}
         <div className="flex gap-4 mb-8">
@@ -280,6 +294,190 @@ export default function ExplorerPage() {
   );
 }
 
+function WalletPortfolio() {
+  const [address, setAddress] = useState("");
+  const [input, setInput] = useState("");
+  const [balances, setBalances] = useState<BalancesData | null>(null);
+  const [txs, setTxs] = useState<TransactionsData | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [tab, setTab] = useState<"portfolio" | "transactions">("portfolio");
+
+  const lookup = async (addr: string) => {
+    if (!addr.trim()) return;
+    setLoading(true);
+    setError(null);
+    setBalances(null);
+    setTxs(null);
+    setAddress(addr.trim());
+    try {
+      const [bal, txData] = await Promise.all([
+        getBalances("solana-mainnet", addr.trim()),
+        getTransactions("solana-mainnet", addr.trim()),
+      ]);
+      setBalances(bal);
+      setTxs(txData);
+    } catch (err: any) {
+      setError(err.message ?? "Failed to fetch wallet data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const totalUsd = balances?.items?.reduce((sum, t) => sum + (t.quote ?? 0), 0) ?? 0;
+
+  return (
+    <div className="mb-10 space-y-4">
+      <div className="flex items-center gap-3">
+        <Wallet size={18} className="text-red-500" />
+        <h2 className="text-lg font-bold text-white">Wallet Explorer</h2>
+        <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 px-2.5 py-1 rounded-full">
+          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Powered by</span>
+          <img src="/media/images/attributions/goldrush-logo.png" alt="GoldRush" className="h-3.5 object-contain" />
+          <span className="text-[10px] text-gray-600">· Solana Mainnet</span>
+        </div>
+      </div>
+
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && lookup(input)}
+          placeholder="Enter a Solana mainnet wallet address..."
+          className="flex-1 h-12 px-4 bg-black border border-gray-800 rounded-xl text-white text-sm placeholder:text-gray-600 focus:outline-none focus:border-red-600 transition-colors"
+        />
+        <Button
+          onClick={() => lookup(input)}
+          disabled={loading || !input.trim()}
+          className="h-12 px-5 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl disabled:opacity-40"
+        >
+          {loading ? <Loader className="w-4 h-4" /> : <Search size={16} />}
+        </Button>
+      </div>
+
+      {error && (
+        <p className="text-sm text-red-500">{error}</p>
+      )}
+
+      {(balances || txs) && !loading && (
+        <div className="rounded-2xl bg-white/[0.02] border border-white/5 overflow-hidden">
+          {/* Summary bar */}
+          <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between">
+            <div>
+              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Portfolio Value</p>
+              <p className="text-2xl font-black text-white">
+                {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(totalUsd)}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Address</p>
+              <p className="text-xs text-gray-400 font-mono">{address.slice(0, 8)}…{address.slice(-6)}</p>
+            </div>
+          </div>
+
+          {/* Tabs */}
+          <div className="flex border-b border-white/5">
+            {(["portfolio", "transactions"] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={`flex-1 py-3 text-[11px] font-bold uppercase tracking-widest transition-colors ${
+                  tab === t ? "text-white border-b-2 border-red-600" : "text-gray-600 hover:text-gray-400"
+                }`}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+
+          {/* Portfolio tab */}
+          {tab === "portfolio" && balances && (
+            <div className="divide-y divide-white/5">
+              {balances.items.length === 0 ? (
+                <p className="px-5 py-8 text-center text-gray-600 text-sm">No tokens found</p>
+              ) : (
+                balances.items.map((token, i) => (
+                  <div key={i} className="flex items-center justify-between px-5 py-3 hover:bg-white/[0.02] transition-colors">
+                    <div className="flex items-center gap-3">
+                      {token.logo_url ? (
+                        <img src={token.logo_url} alt={token.contract_ticker_symbol} className="w-8 h-8 rounded-full object-contain bg-white/5" />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-[10px] font-bold text-gray-400">
+                          {token.contract_ticker_symbol?.slice(0, 2)}
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-sm font-bold text-white">{token.contract_ticker_symbol}</p>
+                        <p className="text-[10px] text-gray-500">{token.contract_name}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-white">
+                        {token.pretty_quote ?? `$${(token.quote ?? 0).toFixed(2)}`}
+                      </p>
+                      {token.quote_rate > 0 && (
+                        <p className="text-[10px] text-gray-500">${token.quote_rate.toFixed(4)}</p>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+
+          {/* Transactions tab */}
+          {tab === "transactions" && txs && (
+            <div className="divide-y divide-white/5">
+              {txs.items.length === 0 ? (
+                <p className="px-5 py-8 text-center text-gray-600 text-sm">No transactions found</p>
+              ) : (
+                txs.items.map((tx, i) => {
+                  const isOut = tx.from_address?.toLowerCase() === address.toLowerCase();
+                  return (
+                    <div key={i} className="flex items-center justify-between px-5 py-3 hover:bg-white/[0.02] transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isOut ? "bg-red-600/10" : "bg-green-600/10"}`}>
+                          {isOut
+                            ? <ArrowUpRight size={14} className="text-red-500" />
+                            : <ArrowDownLeft size={14} className="text-green-500" />
+                          }
+                        </div>
+                        <div>
+                          <p className="text-xs font-mono text-gray-300">{tx.tx_hash.slice(0, 12)}…{tx.tx_hash.slice(-6)}</p>
+                          <p className="text-[10px] text-gray-600">{new Date(tx.block_signed_at).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="text-right">
+                          <p className={`text-[10px] font-bold uppercase ${tx.successful ? "text-green-500" : "text-red-500"}`}>
+                            {tx.successful ? "Success" : "Failed"}
+                          </p>
+                          {tx.gas_quote != null && (
+                            <p className="text-[10px] text-gray-600">Fee ${tx.gas_quote.toFixed(4)}</p>
+                          )}
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 w-7 p-0 text-gray-600 hover:text-white"
+                          onClick={() => window.open(`https://explorer.solana.com/tx/${tx.tx_hash}`, "_blank")}
+                        >
+                          <ExternalLink size={12} />
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface MarketCardProps {
   market: OnchainMarket;
   onClick: () => void;
@@ -362,6 +560,109 @@ function MarketCard({ market, onClick }: MarketCardProps) {
   );
 }
 
+interface GoldRushTxProps {
+  txHash: string;
+  chain: "solana-mainnet" | "base-mainnet";
+  label: string;
+}
+
+function GoldRushTxPanel({ txHash, chain, label }: GoldRushTxProps) {
+  const [data, setData] = useState<SingleTransactionData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    getTransaction(chain, txHash)
+      .then(setData)
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, [txHash, chain]);
+
+  const tx = data?.items?.[0];
+
+  return (
+    <div className="rounded-xl bg-white/[0.03] border border-white/5 p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{label}</span>
+        {tx && (
+          <span className={`text-[10px] font-bold uppercase tracking-widest ${tx.successful ? "text-green-500" : "text-red-500"}`}>
+            {tx.successful ? "✓ Confirmed" : "✗ Failed"}
+          </span>
+        )}
+      </div>
+
+      <div className="flex items-center gap-2">
+        <code className="flex-1 text-[11px] text-gray-300 font-mono truncate bg-black/40 px-2 py-1 rounded">
+          {txHash}
+        </code>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 w-7 p-0 text-gray-400 hover:text-white"
+          onClick={() => navigator.clipboard.writeText(txHash)}
+        >
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 w-7 p-0 text-gray-400 hover:text-white"
+          onClick={() => window.open(`https://explorer.solana.com/tx/${txHash}`, "_blank")}
+        >
+          <ExternalLink size={14} />
+        </Button>
+      </div>
+
+      {loading && (
+        <div className="flex items-center gap-2 text-[11px] text-gray-500">
+          <Loader className="w-3 h-3" />
+          <span>Fetching onchain proof via GoldRush...</span>
+        </div>
+      )}
+
+      {error && (
+        <p className="text-[11px] text-gray-600">Onchain data unavailable on this network</p>
+      )}
+
+      {tx && !loading && (
+        <div className="grid grid-cols-2 gap-x-4 gap-y-2 pt-1">
+          <div>
+            <p className="text-[10px] text-gray-600 uppercase tracking-widest">Block</p>
+            <p className="text-xs text-white font-mono">{tx.block_height.toLocaleString()}</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-gray-600 uppercase tracking-widest">Time</p>
+            <p className="text-xs text-white font-mono">
+              {new Date(tx.block_signed_at).toLocaleString()}
+            </p>
+          </div>
+          {tx.gas_quote != null && (
+            <div>
+              <p className="text-[10px] text-gray-600 uppercase tracking-widest">Fee (USD)</p>
+              <p className="text-xs text-white font-mono">${tx.gas_quote.toFixed(4)}</p>
+            </div>
+          )}
+          {tx.from_address && (
+            <div>
+              <p className="text-[10px] text-gray-600 uppercase tracking-widest">Signer</p>
+              <p className="text-xs text-gray-300 font-mono truncate">{tx.from_address.slice(0, 16)}…</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {tx && !loading && (
+        <div className="flex items-center gap-1.5 pt-1">
+          <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+          <span className="text-[10px] text-gray-500">Verified via GoldRush · Solana Mainnet</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface MarketDetailModalProps {
   market: OnchainMarket;
   onClose: () => void;
@@ -374,6 +675,14 @@ function MarketDetailModal({ market, onClose }: MarketDetailModalProps) {
   const marketType = market.MarketType === 0 ? "CAPPM" : "GEM";
   const direction = market.Direction !== null ? (market.Direction === 0 ? "Above" : "Below") : null;
   const outcome = market.Outcome !== null ? (market.Outcome === 0 ? "YES" : "NO") : null;
+
+  const [fullMarket, setFullMarket] = useState<Market | null>(null);
+
+  useEffect(() => {
+    getMarketOnchain(market.MarketID)
+      .then((res) => setFullMarket(res.market))
+      .catch(() => {});
+  }, [market.MarketID]);
 
   const programId = process.env.NEXT_PUBLIC_VANT_PROGRAM_ID || "VantProgram111111111111111111111111111111";
   const marketPda = market.MarketID;
@@ -499,56 +808,60 @@ function MarketDetailModal({ market, onClose }: MarketDetailModalProps) {
               <ExternalLink size={18} />
               Onchain Data (OVM)
             </h3>
+
+            {/* Addresses */}
             <div className="space-y-3">
-              <div>
-                <h4 className="text-sm font-medium text-gray-400 mb-2">Market PDA</h4>
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 bg-gray-900 px-3 py-2 rounded text-xs text-gray-300 font-mono break-all">
-                    {marketPda}
-                  </code>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => window.open(`https://explorer.solana.com/address/${marketPda}?cluster=devnet`, "_blank")}
-                    className="shrink-0"
-                  >
-                    <ExternalLink size={14} />
-                  </Button>
+              {[
+                { label: "Market PDA", value: marketPda },
+                { label: "Creator", value: market.Creator },
+                { label: "Approved Settler", value: market.ApprovedSettler },
+              ].map(({ label, value }) => (
+                <div key={label}>
+                  <h4 className="text-sm font-medium text-gray-400 mb-2">{label}</h4>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 bg-gray-900 px-3 py-2 rounded text-xs text-gray-300 font-mono break-all">
+                      {value}
+                    </code>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => window.open(`https://explorer.solana.com/address/${value}?cluster=devnet`, "_blank")}
+                      className="shrink-0"
+                    >
+                      <ExternalLink size={14} />
+                    </Button>
+                  </div>
                 </div>
-              </div>
-              <div>
-                <h4 className="text-sm font-medium text-gray-400 mb-2">Creator</h4>
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 bg-gray-900 px-3 py-2 rounded text-xs text-gray-300 font-mono break-all">
-                    {market.Creator}
-                  </code>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => window.open(`https://explorer.solana.com/address/${market.Creator}?cluster=devnet`, "_blank")}
-                    className="shrink-0"
-                  >
-                    <ExternalLink size={14} />
-                  </Button>
-                </div>
-              </div>
-              <div>
-                <h4 className="text-sm font-medium text-gray-400 mb-2">Approved Settler</h4>
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 bg-gray-900 px-3 py-2 rounded text-xs text-gray-300 font-mono break-all">
-                    {market.ApprovedSettler}
-                  </code>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => window.open(`https://explorer.solana.com/address/${market.ApprovedSettler}?cluster=devnet`, "_blank")}
-                    className="shrink-0"
-                  >
-                    <ExternalLink size={14} />
-                  </Button>
-                </div>
-              </div>
+              ))}
             </div>
+
+            {/* GoldRush Transaction Enrichment */}
+            {fullMarket ? (
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center gap-2">
+                  <div className="h-px flex-1 bg-white/5" />
+                  <span className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">GoldRush Enrichment</span>
+                  <div className="h-px flex-1 bg-white/5" />
+                </div>
+                <GoldRushTxPanel
+                  txHash={fullMarket.creation_tx_hash}
+                  chain="solana-mainnet"
+                  label="Creation TX"
+                />
+                {fullMarket.settlement_tx_hash && (
+                  <GoldRushTxPanel
+                    txHash={fullMarket.settlement_tx_hash}
+                    chain="solana-mainnet"
+                    label="Settlement TX"
+                  />
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-[11px] text-gray-600 pt-2">
+                <Loader className="w-3 h-3" />
+                Loading transaction proofs...
+              </div>
+            )}
           </div>
         </div>
       </div>
