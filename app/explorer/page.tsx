@@ -656,7 +656,8 @@ function GoldRushTxPanel({ txHash, chain, label }: GoldRushTxProps) {
       {tx && !loading && (
         <div className="flex items-center gap-1.5 pt-1">
           <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-          <span className="text-[10px] text-gray-500">Verified via GoldRush · Solana Mainnet</span>
+          <span className="text-[10px] text-gray-500">Verified via</span>
+          <img src="/media/images/attributions/goldrush-logo.png" alt="GoldRush" className="h-3 object-contain opacity-60" />
         </div>
       )}
     </div>
