@@ -8,8 +8,8 @@ import { ReelAnimation } from "./reel-animation";
 const steps = [
   {
     number: "1",
-    title: "Naira-First Funding",
-    description: "Deposit via Bank Transfer or Crypto (SOL/BASE). Your balance is displayed in NGN for zero-friction trading.",
+    title: "Fund Your Account",
+    description: "Deposit via Crypto (SOL/BASE). Your balance is displayed in USD for zero-friction trading.",
     icon: "wallet",
   },
   {
@@ -27,7 +27,7 @@ const steps = [
   {
     number: "4",
     title: "Instant Payouts",
-    description: "Win and withdraw immediately back to your Nigerian bank account or crypto wallet.",
+    description: "Win and withdraw immediately to your crypto wallet. Instant, borderless, on Solana.",
     icon: "send",
   },
 ];
@@ -85,7 +85,7 @@ export function HowItWorksSection() {
             <ReelAnimation text="How It Works" />
           </h2>
           <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-            Four simple steps to start trading predictions on the fastest terminal in West Africa
+            Four simple steps to start trading predictions on the fastest terminal on Solana
           </p>
         </div>
 

@@ -19,10 +19,10 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: 'Vantic - The Fastest Prediction Market Terminal for West Africa',
+    default: 'Vantic - The Fastest Prediction Market Terminal on Solana',
     template: '%s | Vantic'
   },
-  description: 'Trade crypto predictions, sports wagers, and custom markets on Solana. Built for the Nigerian market with instant payouts and Naira-first abstraction.',
+  description: 'Trade crypto predictions, sports wagers, and custom markets on Solana. Onchain verifiable markets with instant USDC payouts.',
   metadataBase: new URL('https://vantic.xyz'),
   alternates: {
     canonical: 'https://vantic.xyz',
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
     description: 'The fastest prediction terminal for BTC, ETH, SOL predictions and custom wagers on Solana.',
     type: 'website',
     url: 'https://vantic.xyz',
-    locale: 'en_NG',
+    locale: 'en_US',
     siteName: 'Vantic',
     images: [
       {
@@ -58,17 +58,19 @@ export const metadata: Metadata = {
     'prediction market',
     'crypto',
     'Solana',
-    'Nigeria',
     'wagering',
     'BTC',
     'ETH',
     'SOL',
     'Vantic VS',
     'crypto predictions',
+    'onchain verifiable markets',
+    'OVM',
     'sports betting',
     'P2P wagering',
-    'Naira trading',
-    'instant payouts'
+    'instant payouts',
+    'USDC',
+    'DeFi'
   ],
   authors: [{ name: 'Vantic' }],
   creator: 'Vantic',

@@ -87,7 +87,7 @@ export default function PrivacyPolicyPage() {
               <ul className="list-disc list-inside text-gray-300 space-y-2 ml-4">
                 <li>Provide, maintain, and improve the Vantic Service</li>
                 <li>Process transactions and manage wagers</li>
-                <li>Display balances in NGN through our Naira-first abstraction layer</li>
+                <li>Display balances in USD across all supported assets</li>
                 <li>Send technical notices and support messages</li>
                 <li>Respond to your comments, questions, and requests</li>
                 <li>Monitor and analyze trends, usage, and activities</li>

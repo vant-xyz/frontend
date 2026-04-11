@@ -237,14 +237,14 @@ function MarketCard({ market, onSelect, onQuickTrade, prices }: MarketCardProps)
                 className="h-12 border-green-500/50 text-green-400 hover:bg-green-500/10 hover:text-green-300 font-semibold"
                 onClick={() => onQuickTrade(market, "YES")}
               >
-                YES @ ₦{sharePrice}
+                YES @ ${sharePrice}
               </Button>
               <Button 
                 variant="outline"
                 className="h-12 border-red-500/50 text-red-400 hover:bg-red-500/10 hover:text-red-300 font-semibold"
                 onClick={() => onQuickTrade(market, "NO")}
               >
-                NO @ ₦{sharePrice}
+                NO @ ${sharePrice}
               </Button>
             </div>
           )}

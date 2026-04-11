@@ -15,10 +15,10 @@ export function BalanceWidget({
   className,
 }: BalanceWidgetProps) {
   const formatCurrency = (value: number | null) => {
-    if (value === null || value === undefined) return "₦0.00";
-    return new Intl.NumberFormat("en-NG", {
+    if (value === null || value === undefined) return "$0.00";
+    return new Intl.NumberFormat("en-US", {
       style: "currency",
-      currency: "NGN",
+      currency: "USD",
       minimumFractionDigits: 2,
     }).format(value);
   };

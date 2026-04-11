@@ -58,7 +58,7 @@ export function CryptoTab() {
             <ul className="list-disc list-inside space-y-1 text-gray-400">
               <li>Buy <strong className="text-green-400">YES</strong> shares if you think the price will be above the target</li>
               <li>Buy <strong className="text-red-400">NO</strong> shares if you think the price will be below the target</li>
-              <li>Each share pays <strong className="text-white">~₦100</strong> if correct, ~₦0 if wrong</li>
+              <li>Each share pays <strong className="text-white">~$1.00</strong> if correct, ~$0 if wrong</li>
               <li>Markets auto-settle at expiry and can be verified via <a href="/explorer" class="text-red-400 underline">Onchain Verifiable Markets (OVM)</a></li>
             </ul>
           </AccordionContent>

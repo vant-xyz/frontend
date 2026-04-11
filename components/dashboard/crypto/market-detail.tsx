@@ -288,7 +288,7 @@ export function MarketDetailView({ market, onBack }: MarketDetailViewProps) {
               {orderType === "LIMIT" && (
                 <div className="space-y-2">
                   <Label htmlFor="price" className="text-gray-400">
-                    Price (NGN per share)
+                    Price (USD per share)
                   </Label>
                   <Input
                     id="price"
@@ -325,11 +325,11 @@ export function MarketDetailView({ market, onBack }: MarketDetailViewProps) {
               <div className="pt-4 border-t border-white/10 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-400">Estimated Cost</span>
-                  <span className="text-white font-mono">₦{estimatedCost}</span>
+                  <span className="text-white font-mono">${estimatedCost}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-400">Max Win</span>
-                  <span className="text-green-400 font-mono">₦{maxWin}</span>
+                  <span className="text-green-400 font-mono">${maxWin}</span>
                 </div>
               </div>
 
@@ -376,7 +376,7 @@ function OrderbookTable({ bids, asks, loading }: OrderbookTableProps) {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-3 text-xs text-gray-500 pb-2 border-b border-white/10">
-        <span>Price (NGN)</span>
+        <span>Price (USD)</span>
         <span className="text-center">Shares</span>
         <span className="text-right">Orders</span>
       </div>
@@ -395,7 +395,7 @@ function OrderbookTable({ bids, asks, loading }: OrderbookTableProps) {
       {/* Spread */}
       {sortedBids.length > 0 && sortedAsks.length > 0 && (
         <div className="py-2 text-center text-xs text-gray-500 border-y border-white/10">
-          Spread: {(sortedAsks[0]?.price - sortedBids[0]?.price).toFixed(2)} NGN
+          Spread: ${(sortedAsks[0]?.price - sortedBids[0]?.price).toFixed(2)}
         </div>
       )}
 

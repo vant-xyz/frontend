@@ -138,9 +138,9 @@ export function SellCryptoModal({
   };
 
   const formatNaira = (val: number) => {
-    return new Intl.NumberFormat("en-NG", {
+    return new Intl.NumberFormat("en-US", {
       style: "currency",
-      currency: "NGN",
+      currency: "USD",
       minimumFractionDigits: 2,
     }).format(val);
   };

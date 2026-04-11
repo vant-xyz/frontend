@@ -96,12 +96,12 @@ export function QuickTradeModal({
           <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/10">
             <div>
               <p className="text-gray-400 text-sm mb-1">Total Cost</p>
-              <p className="text-xl font-mono text-white">₦{totalCost.toFixed(2)}</p>
+              <p className="text-xl font-mono text-white">${totalCost.toFixed(2)}</p>
             </div>
             <div>
               <p className="text-gray-400 text-sm mb-1">Max Win</p>
               <p className={cn("text-xl font-mono", sideColor === "green" ? "text-green-400" : "text-red-400")}>
-                ₦{maxWin.toFixed(2)}
+                ${maxWin.toFixed(2)}
               </p>
             </div>
           </div>
@@ -116,7 +116,7 @@ export function QuickTradeModal({
             onClick={handlePlaceOrder}
             disabled={submitting || numQuantity <= 0}
           >
-            {submitting ? "Placing Order..." : `Buy ${selectedSide} @ ₦${pricePerShare}/share`}
+            {submitting ? "Placing Order..." : `Buy ${selectedSide} @ $${pricePerShare}/share`}
           </Button>
         </div>
       </DialogContent>

@@ -66,9 +66,9 @@ export function HistoryClient({ initialTransactions }: HistoryClientProps) {
   };
 
   const formatAmount = (amount: number, currency: string) => {
-    const isNaira = currency.toLowerCase().includes("naira") || currency.toUpperCase() === "NGN";
-    if (isNaira) {
-      return new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN" }).format(amount);
+    const isUSD = currency.toLowerCase().includes("usd") || currency.toLowerCase().includes("naira") || currency.toUpperCase() === "NGN";
+    if (isUSD) {
+      return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount);
     }
     return `${amount} ${currency}`;
   };

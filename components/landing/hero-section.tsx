@@ -147,7 +147,7 @@ export function HeroSection() {
                 <div className="text-red-600 text-3xl font-bold mb-2">
                   <ReelAnimation text="Instant" />
                 </div>
-                <div className="text-gray-400">Payouts to NGN or Crypto</div>
+                <div className="text-gray-400">Payouts in USDC or Crypto</div>
               </div>
             </div>
           </div>

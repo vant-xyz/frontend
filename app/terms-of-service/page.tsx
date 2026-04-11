@@ -51,8 +51,7 @@ export default function TermsOfServicePage() {
                   ETH, and SOL using real-time data from Coinbase and Kalshi.
                 </li>
                 <li>
-                  <strong>Vantic Sports:</strong> Sports-based outcome predictions localized
-                  for the Nigerian and West African markets.
+                  <strong>Vantic Sports:</strong> Sports-based outcome predictions on global events.
                 </li>
                 <li>
                   <strong>Vantic VS:</strong> A peer-to-peer wagering protocol allowing users
@@ -60,8 +59,7 @@ export default function TermsOfServicePage() {
                 </li>
               </ul>
               <p className="text-gray-300 leading-relaxed mt-4">
-                The Service displays all balances in Nigerian Naira (NGN) through our
-                Naira-first abstraction layer, regardless of the underlying cryptocurrency
+                The Service displays all balances in USD, regardless of the underlying cryptocurrency
                 (SOL, USDC, USDT) used for transactions.
               </p>
             </section>
@@ -107,12 +105,10 @@ export default function TermsOfServicePage() {
               </p>
               <ul className="list-disc list-inside text-gray-300 space-y-2 ml-4">
                 <li>Cryptocurrencies: SOL, USDC, USDT (on Solana and Base networks)</li>
-                <li>Direct Naira deposits via supported payment processors</li>
               </ul>
               <p className="text-gray-300 leading-relaxed mt-4">
-                All balances are displayed in NGN for user convenience. Withdrawals can be 
-                made to local Nigerian bank accounts or cryptocurrency wallets. Processing 
-                times and fees may apply.
+                All balances are displayed in USD for user convenience. Withdrawals can be
+                made to any compatible cryptocurrency wallet. Processing times and fees may apply.
               </p>
             </section>
 
@@ -160,8 +156,8 @@ export default function TermsOfServicePage() {
                   forks, or other technical issues.
                 </li>
                 <li>
-                  <strong>Market Volatility:</strong> Cryptocurrency values can fluctuate 
-                  significantly, affecting the NGN value of your holdings.
+                  <strong>Market Volatility:</strong> Cryptocurrency values can fluctuate
+                  significantly, affecting the USD value of your holdings.
                 </li>
                 <li>
                   <strong>Regulatory Uncertainty:</strong> Laws governing prediction markets 
@@ -262,9 +258,9 @@ export default function TermsOfServicePage() {
             <section className="mb-12">
               <h2 className="text-2xl font-bold text-white mb-4">14. Governing Law</h2>
               <p className="text-gray-300 leading-relaxed mb-4">
-                These Terms shall be governed by and construed in accordance with the laws 
-                of Nigeria, without regard to its conflict of law provisions. Any disputes 
-                arising from these Terms shall be resolved in the courts of Nigeria.
+                These Terms shall be governed by and construed in accordance with applicable
+                international laws. Any disputes arising from these Terms shall be resolved
+                through binding arbitration.
               </p>
             </section>
 

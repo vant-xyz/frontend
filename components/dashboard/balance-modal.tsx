@@ -47,8 +47,8 @@ interface AssetConfig {
 }
 
 const REAL_ASSETS: AssetConfig[] = [
-  { key: "naira", label: "Naira", symbol: "NGN", isNaira: true },
-  { key: "vnaira", label: "vNaira", symbol: "vNGN", isVNaira: true },
+  { key: "naira", label: "USD Balance", symbol: "USD", isNaira: true },
+  { key: "vnaira", label: "vUSD", symbol: "vUSD", isVNaira: true },
   { key: "sol", label: "Solana", symbol: "SOL", icon: "/media/images/token_icons/solana.png" },
   { key: "eth_base", label: "Ethereum (Base)", symbol: "ETH", icon: "/media/images/token_icons/eth.png" },
   { key: "usdc_sol", label: "USDC (Solana)", symbol: "USDC", icon: "/media/images/token_icons/usdc.png" },
@@ -58,7 +58,7 @@ const REAL_ASSETS: AssetConfig[] = [
 ];
 
 const DEMO_ASSETS: AssetConfig[] = [
-  { key: "demo_naira", label: "Demo Naira", symbol: "NGN", isNaira: true },
+  { key: "demo_naira", label: "Demo USD", symbol: "USD", isNaira: true },
   { key: "demo_sol", label: "Demo Solana", symbol: "SOL", icon: "/media/images/token_icons/solana.png" },
   { key: "demo_usdc_sol", label: "Demo USDC", symbol: "USDC", icon: "/media/images/token_icons/usdc.png" },
 ];
@@ -95,10 +95,10 @@ export function BalanceModal({
   }, [isOpen, onSync]);
 
   const formatNaira = (value: number | undefined) => {
-    if (value === undefined) return "₦0.00";
-    return new Intl.NumberFormat("en-NG", {
+    if (value === undefined) return "$0.00";
+    return new Intl.NumberFormat("en-US", {
       style: "currency",
-      currency: "NGN",
+      currency: "USD",
       minimumFractionDigits: 2,
     }).format(value);
   };
@@ -145,7 +145,7 @@ export function BalanceModal({
                 "font-bold text-lg",
                 asset.isNaira ? "text-green-500" : asset.isVNaira ? "text-red-500" : "text-white"
               )}>
-                ₦
+                $
               </span>
             )}
           </div>
@@ -222,7 +222,7 @@ export function BalanceModal({
       {isDemoMode && !canFundDemo && (
         <div className="px-4 -mt-4 shrink-0">
           <p className="text-[10px] text-center text-gray-400 font-bold uppercase tracking-widest">
-            Refill available when balance &lt; ₦100
+            Refill available when balance &lt; $1.00
           </p>
         </div>
       )}
