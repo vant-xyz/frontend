@@ -13,7 +13,6 @@ export function usePriceFeed({ usePolling = false, pollingInterval = 2000 }: Use
     BTC: null,
     ETH: null,
     SOL: null,
-    NGN: null,
     USDC: null,
     USDT: null,
     vant_rate: null,
@@ -37,7 +36,6 @@ export function usePriceFeed({ usePolling = false, pollingInterval = 2000 }: Use
         BTC: rawPrices["BTC-USD"] || null,
         ETH: rawPrices["ETH-USD"] || null,
         SOL: rawPrices["SOL-USD"] || null,
-        NGN: rawPrices["USD-NGN"] || null,
         USDC: rawPrices["USDC-USD"] || null,
         USDT: rawPrices["USDT-USD"] || null,
       };
@@ -90,7 +88,7 @@ export function usePriceFeed({ usePolling = false, pollingInterval = 2000 }: Use
           if (data.type === "PRICE_UPDATE" || (data.symbol && data.price)) {
             setPrices((prev) => {
               const symbol = data.symbol.replace("-USD", "").replace("USD-", "") as keyof PriceData;
-              const validSymbols: (keyof PriceData)[] = ["BTC", "ETH", "SOL", "NGN", "USDC", "USDT"];
+              const validSymbols: (keyof PriceData)[] = ["BTC", "ETH", "SOL", "USDC", "USDT"];
               if (validSymbols.includes(symbol)) {
                 return { ...prev, [symbol]: data };
               }

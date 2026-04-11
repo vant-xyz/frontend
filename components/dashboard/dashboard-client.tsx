@@ -35,7 +35,7 @@ export function DashboardClient({ children }: DashboardClientProps) {
   const [isSellModalOpen, setIsSellModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("crypto");
 
-  const totalBalance = isDemoMode ? balance?.total_demo_naira : balance?.total_naira;
+  const totalBalance = isDemoMode ? balance?.total_demo_usd : balance?.total_usd;
 
   // Sync active tab with pathname
   useEffect(() => {

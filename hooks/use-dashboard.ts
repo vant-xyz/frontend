@@ -28,7 +28,7 @@ export function useDashboard() {
     return false;
   });
   const [prices, setPrices] = useState<PriceData & { vant_rate: number | null }>({
-    BTC: null, ETH: null, SOL: null, NGN: null, USDC: null, USDT: null, vant_rate: null,
+    BTC: null, ETH: null, SOL: null, USDC: null, USDT: null, vant_rate: null,
   });
 
   const wsRef = useRef<WebSocket | null>(null);
@@ -37,7 +37,7 @@ export function useDashboard() {
   const handlePriceUpdate = useCallback((priceUpdate: PriceUpdate) => {
     setPrices((prev) => {
       const symbol = priceUpdate.symbol.replace("-USD", "").replace("USD-", "") as keyof PriceData;
-      const validSymbols: (keyof PriceData)[] = ["BTC", "ETH", "SOL", "NGN", "USDC", "USDT"];
+      const validSymbols: (keyof PriceData)[] = ["BTC", "ETH", "SOL", "USDC", "USDT"];
       if (validSymbols.includes(symbol)) {
         return { ...prev, [symbol]: priceUpdate };
       }
@@ -82,7 +82,7 @@ export function useDashboard() {
       const rawPrices = (pricesRes as any).prices || {};
       const mappedPrices: Partial<PriceData> = {
         BTC: rawPrices["BTC-USD"], ETH: rawPrices["ETH-USD"], SOL: rawPrices["SOL-USD"],
-        NGN: rawPrices["USD-NGN"], USDC: rawPrices["USDC-USD"], USDT: rawPrices["USDT-USD"],
+        USDC: rawPrices["USDC-USD"], USDT: rawPrices["USDT-USD"],
       };
       setPrices((prev) => ({ ...prev, ...mappedPrices, vant_rate: vantRes.buy_rate }));
       
@@ -135,8 +135,8 @@ export function useDashboard() {
 
   const currentBalance = balance
     ? isDemoMode
-      ? balance.total_demo_naira
-      : balance.total_naira
+      ? balance.total_demo_usd
+      : balance.total_usd
     : null;
 
   return {

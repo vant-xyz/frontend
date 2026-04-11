@@ -178,7 +178,6 @@ export interface PriceData {
   BTC: PriceUpdate | null;
   ETH: PriceUpdate | null;
   SOL: PriceUpdate | null;
-  NGN?: PriceUpdate | null;
   USDC?: PriceUpdate | null;
   USDT?: PriceUpdate | null;
 }
@@ -292,7 +291,6 @@ export interface UserProfile {
 export interface WalletDetails {
   sol_public_key: string;
   base_public_key: string;
-  naira_account_number: string;
   account_id: string;
 }
 
@@ -305,9 +303,9 @@ export interface UserResponse {
 export interface BalanceInfo {
   id: string;
   email: string;
-  total_naira: number;
-  total_demo_naira: number;
-  vnaira: number;
+  total_usd: number;
+  total_demo_usd: number;
+  vusd: number;
   // Real assets
   usdc_sol: number;
   usdc_base: number;
@@ -342,7 +340,7 @@ export interface SellCryptoRequest {
 export interface SellCryptoResponse {
   success: boolean;
   message: string;
-  naira_received: number;
+  usd_received: number;
   exchange_rate: number;
 }
 

@@ -371,37 +371,6 @@ export function AccountClient({ initialData, token }: AccountClientProps) {
                 </div>
               </div>
 
-              {/* Naira Virtual Account */}
-              <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5 hover:bg-white/[0.05] transition-all group">
-                <div className="flex flex-col gap-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center text-green-500">
-                      <Landmark size={20} />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-white tracking-tight">Virtual Bank Account</p>
-                      <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Providus Bank</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 w-full">
-                    <div className="flex-1 bg-black/40 border border-white/5 rounded-xl px-3 h-10 flex items-center">
-                      <code className="text-[10px] text-gray-400 font-mono">{wallet.naira_account_number}</code>
-                    </div>
-                    <Button 
-                      size="icon" 
-                      variant="ghost" 
-                      onClick={() => copyToClipboard(wallet.naira_account_number, "Account Number")}
-                      className="h-10 w-10 bg-white/5 hover:bg-white/10 rounded-xl flex-shrink-0 shadow-none"
-                    >
-                      <Copy size={14} />
-                    </Button>
-                  </div>
-                </div>
-                <div className="mt-2 pl-1">
-                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Account Name</p>
-                  <p className="text-sm font-bold text-white truncate uppercase">VANTIC / {user.full_name || user.username.replace("@", "")}</p>
-                </div>
-              </div>
             </div>
           </CardContent>
         </Card>

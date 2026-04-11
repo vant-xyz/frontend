@@ -48,7 +48,7 @@ interface AssetConfig {
 
 const REAL_ASSETS: AssetConfig[] = [
   { key: "naira", label: "USD Balance", symbol: "USD", isNaira: true },
-  { key: "vnaira", label: "vUSD", symbol: "vUSD", isVNaira: true },
+  { key: "vusd", label: "vUSD", symbol: "vUSD", isVNaira: true },
   { key: "sol", label: "Solana", symbol: "SOL", icon: "/media/images/token_icons/solana.png" },
   { key: "eth_base", label: "Ethereum (Base)", symbol: "ETH", icon: "/media/images/token_icons/eth.png" },
   { key: "usdc_sol", label: "USDC (Solana)", symbol: "USDC", icon: "/media/images/token_icons/usdc.png" },
@@ -112,8 +112,8 @@ export function BalanceModal({
   };
 
   const assetsToShow = isDemoMode ? DEMO_ASSETS : REAL_ASSETS;
-  const totalBalance = isDemoMode ? balance?.total_demo_naira : balance?.total_naira;
-  const canFundDemo = isDemoMode && (balance?.total_demo_naira ?? 0) < 100;
+  const totalBalance = isDemoMode ? balance?.total_demo_usd : balance?.total_usd;
+  const canFundDemo = isDemoMode && (balance?.total_demo_usd ?? 0) < 1.0;
 
   const handleRequestDemoFunds = async () => {
     setIsFunding(true);
