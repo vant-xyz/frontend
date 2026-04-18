@@ -22,7 +22,7 @@ import { SellCryptoModal } from "./sell-crypto-modal";
 import { Loader } from "@/components/ui/loader";
 import { cn } from "@/lib/utils";
 import type { BalanceInfo } from "@/lib/api";
-import { Fuel, Copy, ExternalLink, ArrowDownLeft, Landmark } from "lucide-react";
+import { Fuel, Copy, ExternalLink, ArrowDownLeft, Landmark, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
 interface BalanceModalProps {
@@ -34,6 +34,7 @@ interface BalanceModalProps {
   onSync: () => void;
   onFundDemo: (amount: number) => Promise<any>;
   onOpenSell: () => void;
+  onOpenPrivateDeposit: () => void;
   isSyncing: boolean;
 }
 
@@ -72,6 +73,7 @@ export function BalanceModal({
   onSync,
   onFundDemo,
   onOpenSell,
+  onOpenPrivateDeposit,
   isSyncing,
 }: BalanceModalProps) {
   const [isMobile, setIsMobile] = useState(false);
@@ -213,9 +215,19 @@ export function BalanceModal({
         </Button>
 
         {!isDemoMode && (
-          <Button className="flex-1 bg-white text-black hover:bg-gray-200 font-black h-10 rounded-xl uppercase text-[10px] tracking-widest shadow-none">
-            Withdraw
-          </Button>
+          <>
+            <Button className="flex-1 bg-white text-black hover:bg-gray-200 font-black h-10 rounded-xl uppercase text-[10px] tracking-widest shadow-none">
+              Withdraw
+            </Button>
+            <Button
+              className="flex-1 bg-white/5 text-white hover:bg-white/10 font-black h-10 rounded-xl gap-1.5 uppercase text-[10px] tracking-widest shadow-none border border-white/10"
+              onClick={() => { onClose(); onOpenPrivateDeposit(); }}
+              title="Deposit privately — source wallet is not linked to your Vantic identity on-chain"
+            >
+              <ShieldCheck size={13} />
+              Private
+            </Button>
+          </>
         )}
       </div>
 

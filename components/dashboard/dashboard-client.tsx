@@ -8,6 +8,7 @@ import { DashboardNav } from "./nav";
 import { BalanceWidget } from "./balance-widget";
 import { BalanceModal } from "./balance-modal";
 import { SellCryptoModal } from "./sell-crypto-modal";
+import { PrivateDepositModal } from "./private-deposit-modal";
 import { History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -33,6 +34,7 @@ export function DashboardClient({ children }: DashboardClientProps) {
   
   const [isBalanceModalOpen, setIsBalanceModalOpen] = useState(false);
   const [isSellModalOpen, setIsSellModalOpen] = useState(false);
+  const [isPrivateDepositOpen, setIsPrivateDepositOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("crypto");
 
   const totalBalance = isDemoMode ? balance?.total_demo_usd : balance?.total_usd;
@@ -134,7 +136,13 @@ export function DashboardClient({ children }: DashboardClientProps) {
         onSync={sync}
         onFundDemo={fundDemo}
         onOpenSell={handleOpenSellModal}
+        onOpenPrivateDeposit={() => setIsPrivateDepositOpen(true)}
         isSyncing={isSyncing}
+      />
+
+      <PrivateDepositModal
+        isOpen={isPrivateDepositOpen}
+        onClose={() => setIsPrivateDepositOpen(false)}
       />
 
       <SellCryptoModal 
