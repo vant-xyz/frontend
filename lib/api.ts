@@ -74,6 +74,7 @@ export async function checkEmailExists(email: string): Promise<AuthExistsRespons
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
     },
     body: JSON.stringify({ email }),
   });
@@ -90,6 +91,7 @@ export async function checkUsernameExists(username: string): Promise<AuthUsernam
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
     },
     body: JSON.stringify({ username }),
   });
@@ -106,6 +108,7 @@ export async function login(email: string, password: string): Promise<AuthRespon
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
     },
     body: JSON.stringify({ email, password }),
   });
@@ -123,6 +126,7 @@ export async function signup(email: string, password: string): Promise<AuthRespo
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
     },
     body: JSON.stringify({ email, password }),
   });
@@ -141,6 +145,7 @@ export async function setUsername(username: string, email: string, token: string
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
+      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
     },
     body: JSON.stringify({ username, email }),
   });
@@ -236,6 +241,7 @@ export async function getLatestPrices(): Promise<PriceData> {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
+      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
     },
   });
 
@@ -251,6 +257,7 @@ export async function getVantRate(): Promise<VantRateResponse> {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
+      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
     },
   });
 
@@ -266,6 +273,7 @@ export async function getAssetVantPrice(asset: string): Promise<AssetVantPriceRe
     method: "GET",
     headers: {
       "Content-Type": "application/json",
+      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
     },
   });
 
@@ -368,6 +376,7 @@ export async function getUserProfile(token: string): Promise<UserResponse> {
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
+      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
     },
   });
 
@@ -387,6 +396,7 @@ export async function updateUserProfile(
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
+      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
     },
     body: JSON.stringify(updates),
   });
@@ -409,6 +419,7 @@ export async function uploadProfileImage(
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
+      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
     },
     body: formData,
   });
@@ -426,6 +437,7 @@ export async function getBalance(token: string): Promise<BalanceResponse> {
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
+      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
     },
   });
 
@@ -442,6 +454,7 @@ export async function syncBalance(token: string): Promise<BalanceResponse> {
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
+      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
     },
   });
 
@@ -458,6 +471,7 @@ export async function fundDemoAccount(token: string, amount: number = 20000): Pr
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
+      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
     },
     body: JSON.stringify({ amount }),
   });
@@ -476,6 +490,7 @@ export async function sellCrypto(token: string, data: SellCryptoRequest): Promis
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
+      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
     },
     body: JSON.stringify(data),
   });
@@ -494,6 +509,7 @@ export async function getTransactions(token: string): Promise<TransactionsRespon
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
+      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
     },
   });
 
@@ -687,6 +703,7 @@ export async function getMarkets(
     method: "GET",
     headers: {
       "Content-Type": "application/json",
+      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
     },
   });
 
@@ -702,6 +719,7 @@ export async function getMarket(marketId: string): Promise<MarketResponse> {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
+      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
     },
   });
 
@@ -717,6 +735,7 @@ export async function getMarketOnchain(marketId: string): Promise<MarketOnchainR
     method: "GET",
     headers: {
       "Content-Type": "application/json",
+      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
     },
   });
 
@@ -735,6 +754,7 @@ export async function getMarketsOnchain(status?: MarketStatus): Promise<MarketsO
     method: "GET",
     headers: {
       "Content-Type": "application/json",
+      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
     },
   });
 
@@ -750,6 +770,7 @@ export async function getOrderbook(marketId: string): Promise<OrderbookResponse>
     method: "GET",
     headers: {
       "Content-Type": "application/json",
+      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
     },
   });
 
@@ -766,6 +787,7 @@ export async function placeOrder(token: string, data: PlaceOrderRequest): Promis
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
+      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
     },
     body: JSON.stringify(data),
   });
@@ -784,6 +806,7 @@ export async function cancelOrder(token: string, orderId: string): Promise<void>
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
+      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
     },
   });
 
@@ -801,6 +824,7 @@ export async function getUserOrders(token: string, marketId?: string): Promise<O
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
+      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
     },
   });
 
@@ -820,6 +844,7 @@ export async function getUserPositions(token: string, marketId?: string): Promis
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
+      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
     },
   });
 

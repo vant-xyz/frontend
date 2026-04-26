@@ -16,6 +16,7 @@ export function Navigation({ onWaitlistOpen }: NavigationProps) {
   const [isWaitlistModalOpen, setIsWaitlistModalOpen] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [user, setUser] = useState<AuthResponse["user"] | null>(null);
+  console.log(user)
 
   const isAuthEnabled = process.env.NEXT_PUBLIC_ENABLE_AUTH === "true";
 

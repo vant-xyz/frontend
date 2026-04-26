@@ -32,7 +32,9 @@ import {
   getPublicBalanceToEncryptedBalanceDirectDepositorFunction,
   getEncryptedBalanceToPublicBalanceDirectWithdrawerFunction,
   createSignerFromWalletAccount,
+  getUserAccountQuerierFunction,
 } from "@umbra-privacy/sdk";
+import { getWallets } from "@wallet-standard/app";
 
 const DEVNET_USDC_MINT = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU";
 
@@ -73,6 +75,8 @@ export function PrivateDepositModal({ isOpen, onClose }: PrivateDepositModalProp
     }
   }, [isOpen]);
 
+
+
   const handleConnect = async () => {
     setConnecting(true);
     try {
@@ -82,41 +86,70 @@ export function PrivateDepositModal({ isOpen, onClose }: PrivateDepositModalProp
       const userRes = await getUserProfile(token);
       setVanticAddress(userRes.wallet.sol_public_key);
 
-      const walletStandard = await import("@wallet-standard/core" as any);
-      const { get } = walletStandard.getWallets();
-      const wallets = get() as any[];
+      const { get } = getWallets();
+      const solanaWallets = get().filter((w) => {
+        const features = Object.keys(w.features);
+        return (
+          features.includes("solana:signTransaction") &&
+          features.includes("solana:signMessage")
+        );
+      });
 
-      if (!wallets.length) {
-        throw new Error("No Solana wallet detected. Install Phantom or Solflare.");
-      }
+      if (!solanaWallets.length) throw new Error("No compatible Solana wallet found.");
 
       const wallet =
-        wallets.find((w) => w.name === "Phantom") ||
-        wallets.find((w) => w.name === "Solflare") ||
-        wallets[0];
+        solanaWallets.find((w) => w.name === "Phantom") ||
+        solanaWallets.find((w) => w.name === "Solflare") ||
+        solanaWallets[0];
 
-      const connectFeature = wallet.features?.["standard:connect"];
-      if (connectFeature) await connectFeature.connect();
-      if (!wallet.accounts?.length) throw new Error("No accounts found. Unlock your wallet.");
+      const connectFeature = wallet.features["standard:connect"] as any;
+      if (!connectFeature) throw new Error("Wallet does not support standard:connect");
 
-      const account = wallet.accounts[0];
+      const { accounts } = await connectFeature.connect();
+      const account = accounts[0];
+      if (!account) throw new Error("No accounts found. Unlock your wallet.");
+
       setExternalAddress(account.address);
 
-      const signer = createSignerFromWalletAccount(account as any, account.address as any);
+      const signer = createSignerFromWalletAccount(wallet, account);
+
       const client = await getUmbraClient({
         signer,
         network: "devnet",
         rpcUrl: "https://api.devnet.solana.com",
         rpcSubscriptionsUrl: "wss://api.devnet.solana.com",
-        deferMasterSeedSignature: true,
+        deferMasterSeedSignature: false,
       });
+
       setUmbraClient(client);
 
-      const register = getUserRegistrationFunction({ client });
-      await register({ confidential: true, anonymous: false });
+      // ✅ Check registration state first
+      const query = getUserAccountQuerierFunction({ client });
+      const result = await query(account.address as any);
 
+      console.log("Registration state:", result);
+
+      // ✅ Check if x25519 key is actually valid (not all zeros)
+      const x25519IsValid = result.state === "exists" &&
+        result.data.x25519PublicKey?.some((b: number) => b !== 0);
+
+      const isFullyRegistered =
+        result.state === "exists" &&
+        result.data.isInitialised &&
+        result.data.isUserAccountX25519KeyRegistered &&
+        x25519IsValid;
+
+      if (!isFullyRegistered) {
+        console.log("Registration incomplete or corrupted — re-registering...");
+        const register = getUserRegistrationFunction({ client });
+        const sigs = await register({ confidential: true, anonymous: false });
+        console.log(`Registration complete — ${sigs.length} transaction(s) submitted`);
+      } else {
+        console.log("Already registered — skipping");
+      }
       setStep("shield");
     } catch (err) {
+      console.log("Connect error:", err);
       toast.error(err instanceof Error ? err.message : "Failed to connect wallet");
     } finally {
       setConnecting(false);
@@ -125,15 +158,25 @@ export function PrivateDepositModal({ isOpen, onClose }: PrivateDepositModalProp
 
   const handleShield = async () => {
     if (!umbraClient || !shieldAmount) return;
+    console.log("signer address:", umbraClient.signer.address);
+    console.log("phantom pubkey:", (window as any).phantom?.solana?.publicKey?.toString());
     setIsShielding(true);
     try {
       const deposit = getPublicBalanceToEncryptedBalanceDirectDepositorFunction({ client: umbraClient });
       const amount = BigInt(Math.floor(parseFloat(shieldAmount) * 1_000_000));
-      await deposit(umbraClient.signer.address as any, DEVNET_USDC_MINT as any, amount as any);
+
+      await deposit(
+        umbraClient.signer.address as any,
+        DEVNET_USDC_MINT as any,
+        amount as any,
+      );
+
+
       setUnshieldAmount(shieldAmount);
       setStep("unshield");
       toast.success("USDC shielded into Umbra");
     } catch (err) {
+      console.log(err);
       toast.error(err instanceof Error ? err.message : "Shield failed");
     } finally {
       setIsShielding(false);
@@ -348,9 +391,9 @@ export function PrivateDepositModal({ isOpen, onClose }: PrivateDepositModalProp
 
   const title = step === "intro" ? "Private Deposit" :
     step === "connect" ? "Connect Wallet" :
-    step === "shield" ? "Shield Funds" :
-    step === "unshield" ? "Unshield Funds" :
-    "Complete";
+      step === "shield" ? "Shield Funds" :
+        step === "unshield" ? "Unshield Funds" :
+          "Complete";
 
   if (isMobile) {
     return (
