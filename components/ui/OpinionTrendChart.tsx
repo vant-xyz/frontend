@@ -11,6 +11,7 @@ import {
   LineStyle,
 } from 'lightweight-charts';
 import { cn } from '@/lib/utils';
+import { getMarketOpinionTrend } from '@/lib/api';
 
 interface OpinionTrendChartProps {
   marketId: string;
@@ -96,17 +97,13 @@ export function OpinionTrendChart({
       if (n) setCurrentNo(n.value);
     });
 
-    loadTrendData(
-      marketId,
-      yesSeries,
-      noSeries,
-      chart,
-      setCurrentYes,
-      setCurrentNo,
-      setIsAnimating
-    );
+    loadTrendData(marketId, yesSeries, noSeries, chart, setCurrentYes, setCurrentNo, setIsAnimating);
+    const interval = setInterval(() => {
+      loadTrendData(marketId, yesSeries, noSeries, chart, setCurrentYes, setCurrentNo, setIsAnimating);
+    }, 1000);
 
     return () => {
+      clearInterval(interval);
       ro.disconnect();
       chart.remove();
     };
@@ -149,40 +146,27 @@ async function loadTrendData(
   setNo: (v: number) => void,
   setAnimating: (v: boolean) => void
 ) {
-  const now = Math.floor(Date.now() / 1000);
-  const start = now - 300;
-
-  const yesData: LineData[] = [];
-  const noData: LineData[] = [];
-
-  let yes = 50;
-
-  for (let t = start; t <= now; t += 15) {
-    yes += (Math.random() - 0.48) * 3;
-    yes = Math.max(5, Math.min(95, yes));
-
-    yesData.push({
-      time: t as UTCTimestamp, // ✅ FIX
-      value: +yes.toFixed(1),
-    });
-    noData.push({
-      time: t as UTCTimestamp,
-      value: +(100 - yes).toFixed(1),
-    });
-  }
-
-  setAnimating(true);
-
-  setTimeout(() => {
+  try {
+    const res = await getMarketOpinionTrend(marketId);
+    const pts = res.trend || [];
+    if (!pts.length) return;
+    const yesData: LineData[] = [];
+    const noData: LineData[] = [];
+    for (const p of pts) {
+      const total = p.yes_volume + p.no_volume;
+      const yesPct = total > 0 ? (p.yes_volume / total) * 100 : 50;
+      yesData.push({ time: p.time as UTCTimestamp, value: +yesPct.toFixed(2) });
+      noData.push({ time: p.time as UTCTimestamp, value: +(100 - yesPct).toFixed(2) });
+    }
+    setAnimating(true);
     yesSeries.setData(yesData);
     noSeries.setData(noData);
-
     chart.timeScale().fitContent();
-
     const last = yesData[yesData.length - 1];
     setYes(last.value);
     setNo(100 - last.value);
-
     setAnimating(false);
-  }, 200);
+  } catch {
+    // ignore transient fetch errors
+  }
 }

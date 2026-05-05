@@ -258,7 +258,7 @@ export function MarketDetailView({ market, onBack }: MarketDetailViewProps) {
           {/* Chart */}
           <div className="p-4">
             {chartType === 'candlestick' ? (
-              <CandlestickChart title="BTC Spot Price (1m)" />
+              <CandlestickChart marketId={market.id} title="BTC Spot Price (1m)" />
             ) : (
               <OpinionTrendChart
                 marketId={market.id}

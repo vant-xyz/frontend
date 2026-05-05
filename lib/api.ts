@@ -772,6 +772,36 @@ export interface MarketVolumeResponse {
   volume: MarketVolume;
 }
 
+export interface MarketCandle {
+  time: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
+
+export interface MarketCandlesResponse {
+  success: boolean;
+  market_id: string;
+  interval_seconds: number;
+  candles: MarketCandle[];
+  count: number;
+}
+
+export interface MarketTrendPoint {
+  time: number;
+  yes_volume: number;
+  no_volume: number;
+}
+
+export interface MarketOpinionTrendResponse {
+  success: boolean;
+  market_id: string;
+  trend: MarketTrendPoint[];
+  count: number;
+}
+
 // Markets API functions
 export async function getTrades(
   id: string,
@@ -808,6 +838,34 @@ export async function getMarketVolume(id: string): Promise<MarketVolumeResponse>
     throw new Error("Failed to fetch market volume");
   }
 
+  return response.json();
+}
+
+export async function getMarketCandles(id: string): Promise<MarketCandlesResponse> {
+  const response = await fetch(`${API_BASE_URL}/markets/${id}/candles`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4",
+    },
+  });
+  if (!response.ok) {
+    throw new Error("Failed to fetch market candles");
+  }
+  return response.json();
+}
+
+export async function getMarketOpinionTrend(id: string): Promise<MarketOpinionTrendResponse> {
+  const response = await fetch(`${API_BASE_URL}/markets/${id}/opinion-trend`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4",
+    },
+  });
+  if (!response.ok) {
+    throw new Error("Failed to fetch market opinion trend");
+  }
   return response.json();
 }
 

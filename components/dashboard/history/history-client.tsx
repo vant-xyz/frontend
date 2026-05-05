@@ -25,9 +25,14 @@ export function HistoryClient({ initialTransactions }: HistoryClientProps) {
   useEffect(() => {
     const token = localStorage.getItem("auth_token");
     if (!token) return;
-    getUserPositions(token)
-      .then((res) => setPositions(res.positions || []))
-      .catch(() => setPositions([]));
+    const load = () => {
+      getUserPositions(token)
+        .then((res) => setPositions(res.positions || []))
+        .catch(() => setPositions([]));
+    };
+    load();
+    const i = setInterval(load, 1000);
+    return () => clearInterval(i);
   }, []);
 
   const monthlyPnl = useMemo(() => {
@@ -163,11 +168,32 @@ export function HistoryClient({ initialTransactions }: HistoryClientProps) {
             <div className="grid grid-cols-1 gap-2">
               {positions.map((p) => (
                 <div key={p.id} className="p-4 rounded-2xl bg-white/[0.02] border border-white/5">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-bold text-white">{p.side} • {p.shares.toFixed(2)} shares</p>
-                    <p className={cn("text-sm font-black", p.realized_pnl >= 0 ? "text-green-400" : "text-red-400")}>${Number(p.realized_pnl).toFixed(2)}</p>
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-bold text-white">{p.side} • {p.shares.toFixed(2)} shares</p>
+                      <p className="text-[10px] text-gray-500 mt-1">{format(new Date(p.created_at), "MMM d, yyyy")}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className={cn("text-sm font-black", Number(p.realized_pnl) >= 0 ? "text-green-400" : "text-red-400")}>${Number(p.realized_pnl).toFixed(2)}</p>
+                      <Badge className={cn("mt-1 uppercase text-[8px] font-black", p.status === "ACTIVE" ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/20" : p.status === "SETTLED" ? "bg-green-500/10 text-green-500 border-green-500/20" : "bg-gray-500/10 text-gray-400 border-gray-500/20")}>{p.status}</Badge>
+                    </div>
                   </div>
-                  <p className="text-[10px] text-gray-500 mt-1">{format(new Date(p.created_at), "MMM d, yyyy")}</p>
+                  <div className="mt-3 flex justify-end">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={async () => {
+                        const url = `${window.location.origin}/market/${p.market_id}`;
+                        const txt = `${p.side} ${p.shares.toFixed(2)} shares • ${p.status} • PnL $${Number(p.realized_pnl).toFixed(2)}`;
+                        if (navigator.share) {
+                          try { await navigator.share({ title: "Vantic Trade", text: txt, url }); return; } catch {}
+                        }
+                        await navigator.clipboard.writeText(`${txt}\n${url}`);
+                      }}
+                    >
+                      Share
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>

@@ -3,13 +3,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { createChart, IChartApi, CandlestickSeries } from 'lightweight-charts';
 import { cn } from '@/lib/utils';
-import { getLatestPrices } from '@/lib/api';
+import { getLatestPrices, getMarketCandles } from '@/lib/api';
 
 interface CandlestickChartProps {
+  marketId: string;
   title?: string;
 }
 
-export function CandlestickChart({ title = "BTC Spot Price (5m)" }: CandlestickChartProps) {
+export function CandlestickChart({ marketId, title = "BTC Spot Price (5m)" }: CandlestickChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<any>(null);
@@ -58,14 +59,9 @@ export function CandlestickChart({ title = "BTC Spot Price (5m)" }: CandlestickC
 
     const fetchHistory = async () => {
       try {
-        const end = Math.floor(Date.now() / 1000);
-        const start = end - 3600;
-        const res = await fetch(
-          `https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=60&start=${start}&end=${end}`
-        );
-        const data: [number, number, number, number, number, number][] = await res.json();
-        const candles = data
-          .map(([time, low, high, open, close]) => ({ time, open, high, low, close }))
+        const res = await getMarketCandles(marketId);
+        const candles = (res.candles || [])
+          .map((c) => ({ time: c.time, open: c.open, high: c.high, low: c.low, close: c.close }))
           .sort((a, b) => a.time - b.time);
 
         candles.forEach(c => candlesRef.current.set(c.time, c));
@@ -120,7 +116,7 @@ export function CandlestickChart({ title = "BTC Spot Price (5m)" }: CandlestickC
       if (pollRef.current) clearInterval(pollRef.current);
       chart.remove();
     };
-  }, []);
+  }, [marketId]);
 
   return (
     <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">

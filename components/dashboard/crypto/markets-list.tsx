@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Market, OrderSide, getOrderbook } from "@/lib/api";
+import { Market, OrderSide, getOrderbook, PriceData } from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Share2, Target } from "lucide-react";
@@ -18,9 +18,10 @@ export interface MarketsListProps {
   error: string | null;
   markets: Market[];
   reloadMarkets: () => Promise<void>;
+  prices?: PriceData & { vant_rate: number | null };
 }
 
-export function MarketsList({ loading, error, reloadMarkets, markets }: MarketsListProps) {
+export function MarketsList({ loading, error, reloadMarkets, markets, prices }: MarketsListProps) {
   const [selectedMarket, setSelectedMarket] = useState<Market | null>(null);
   const [selectedSide, setSelectedSide] = useState<OrderSide>("YES");
   const [isQuickTradeOpen, setIsQuickTradeOpen] = useState(false);
@@ -64,7 +65,7 @@ export function MarketsList({ loading, error, reloadMarkets, markets }: MarketsL
     <>
       <div className="space-y-4">
         {markets.map((market) => (
-          <MarketCard key={market.id} market={market} onQuickTrade={handleQuickTrade} />
+          <MarketCard key={market.id} market={market} onQuickTrade={handleQuickTrade} prices={prices} />
         ))}
       </div>
 
@@ -86,9 +87,10 @@ export function MarketsList({ loading, error, reloadMarkets, markets }: MarketsL
 export interface MarketCardProps {
   market: Market;
   onQuickTrade: (market: Market, side: OrderSide) => void;
+  prices?: PriceData & { vant_rate: number | null };
 }
 
-export function MarketCard({ market, onQuickTrade }: MarketCardProps) {
+export function MarketCard({ market, onQuickTrade, prices }: MarketCardProps) {
   const router = useRouter();
   const [timeLeft, setTimeLeft] = useState<{ seconds: number; text: string }>({ seconds: 0, text: "" });
   const [shareOpen, setShareOpen] = useState(false);
@@ -147,7 +149,13 @@ export function MarketCard({ market, onQuickTrade }: MarketCardProps) {
 
   const openDetails = () => router.push(`/market/${market.id}`);
 
-  const currentPriceDollars = (market.current_price ?? 50) / 100;
+  const liveSpot = (() => {
+    const asset = (market.asset || "").toUpperCase() as keyof PriceData;
+    const p = prices?.[asset];
+    const n = p?.price ? Number(p.price) : NaN;
+    return Number.isFinite(n) && n > 0 ? n : null;
+  })();
+  const currentPriceDollars = liveSpot ?? (market.current_price ?? 50) / 100;
   const targetPrice = market.target_price ? (market.target_price / 100).toFixed(2) : "0.00";
   const yesPriceCents = yesNoCents.yes;
   const noPriceCents = yesNoCents.no;

@@ -32,6 +32,7 @@ import { CandlestickChart } from "@/components/ui/CandlestickChart";
 import { useParams, useRouter } from "next/navigation";
 import { useDashboard } from "@/hooks/use-dashboard";
 import { SharePositionModal } from "./sharePositionModal";
+import { usePriceFeed } from "@/hooks/use-price-feed";
 
 export default function MarketDetailView() {
     const { id } = useParams()
@@ -79,6 +80,7 @@ export default function MarketDetailView() {
     };
     const token = localStorage.getItem("auth_token");
     const { isDemoMode } = useDashboard();
+    const { prices } = usePriceFeed({ usePolling: true, pollingInterval: 1000 });
     const router = useRouter();
     const goBack = () => {
         if (typeof window !== "undefined" && window.history.length > 1) {
@@ -137,7 +139,7 @@ export default function MarketDetailView() {
         const interval = setInterval(() => {
             fetchUserPositions();
             fetchOpenOrders();
-        }, 2000);
+        }, 1000);
 
         return () => clearInterval(interval);
     }, [id, token, fetchUserPositions, fetchOpenOrders]);
@@ -160,6 +162,8 @@ export default function MarketDetailView() {
             }
         };
         fetchMarketTrades();
+        const interval = setInterval(fetchMarketTrades, 1000);
+        return () => clearInterval(interval);
     }, [id])
 
     useEffect(() => {
@@ -339,6 +343,12 @@ export default function MarketDetailView() {
     const displayStatus = isResolved ? "Resolved" : isSettling ? "Settling" : "Active";
 
     const pricePerShareDollars = (selectedSide === "YES" ? lastYes : lastNo) / 100;
+    const liveAssetPrice = (() => {
+        const asset = (market.asset || "").toUpperCase() as keyof typeof prices;
+        const p = prices[asset];
+        const n = p?.price ? Number(p.price) : NaN;
+        return Number.isFinite(n) && n > 0 ? n : null;
+    })();
     const effectiveQuantity = inputMode === "shares"
         ? quantity
         : (parseFloat(usdAmount) || 0) / (pricePerShareDollars > 0 ? pricePerShareDollars : 1);
@@ -573,9 +583,22 @@ export default function MarketDetailView() {
                         >
                             <ChevronDown size={14} />
                         </button>
-                        <span className="flex-1 text-center text-2xl font-mono font-semibold text-white">
-                            {inputMode === "shares" ? quantity : (parseFloat(usdAmount || "0").toFixed(2))}
-                        </span>
+                        <Input
+                            type="number"
+                            value={inputMode === "shares" ? String(quantity) : usdAmount}
+                            onChange={(e) => {
+                                if (inputMode === "shares") {
+                                    const next = parseFloat(e.target.value);
+                                    setQuantity(Number.isFinite(next) ? Math.max(0, next) : 0);
+                                    return;
+                                }
+                                setUsdAmount(e.target.value);
+                            }}
+                            className="flex-1 text-center text-2xl font-mono font-semibold text-white bg-transparent border-0 h-auto p-0 focus-visible:ring-0"
+                            min="0"
+                            step="0.01"
+                            inputMode="decimal"
+                        />
                         <button
                             onClick={() => inputMode === "shares"
                                 ? setQuantity(q => q + 1)
@@ -585,23 +608,6 @@ export default function MarketDetailView() {
                             <ChevronUp size={14} />
                         </button>
                     </div>
-
-                    <Input
-                        type="number"
-                        value={inputMode === "shares" ? String(quantity) : usdAmount}
-                        onChange={(e) => {
-                            if (inputMode === "shares") {
-                                const next = parseFloat(e.target.value);
-                                setQuantity(Number.isFinite(next) ? Math.max(0, next) : 0);
-                                return;
-                            }
-                            setUsdAmount(e.target.value);
-                        }}
-                        className="bg-white/5 border-white/10 text-white h-11 text-center font-mono"
-                        min="0"
-                        step="0.01"
-                        inputMode="decimal"
-                    />
 
                     {/* 25% 50% MAX Buttons */}
                     <div className="flex gap-1.5">
@@ -741,7 +747,7 @@ export default function MarketDetailView() {
                     </Badge>
                     <div className="ml-2 text-right shrink-0">
                         <p className="text-[10px] text-gray-400 uppercase tracking-widest">Current</p>
-                        <p className="text-lg font-mono text-white">{market.market_type === "CAPPM" ? `$${(market.current_price ?? 0).toFixed(2)}` : `${currentPriceCents.toFixed(1)}¢`}</p>
+                        <p className="text-lg font-mono text-white">{market.market_type === "CAPPM" ? `$${(liveAssetPrice ?? ((market.current_price ?? 0) / 100)).toFixed(2)}` : `${currentPriceCents.toFixed(1)}¢`}</p>
                     </div>
                 </div>
 
@@ -774,7 +780,7 @@ export default function MarketDetailView() {
                             {market.market_type === "GEM" || chartType === "opinion" ? (
                                 <OpinionTrendChart marketId={market.id} title="YES / NO Sentiment" />
                             ) : (
-                                <CandlestickChart title={`${market.asset || "Asset"} Spot Price`} />
+                                <CandlestickChart marketId={market.id} title={`${market.asset || "Asset"} Spot Price`} />
                             )}
                         </div>
 

@@ -90,7 +90,7 @@ export function CryptoTab() {
       </Accordion>
 
       {/* Markets List */}
-      <MarketsList markets={markets} loading={loading} error={error} reloadMarkets= {loadMarkets}/>
+      <MarketsList markets={markets} loading={loading} error={error} reloadMarkets= {loadMarkets} prices={prices} />
     </div>
   );
 }
