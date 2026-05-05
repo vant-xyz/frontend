@@ -36,7 +36,8 @@ import {
 } from "@umbra-privacy/sdk";
 import { getWallets } from "@wallet-standard/app";
 
-const DEVNET_USDC_MINT = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU";
+// const DEVNET_USDC_MINT = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU";
+const DEVNET_WSOL_MINT = "So11111111111111111111111111111111111111112";
 
 type Step = "intro" | "connect" | "shield" | "unshield" | "done";
 
@@ -98,8 +99,8 @@ export function PrivateDepositModal({ isOpen, onClose }: PrivateDepositModalProp
       if (!solanaWallets.length) throw new Error("No compatible Solana wallet found.");
 
       const wallet =
-        solanaWallets.find((w) => w.name === "Phantom") ||
         solanaWallets.find((w) => w.name === "Solflare") ||
+        solanaWallets.find((w) => w.name === "Phantom") ||
         solanaWallets[0];
 
       const connectFeature = wallet.features["standard:connect"] as any;
@@ -123,13 +124,12 @@ export function PrivateDepositModal({ isOpen, onClose }: PrivateDepositModalProp
 
       setUmbraClient(client);
 
-      // ✅ Check registration state first
       const query = getUserAccountQuerierFunction({ client });
       const result = await query(account.address as any);
 
-      console.log("Registration state:", result);
 
-      // ✅ Check if x25519 key is actually valid (not all zeros)
+
+
       const x25519IsValid = result.state === "exists" &&
         result.data.x25519PublicKey?.some((b: number) => b !== 0);
 
@@ -158,8 +158,13 @@ export function PrivateDepositModal({ isOpen, onClose }: PrivateDepositModalProp
 
   const handleShield = async () => {
     if (!umbraClient || !shieldAmount) return;
-    console.log("signer address:", umbraClient.signer.address);
-    console.log("phantom pubkey:", (window as any).phantom?.solana?.publicKey?.toString());
+
+    if (umbraClient.signer.address !== externalAddress) {
+      toast.error("Wallet mismatch — please reconnect.");
+      setStep("connect");
+      return;
+    }
+
     setIsShielding(true);
     try {
       const deposit = getPublicBalanceToEncryptedBalanceDirectDepositorFunction({ client: umbraClient });
@@ -167,10 +172,9 @@ export function PrivateDepositModal({ isOpen, onClose }: PrivateDepositModalProp
 
       await deposit(
         umbraClient.signer.address as any,
-        DEVNET_USDC_MINT as any,
+        DEVNET_WSOL_MINT as any,
         amount as any,
       );
-
 
       setUnshieldAmount(shieldAmount);
       setStep("unshield");
@@ -182,14 +186,13 @@ export function PrivateDepositModal({ isOpen, onClose }: PrivateDepositModalProp
       setIsShielding(false);
     }
   };
-
   const handleUnshield = async () => {
     if (!umbraClient || !unshieldAmount || !vanticAddress) return;
     setIsUnshielding(true);
     try {
       const withdraw = getEncryptedBalanceToPublicBalanceDirectWithdrawerFunction({ client: umbraClient });
       const amount = BigInt(Math.floor(parseFloat(unshieldAmount) * 1_000_000));
-      await withdraw(vanticAddress as any, DEVNET_USDC_MINT as any, amount as any);
+      await withdraw(vanticAddress as any, DEVNET_WSOL_MINT as any, amount as any);
       setStep("done");
       toast.success("Funds are on their way to your Vantic wallet");
     } catch (err) {

@@ -4,10 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useRouter } from "next/navigation";
 
 export function VantVsSection() {
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -134,8 +136,8 @@ export function VantVsSection() {
             isVisible ? "opacity-100" : "opacity-0"
           }`}
         >
-          <Button className="px-8 py-3 bg-red-600 text-white font-bold rounded hover:bg-red-500 transition-colors">
-            Create Your First Wager
+          <Button className="px-8 py-3 bg-red-600 text-white font-bold rounded hover:bg-red-500 transition-colors" onClick={() => router.push("/app/vs")}>
+            Create Your First VS
           </Button>
         </div>
       </div>

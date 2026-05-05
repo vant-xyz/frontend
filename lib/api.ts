@@ -206,7 +206,7 @@ export function connectToPriceFeed(
 ): WebSocket {
   const wsUrl = process.env.NEXT_PUBLIC_WS_URL || `ws://localhost:8080/ws`;
   const authedWsUrl = `${wsUrl}?token=${token}`;
-  
+
   try {
     const ws = new WebSocket(authedWsUrl);
 
@@ -316,6 +316,7 @@ export interface BalanceInfo {
   vusd: number;
   // Real assets
   usdc_sol: number;
+  wsol: number;
   usdc_base: number;
   usdt_sol: number;
   usdg_sol: number;
@@ -520,6 +521,25 @@ export async function getTransactions(token: string): Promise<TransactionsRespon
   return response.json();
 }
 
+
+export async function closePosition(marketId: string, token: string, positionId: string, data: SellPositionRequest): Promise<SellPositionResponse> {
+  const response = await fetch(`${API_BASE_URL}/markets/${marketId}/sell`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch transactions");
+  }
+
+  return response.json();
+
+}
+
 // Markets types
 export type MarketType = "CAPPM" | "GEM";
 export type MarketStatus = "active" | "resolved";
@@ -550,6 +570,8 @@ export interface Market {
   end_price?: number;
   settlement_tx_hash?: string;
   resolved_at?: string;
+  market_image_small?: string;
+  category?: string;
 }
 
 export interface MarketsResponse {
@@ -657,6 +679,7 @@ export interface PlaceOrderRequest {
   type: OrderType;
   price?: number;
   quantity: number;
+  is_demo: boolean;
   expires_at?: number;
 }
 
@@ -678,6 +701,7 @@ export interface Position {
   quote_currency: string;
   created_at: string;
   settled_at?: string;
+  payout_amount: number;
 }
 
 export interface PositionsResponse {
@@ -686,7 +710,54 @@ export interface PositionsResponse {
   count: number;
 }
 
+export interface SellPositionResponse {
+  success: boolean;
+  position: Position;
+  proceeds: number;
+}
+
+export interface SellPositionRequest{
+  position_id: string,
+  shares: number,
+}
+
+export interface Trades {
+  id: string;
+  side: string;
+  price: number;
+  quantity: number;
+  filled_at: string;
+}
+export interface TradesResponse {
+  success: boolean;
+  market_id: string;
+  trades: Trades[];
+  count: string;
+}
+
 // Markets API functions
+export async function getTrades(
+  id: string,
+  limit: number = 10
+): Promise<TradesResponse> {
+  const params = new URLSearchParams();
+  params.append("limit", limit.toString());
+
+  const response = await fetch(`${API_BASE_URL}/markets/${id}/trades?${params.toString()}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch markets");
+  }
+
+  return response.json();
+}
+
 export async function getMarkets(
   type?: MarketType,
   status?: MarketStatus,
@@ -885,3 +956,164 @@ export function connectToOrderbookFeed(
 
   return ws;
 }
+
+
+export interface vsEvents {
+      id: string,
+      title: string,
+      description: string,
+      creator_email: string,
+      mode: vsEventsModes,
+      threshold: number,
+      stake_amount: number,
+      participant_target: number,
+      status: string,
+      outcome: string,
+      outcome_description: string,
+      creation_tx_hash: string,
+      settlement_tx_hash: string,
+      chain_state: string,
+      join_deadline_utc: string,
+      resolve_deadline_utc: string,
+      created_at: string,
+      updated_at: string,
+      resolved_at: string,
+      participants: Participant[]
+     
+}
+
+export type vsEventsModes = "mutual" | "consensus";
+export interface vsCreateRequest {
+  title: string;
+  description: string;
+  mode: vsEventsModes;
+  threshold: number;
+  stake_amount: number;
+  participant_target: number;
+  join_deadline_utc: number;
+  resolve_deadline_utc: number;
+  is_demo: boolean;
+}
+
+export interface vsCreateResponse {
+  success: boolean;
+  event: vsEvents;
+}
+
+export interface Participant{
+  id: string;
+  vs_event_id: string;
+  user_email: string;
+  locked_amount: number;
+  joined_at: string;
+  confirmation: string;
+  confirmed_at: string;
+}
+
+export async function createVsEvent(token: string, data: vsCreateRequest): Promise<vsCreateResponse> {
+  const response = await fetch(`${API_BASE_URL}/vs/events`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to create vs event");
+  }
+
+  return response.json();
+}
+
+export async function getVsEvents(token: string): Promise<{ success: boolean; events: vsEvents[] }> {
+  const response = await fetch(`${API_BASE_URL}/vs/events`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch vs events");
+  }
+
+  return response.json();
+}
+
+export async function fetchEventById(token: string, eventId: string): Promise<{ success: boolean; event: vsEvents }> {
+  const response = await fetch(`${API_BASE_URL}/vs/events/${eventId}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch vs event");
+  }
+
+  return response.json();
+}
+
+export async function joinVsEvent(token: string, eventId: string): Promise<{ success: boolean; participant: Participant }> {
+  const response = await fetch(`${API_BASE_URL}/vs/events/${eventId}/join`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to join vs event");
+  }
+
+  return response.json();
+}
+
+
+export async function confirmVsEventOutcome(token: string, eventId: string, outcome: "YES" | "NO"): Promise<{ success: boolean; event: vsEvents }> {
+  const response = await fetch(`${API_BASE_URL}/vs/events/${eventId}/confirm`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
+    },
+    body: JSON.stringify({ outcome }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to confirm vs event outcome");
+  }
+
+  return response.json();
+}
+
+export async function cancelVsEvent(token: string, eventId: string): Promise<{ success: boolean; message: string }> {
+
+  const response = await fetch(`${API_BASE_URL}/vs/events/${eventId}/cancel`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
+    },
+  });
+  if (!response.ok) {
+    throw new Error("Failed to confirm vs event outcome");
+  }
+
+  return response.json();
+}
+
+
+export type Confirmation = 'YES' | 'NO' 

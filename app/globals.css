@@ -129,3 +129,12 @@
     opacity: 0.03;
   }
 }
+
+/* globals.css */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

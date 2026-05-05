@@ -10,39 +10,25 @@ import { QuickTradeModal } from "./quick-trade-modal";
 import { usePriceFeed } from "@/hooks/use-price-feed";
 import { cn } from "@/lib/utils";
 import { Loader } from "@/components/ui/loader";
+import { useRouter } from "next/navigation";
 
-interface MarketsListProps {
-  onMarketSelect: (market: Market) => void;
+export interface MarketsListProps {
+  loading: boolean,
+  error: string | null,
+  markets: Market[]
+  reloadMarkets: () => Promise<void>;
 }
 
-export function MarketsList({ onMarketSelect }: MarketsListProps) {
-  const [markets, setMarkets] = useState<Market[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export function MarketsList({ loading, error, reloadMarkets, markets }: MarketsListProps) {
+
   const [selectedMarket, setSelectedMarket] = useState<Market | null>(null);
   const [selectedSide, setSelectedSide] = useState<OrderSide>("YES");
   const [isQuickTradeOpen, setIsQuickTradeOpen] = useState(false);
-  
+  const router = useRouter()
+
+
   const { prices } = usePriceFeed({ usePolling: true, pollingInterval: 500 });
 
-  const loadMarkets = useCallback(async () => {
-    try {
-      const res = await getMarkets("CAPPM", "active", undefined, 50);
-      setMarkets(res.markets);
-      setError(null);
-      if (loading) setLoading(false);
-    } catch (err) {
-      console.error("[MarketsList] Error:", err);
-      setError(err instanceof Error ? err.message : "Failed to load markets");
-      if (loading) setLoading(false);
-    }
-  }, [loading]);
-
-  useEffect(() => {
-    loadMarkets();
-    const interval = setInterval(loadMarkets, 2000);
-    return () => clearInterval(interval);
-  }, [loadMarkets]);
 
   const handleQuickTrade = (market: Market, side: OrderSide) => {
     setSelectedMarket(market);
@@ -63,7 +49,7 @@ export function MarketsList({ onMarketSelect }: MarketsListProps) {
       <div className="text-center py-12">
         <p className="text-red-500 mb-2">Failed to load markets</p>
         <p className="text-gray-400 text-sm">{error}</p>
-        <Button variant="outline" onClick={loadMarkets} className="mt-4">
+        <Button variant="outline" onClick={() => reloadMarkets()} className="mt-4">
           Retry
         </Button>
       </div>
@@ -83,10 +69,9 @@ export function MarketsList({ onMarketSelect }: MarketsListProps) {
     <>
       <div className="space-y-4">
         {markets.map((market) => (
-          <MarketCard 
-            key={market.id} 
-            market={market} 
-            onSelect={onMarketSelect}
+          <MarketCard
+            key={market.id}
+            market={market}
             onQuickTrade={handleQuickTrade}
             prices={prices}
           />
@@ -108,14 +93,14 @@ export function MarketsList({ onMarketSelect }: MarketsListProps) {
   );
 }
 
-interface MarketCardProps {
+export interface MarketCardProps {
   market: Market;
-  onSelect: (market: Market) => void;
   onQuickTrade: (market: Market, side: OrderSide) => void;
   prices: any;
 }
 
-function MarketCard({ market, onSelect, onQuickTrade, prices }: MarketCardProps) {
+export function MarketCard({ market, onQuickTrade, prices }: MarketCardProps) {
+  const router = useRouter()
   const [timeLeft, setTimeLeft] = useState<{ seconds: number; text: string }>({ seconds: 0, text: "" });
 
   useEffect(() => {
@@ -129,7 +114,7 @@ function MarketCard({ market, onSelect, onQuickTrade, prices }: MarketCardProps)
       } else {
         const minutes = Math.floor(diff / 60000);
         const seconds = Math.floor((diff % 60000) / 1000);
-        setTimeLeft({ 
+        setTimeLeft({
           seconds: diff / 1000,
           text: `${minutes}:${seconds.toString().padStart(2, '0')}`
         });
@@ -141,10 +126,15 @@ function MarketCard({ market, onSelect, onQuickTrade, prices }: MarketCardProps)
     return () => clearInterval(interval);
   }, [market.end_time_utc]);
 
-  const currentPrice = market.current_price 
+     const handleViewDetails = (market: Market) => {
+    router.push(`/app/general/${market.id}`);
+  };
+
+
+  const currentPrice = market.current_price
     ? (market.current_price / 100).toFixed(2)
     : "0.00";
-  
+
   const targetPrice = market.target_price
     ? (market.target_price / 100).toFixed(2)
     : "0.00";
@@ -159,12 +149,22 @@ function MarketCard({ market, onSelect, onQuickTrade, prices }: MarketCardProps)
         {/* Header */}
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
-            <img 
-              src={`/media/images/crypto_assets/${(market.asset || 'BTC').toLowerCase()}.png`}
-              alt={market.asset || 'Crypto'}
-              className="w-10 h-10 rounded-xl"
+            {/* Logo Image */}
+            <img
+              src={
+                market.market_image_small
+                  ? market.market_image_small
+                  : `/media/images/crypto_assets/${(market.asset || 'BTC').toLowerCase()}.png`
+              }
+              alt={market.title || market.asset || 'Market'}
+              className="w-10 h-10 rounded-xl object-cover"
               onError={(e) => {
-                (e.target as HTMLImageElement).style.display = 'none';
+                const target = e.target as HTMLImageElement;
+                if (market.market_image_small && target.src.includes(market.market_image_small)) {
+                  target.src = `/media/images/crypto_assets/${(market.asset || 'BTC').toLowerCase()}.png`;
+                } else {
+                  target.style.display = 'none';
+                }
               }}
             />
             <div>
@@ -213,12 +213,12 @@ function MarketCard({ market, onSelect, onQuickTrade, prices }: MarketCardProps)
                 </p>
               </div>
             </div>
-            
-            <Button 
-              variant="ghost" 
+
+            <Button
+              variant="ghost"
               size="icon"
               className="h-10 w-10 text-gray-400 hover:text-white hover:bg-white/10"
-              onClick={() => onSelect(market)}
+              onClick={()=>handleViewDetails(market)}
             >
               <MoreHorizontal size={20} />
             </Button>
@@ -232,14 +232,14 @@ function MarketCard({ market, onSelect, onQuickTrade, prices }: MarketCardProps)
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3">
-              <Button 
+              <Button
                 variant="outline"
                 className="h-12 border-green-500/50 text-green-400 hover:bg-green-500/10 hover:text-green-300 font-semibold"
                 onClick={() => onQuickTrade(market, "YES")}
               >
                 YES @ ${sharePrice}
               </Button>
-              <Button 
+              <Button
                 variant="outline"
                 className="h-12 border-red-500/50 text-red-400 hover:bg-red-500/10 hover:text-red-300 font-semibold"
                 onClick={() => onQuickTrade(market, "NO")}
