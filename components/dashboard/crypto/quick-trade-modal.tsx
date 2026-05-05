@@ -30,7 +30,9 @@ export function QuickTradeModal({
 
   const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
 
-  const pricePerShare = Math.max(0.01, (market.current_price ?? 50) / 100);
+  const yesPriceCents = market.current_price ?? 50;
+  const noPriceCents = Math.max(0, 100 - yesPriceCents);
+  const pricePerShare = Math.max(0.01, (selectedSide === "YES" ? yesPriceCents : noPriceCents) / 100);
   const derivedQuantity = inputMode === "shares"
     ? parseFloat(quantity) || 0
     : (parseFloat(usdAmount) || 0) / pricePerShare;
@@ -144,7 +146,7 @@ export function QuickTradeModal({
             onClick={handlePlaceOrder}
             disabled={submitting || numQuantity <= 0}
           >
-            {submitting ? "Placing Order..." : `Buy ${selectedSide} @ $${pricePerShare}/share`}
+            {submitting ? "Placing Order..." : `Buy ${selectedSide} @ $${pricePerShare.toFixed(3)}/share`}
           </Button>
         </div>
       </DialogContent>

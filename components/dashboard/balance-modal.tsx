@@ -22,6 +22,7 @@ import { SellCryptoModal } from "./sell-crypto-modal";
 import { Loader } from "@/components/ui/loader";
 import { cn } from "@/lib/utils";
 import type { BalanceInfo } from "@/lib/api";
+import { getTokenPrices } from "@/lib/api";
 import { Fuel, Copy, ExternalLink, ArrowDownLeft, Landmark, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
@@ -80,6 +81,7 @@ export function BalanceModal({
   const [isMobile, setIsMobile] = useState(false);
   const [isFunding, setIsFunding] = useState(false);
   const [isSellModalOpen, setIsSellModalOpen] = useState(false);
+  const [tokenUsdMap, setTokenUsdMap] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const checkMobile = () => {
@@ -133,6 +135,8 @@ export function BalanceModal({
   const renderAsset = (asset: AssetConfig) => {
     const value = balance?.[asset.key] as number | undefined;
     const isNairaType = asset.isNaira || asset.isVNaira;
+    const usdPrice = tokenUsdMap[asset.symbol];
+    const usdValue = !isNairaType && usdPrice !== undefined ? (value ?? 0) * usdPrice : undefined;
     
     return (
       <div
@@ -167,10 +171,33 @@ export function BalanceModal({
           <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
             {asset.symbol}
           </p>
+          {!isNairaType && usdPrice !== undefined && (
+            <p className="text-[10px] text-gray-400 font-mono">
+              ${usdPrice.toFixed(4)} · ${usdValue?.toFixed(2) ?? "0.00"}
+            </p>
+          )}
         </div>
       </div>
     );
   };
+
+  useEffect(() => {
+    let active = true;
+    const tickers = Array.from(new Set(assetsToShow.filter((a) => !a.isNaira && !a.isVNaira).map((a) => a.symbol)));
+    if (!tickers.length) return;
+    const fetchTokenPrices = async () => {
+      try {
+        const res = await getTokenPrices(tickers);
+        if (active) setTokenUsdMap(res.prices || {});
+      } catch {
+        if (active) setTokenUsdMap({});
+      }
+    };
+    fetchTokenPrices();
+    return () => {
+      active = false;
+    };
+  }, [isDemoMode]);
 
   const modalContent = (
     <div className="flex flex-col gap-8 py-4 overflow-y-auto">

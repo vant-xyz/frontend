@@ -22,8 +22,8 @@ export default async function Image({ params }: { params: Promise<{ id: string }
     volume = 0;
   }
 
-  const yesPrice = Number((((market.current_price ?? 50) as number) / 100).toFixed(2));
-  const noPrice = Number((100 - yesPrice).toFixed(2));
+  const yesPrice = Number((market.current_price ?? 50).toFixed(1));
+  const noPrice = Number((100 - (market.current_price ?? 50)).toFixed(1));
   const rightImage = market.market_image_small || `/media/images/crypto_assets/${(market.asset || "btc").toLowerCase()}.png`;
 
   return new ImageResponse(
@@ -52,8 +52,8 @@ export default async function Image({ params }: { params: Promise<{ id: string }
           <div style={{ fontSize: 18, color: "#888" }}>Vantic • {market.market_type}</div>
           <div style={{ fontSize: 48, fontWeight: 800, lineHeight: 1.12 }}>{market.title}</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <div style={{ fontSize: 34, color: "#22c55e", fontWeight: 700 }}>YES {yesPrice.toFixed(2)}¢</div>
-            <div style={{ fontSize: 34, color: "#ef4444", fontWeight: 700 }}>NO {noPrice.toFixed(2)}¢</div>
+            <div style={{ fontSize: 34, color: "#22c55e", fontWeight: 700 }}>YES {yesPrice.toFixed(1)}¢</div>
+            <div style={{ fontSize: 34, color: "#ef4444", fontWeight: 700 }}>NO {noPrice.toFixed(1)}¢</div>
             <div style={{ fontSize: 24, color: "#bbb" }}>Volume ${volume.toFixed(2)}</div>
           </div>
         </div>

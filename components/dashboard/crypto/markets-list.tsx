@@ -118,15 +118,16 @@ export function MarketCard({ market, onQuickTrade }: MarketCardProps) {
 
   const openDetails = () => router.push(`/market/${market.id}`);
 
-  const currentPrice = market.current_price ? (market.current_price / 100).toFixed(2) : "0.00";
+  const currentPriceDollars = (market.current_price ?? 50) / 100;
   const targetPrice = market.target_price ? (market.target_price / 100).toFixed(2) : "0.00";
-  const yesPrice = Number(currentPrice);
-  const noPrice = Math.max(0, 100 - yesPrice).toFixed(2);
+  const yesPriceDollars = currentPriceDollars;
+  const noPriceDollars = Math.max(0, (100 - (market.current_price ?? 50)) / 100);
   const isSettling = timeLeft.seconds <= 0;
 
   const avatarSrc = `/media/images/crypto_assets/${(market.asset || "BTC").toLowerCase()}.png`;
   const bgImage = market.market_image_small || avatarSrc;
   const shareUrl = `${typeof window !== "undefined" ? window.location.origin : "https://vantic.xyz"}/market/${market.id}`;
+  const previewImageUrl = `${typeof window !== "undefined" ? window.location.origin : "https://vantic.xyz"}/app/general/${market.id}/opengraph-image`;
 
   return (
     <>
@@ -184,7 +185,7 @@ export function MarketCard({ market, onQuickTrade }: MarketCardProps) {
               <div className="flex items-center gap-6">
                 <div>
                   <p className="text-gray-500 text-xs mb-1">Current Price</p>
-                  <p className="text-lg font-mono text-white">${currentPrice}</p>
+                  <p className="text-lg font-mono text-white">${currentPriceDollars.toFixed(2)}</p>
                 </div>
                 <div>
                   <p className="text-gray-500 text-xs mb-1">Target</p>
@@ -208,14 +209,14 @@ export function MarketCard({ market, onQuickTrade }: MarketCardProps) {
                   className="h-12 border-green-500/50 text-green-400 hover:bg-green-500/10 hover:text-green-300 font-semibold"
                   onClick={() => onQuickTrade(market, "YES")}
                 >
-                  YES @ ${yesPrice.toFixed(2)}
+                  YES @ ${yesPriceDollars.toFixed(2)}
                 </Button>
                 <Button
                   variant="outline"
                   className="h-12 border-red-500/50 text-red-400 hover:bg-red-500/10 hover:text-red-300 font-semibold"
                   onClick={() => onQuickTrade(market, "NO")}
                 >
-                  NO @ ${noPrice}
+                  NO @ ${noPriceDollars.toFixed(2)}
                 </Button>
               </div>
             )}
@@ -229,6 +230,9 @@ export function MarketCard({ market, onQuickTrade }: MarketCardProps) {
             <DialogTitle>Share Market</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
+            <div className="rounded-lg overflow-hidden border border-white/10">
+              <img src={previewImageUrl} alt={`${market.title} preview`} className="w-full h-auto object-cover" />
+            </div>
             <p className="text-xs text-gray-400">{shareUrl}</p>
             <div className="grid grid-cols-2 gap-2">
               <Button

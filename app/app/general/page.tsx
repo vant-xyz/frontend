@@ -154,20 +154,30 @@ function GemCard({ market, onQuickTrade, compact = false }: { market: Market; on
   useEffect(() => {
     const tick = () => {
       const diff = new Date(market.end_time_utc).getTime() - Date.now();
-      if (diff <= 0) return setTimeText("00:00");
-      const m = Math.floor(diff / 60000);
-      const s = Math.floor((diff % 60000) / 1000);
-      setTimeText(`${m}:${s.toString().padStart(2, "0")}`);
+      if (diff <= 0) return setTimeText("0s");
+      const sec = Math.floor(diff / 1000);
+      if (sec < 60) return setTimeText(`${sec}s`);
+      const min = Math.floor(sec / 60);
+      if (min < 60) return setTimeText(`${min}m ${sec % 60}s`);
+      const hr = Math.floor(min / 60);
+      if (hr < 24) return setTimeText(`${hr}h ${min % 60}m`);
+      const day = Math.floor(hr / 24);
+      if (day < 7) return setTimeText(`${day}d ${hr % 24}h`);
+      const week = Math.floor(day / 7);
+      if (week < 4) return setTimeText(`${week}w ${day % 7}d`);
+      const month = Math.floor(day / 30);
+      return setTimeText(`${month}mo`);
     };
     tick();
     const interval = setInterval(tick, 1000);
     return () => clearInterval(interval);
   }, [market.end_time_utc]);
 
-  const yes = Number(((market.current_price ?? 50) / 100).toFixed(2));
-  const no = Number((100 - yes).toFixed(2));
-  const banner = market.market_image_small || "/media/images/hero_image.png";
+  const yesCents = market.current_price ?? 50;
+  const noCents = Math.max(0, 100 - yesCents);
+  const banner = market.market_image_banner || market.market_image_small || "/media/images/hero_image.png";
   const shareUrl = `${typeof window !== "undefined" ? window.location.origin : "https://vantic.xyz"}/market/${market.id}`;
+  const previewImageUrl = `${typeof window !== "undefined" ? window.location.origin : "https://vantic.xyz"}/app/general/${market.id}/opengraph-image`;
 
   return (
     <>
@@ -207,8 +217,8 @@ function GemCard({ market, onQuickTrade, compact = false }: { market: Market; on
           </div>
 
           <div className="flex justify-between mt-4" onClick={(e) => e.stopPropagation()}>
-            <Button variant="outline" className="border-green-500/40 text-green-400" onClick={() => onQuickTrade(market, "YES")}>Yes {yes.toFixed(2)}¢</Button>
-            <Button variant="outline" className="border-red-500/40 text-red-400" onClick={() => onQuickTrade(market, "NO")}>No {no.toFixed(2)}¢</Button>
+            <Button variant="outline" className="border-green-500/40 text-green-400" onClick={() => onQuickTrade(market, "YES")}>Yes {yesCents.toFixed(1)}¢</Button>
+            <Button variant="outline" className="border-red-500/40 text-red-400" onClick={() => onQuickTrade(market, "NO")}>No {noCents.toFixed(1)}¢</Button>
           </div>
         </div>
       </div>
@@ -217,6 +227,9 @@ function GemCard({ market, onQuickTrade, compact = false }: { market: Market; on
         <DialogContent className="bg-black border-white/10 text-white max-w-md">
           <DialogHeader><DialogTitle>Share Market</DialogTitle></DialogHeader>
           <div className="space-y-3">
+            <div className="rounded-lg overflow-hidden border border-white/10">
+              <img src={previewImageUrl} alt={`${market.title} preview`} className="w-full h-auto object-cover" />
+            </div>
             <p className="text-xs text-gray-400">{shareUrl}</p>
             <div className="grid grid-cols-2 gap-2">
               <Button onClick={async () => { await navigator.clipboard.writeText(shareUrl); toast.success("Link copied"); }}>Copy Link</Button>

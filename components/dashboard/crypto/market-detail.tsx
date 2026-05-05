@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Market, getOrderbook, OrderbookSnapshot, placeOrder, OrderSide, OrderType, getUserProfile, UserProfile } from "@/lib/api";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,10 +32,12 @@ export function MarketDetailView({ market, onBack }: MarketDetailViewProps) {
   const [price, setPrice] = useState<string>("");
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [quantity, setQuantity] = useState<string>("");
+  const [usdAmount, setUsdAmount] = useState<string>("");
+  const [inputMode, setInputMode] = useState<"shares" | "usd">("shares");
   const [submitting, setSubmitting] = useState(false);
   const [isQuickTradeOpen, setIsQuickTradeOpen] = useState(false);
   const [timeLeft, setTimeLeft] = useState<{ seconds: number; text: string }>({ seconds: 0, text: "" });
-  const token = localStorage.getItem("auth_token_temp")
+  const token = localStorage.getItem("auth_token")
   const [chartType, setChartType] = useState<'candlestick' | 'opinion'>('candlestick');
 
 
@@ -68,7 +70,7 @@ export function MarketDetailView({ market, onBack }: MarketDetailViewProps) {
 
   useEffect(() => {
     loadOrderbook();
-    const interval = setInterval(loadOrderbook, 500);
+    const interval = setInterval(loadOrderbook, 1000);
     return () => clearInterval(interval);
   }, [market.id, loadOrderbook]);
 
@@ -133,7 +135,7 @@ export function MarketDetailView({ market, onBack }: MarketDetailViewProps) {
       return;
     }
 
-    if (!quantity || parseFloat(quantity) <= 0) {
+    if (!effectiveQuantity || effectiveQuantity <= 0) {
       toast.error("Enter a valid quantity");
       return;
     }
@@ -143,7 +145,8 @@ export function MarketDetailView({ market, onBack }: MarketDetailViewProps) {
       side: selectedSide,
       type: orderType,
       price: orderType === "LIMIT" ? parseFloat(price) : undefined,
-      quantity: parseFloat(quantity),
+      quantity: effectiveQuantity,
+      is_demo: localStorage.getItem("mode") === "demo",
     };
 
     try {
@@ -160,14 +163,19 @@ export function MarketDetailView({ market, onBack }: MarketDetailViewProps) {
     }
   };
 
-  const maxWin = quantity
-    ? (parseFloat(quantity) * 100).toFixed(2)
-    : "0.00";
+  const effectiveQuantity = useMemo(() => {
+    if (inputMode === "shares") return parseFloat(quantity) || 0;
+    const usd = parseFloat(usdAmount) || 0;
+    const px = orderType === "LIMIT" ? (parseFloat(price) || 0) : (orderbook?.last_traded_price || 50);
+    return px > 0 ? usd / px : 0;
+  }, [inputMode, quantity, usdAmount, orderType, price, orderbook?.last_traded_price]);
 
-  const estimatedCost = quantity && orderType === "MARKET"
-    ? (parseFloat(quantity) * (orderbook?.last_traded_price || 50)).toFixed(2)
-    : quantity && price
-      ? (parseFloat(quantity) * parseFloat(price)).toFixed(2)
+  const maxWin = effectiveQuantity ? (effectiveQuantity * 100).toFixed(2) : "0.00";
+
+  const estimatedCost = effectiveQuantity && orderType === "MARKET"
+    ? (effectiveQuantity * (orderbook?.last_traded_price || 50)).toFixed(2)
+    : effectiveQuantity && price
+      ? (effectiveQuantity * parseFloat(price)).toFixed(2)
       : "0.00";
 
   return (
@@ -197,6 +205,10 @@ export function MarketDetailView({ market, onBack }: MarketDetailViewProps) {
                 {timeLeft.text}
               </span>
             </p>
+          </div>
+          <div className="ml-auto text-right">
+            <p className="text-[10px] text-gray-500 uppercase tracking-widest">Current</p>
+            <p className="text-xl font-mono text-white">${currentPrice}</p>
           </div>
         </div>
 
@@ -374,8 +386,13 @@ export function MarketDetailView({ market, onBack }: MarketDetailViewProps) {
                 {/* Quantity Input */}
                 <div className="space-y-2">
                   <Label htmlFor="quantity" className="text-gray-400">
-                    Quantity (shares)
+                    Order Size
                   </Label>
+
+                  <div className="grid grid-cols-2 gap-2 mb-2">
+                    <Button type="button" variant={inputMode === "shares" ? "default" : "outline"} onClick={() => setInputMode("shares")}>Shares</Button>
+                    <Button type="button" variant={inputMode === "usd" ? "default" : "outline"} onClick={() => setInputMode("usd")}>USD</Button>
+                  </div>
 
                   {/* Preset Buttons */}
                   <div className="grid grid-cols-5 gap-2 mb-4">
@@ -398,16 +415,29 @@ export function MarketDetailView({ market, onBack }: MarketDetailViewProps) {
                     </Button>
                   </div>
 
-                  <Input
-                    id="quantity"
-                    type="number"
-                    placeholder="0"
-                    value={quantity}
-                    onChange={(e) => setQuantity(e.target.value)}
-                    className="bg-white/5 border-white/10 text-white h-12"
-                    step="1"
-                    min="1"
-                  />
+                  {inputMode === "shares" ? (
+                    <Input
+                      id="quantity"
+                      type="number"
+                      placeholder="0"
+                      value={quantity}
+                      onChange={(e) => setQuantity(e.target.value)}
+                      className="bg-white/5 border-white/10 text-white h-12"
+                      step="0.01"
+                      min="0"
+                    />
+                  ) : (
+                    <Input
+                      id="usdAmount"
+                      type="number"
+                      placeholder="0.00"
+                      value={usdAmount}
+                      onChange={(e) => setUsdAmount(e.target.value)}
+                      className="bg-white/5 border-white/10 text-white h-12"
+                      step="0.01"
+                      min="0"
+                    />
+                  )}
                 </div>
                 {/* Summary */}
                 <div className="pt-4 border-t border-white/10 space-y-2">
@@ -424,7 +454,7 @@ export function MarketDetailView({ market, onBack }: MarketDetailViewProps) {
                 <Button
                   className="w-full h-12 bg-red-600 hover:bg-red-700 text-white font-semibold"
                   onClick={handlePlaceOrder}
-                  disabled={submitting || !quantity}
+                  disabled={submitting || effectiveQuantity <= 0}
                 >
                   {submitting ? "Placing Order..." : `Buy ${selectedSide}`}
                 </Button>

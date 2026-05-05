@@ -256,8 +256,8 @@ export default function MarketDetailView() {
         const i = setInterval(tick, 1000);
         return () => clearInterval(i);
     }, [market?.end_time_utc]);
-    const lastYes = orderbook?.yes_bids?.[0]?.price ?? 50;
-    const lastNo = 100 - lastYes;
+    const lastYes = orderbook?.yes_bids?.[0]?.price ?? (market.current_price ?? 50);
+    const lastNo = orderbook?.no_asks?.[0]?.price ?? Math.max(0, 100 - lastYes);
 
     useEffect(() => {
         if (orderType === "LIMIT") {
@@ -325,7 +325,8 @@ export default function MarketDetailView() {
         setShowClosePositionModal(true);
     };
 
-    const lastTradedPrice = orderbook?.last_traded_price ?? 0;
+    const currentPriceCents = market.current_price ?? lastYes;
+    const lastTradedPrice = orderbook?.last_traded_price ?? currentPriceCents;
     const isSettling = timeLeft.seconds <= 0;
     const isUrgent = timeLeft.seconds > 0 && timeLeft.seconds <= 20;
     const isResolved = market.status === "resolved";
@@ -580,6 +581,23 @@ export default function MarketDetailView() {
                         </button>
                     </div>
 
+                    <Input
+                        type="number"
+                        value={inputMode === "shares" ? String(quantity) : usdAmount}
+                        onChange={(e) => {
+                            if (inputMode === "shares") {
+                                const next = parseFloat(e.target.value);
+                                setQuantity(Number.isFinite(next) ? Math.max(0, next) : 0);
+                                return;
+                            }
+                            setUsdAmount(e.target.value);
+                        }}
+                        className="bg-white/5 border-white/10 text-white h-11 text-center font-mono"
+                        min="0"
+                        step="0.01"
+                        inputMode="decimal"
+                    />
+
                     {/* 25% 50% MAX Buttons */}
                     <div className="flex gap-1.5">
                         {["25%", "50%", "MAX"].map((label) => (
@@ -639,7 +657,7 @@ export default function MarketDetailView() {
                     )}>
                     {submitting
                         ? <Loader className="mx-auto" />
-                        : `${orderMode === "SELL" ? "Sell" : "Buy"} ${selectedSide} · ${effectiveQuantity.toFixed(2)} shares`}
+                        : `${orderMode === "SELL" ? "Sell" : "Buy"} ${selectedSide} · ${effectiveQuantity.toFixed(3)} shares`}
                 </button>
             </div>
         </div>
@@ -698,7 +716,7 @@ export default function MarketDetailView() {
                     </Badge>
                     <div className="ml-2 text-right shrink-0">
                         <p className="text-[10px] text-gray-400 uppercase tracking-widest">Current</p>
-                        <p className="text-lg font-mono text-white">{(market.current_price ?? 50).toFixed(1)}¢</p>
+                        <p className="text-lg font-mono text-white">${(currentPriceCents / 100).toFixed(3)}</p>
                     </div>
                 </div>
 
@@ -728,25 +746,27 @@ export default function MarketDetailView() {
                     )}>
                         {/* Chart */}
                         <div className="">
-                            {chartType === "opinion" ? (
+                            {market.market_type === "GEM" || chartType === "opinion" ? (
                                 <OpinionTrendChart marketId={market.id} title="YES / NO Sentiment" />
                             ) : (
                                 <CandlestickChart title={`${market.asset || "Asset"} Spot Price`} />
                             )}
-                            <div className="flex justify-end gap-2 px-3 py-2 border border-white/10 rounded-xl mt-2 bg-white/[0.02]">
-                                <button
-                                    onClick={() => setChartType("opinion")}
-                                    className={cn("px-3 py-1 rounded-md text-xs", chartType === "opinion" ? "bg-white/15 text-white" : "text-gray-400 hover:text-white")}
-                                >
-                                    Trend
-                                </button>
-                                <button
-                                    onClick={() => setChartType("candlestick")}
-                                    className={cn("px-3 py-1 rounded-md text-xs", chartType === "candlestick" ? "bg-white/15 text-white" : "text-gray-400 hover:text-white")}
-                                >
-                                    Candle
-                                </button>
-                            </div>
+                            {market.market_type === "CAPPM" && (
+                                <div className="flex justify-end gap-2 px-3 py-2 border border-white/10 rounded-xl mt-2 bg-white/[0.02]">
+                                    <button
+                                        onClick={() => setChartType("opinion")}
+                                        className={cn("px-3 py-1 rounded-md text-xs", chartType === "opinion" ? "bg-white/15 text-white" : "text-gray-400 hover:text-white")}
+                                    >
+                                        Trend
+                                    </button>
+                                    <button
+                                        onClick={() => setChartType("candlestick")}
+                                        className={cn("px-3 py-1 rounded-md text-xs", chartType === "candlestick" ? "bg-white/15 text-white" : "text-gray-400 hover:text-white")}
+                                    >
+                                        Candle
+                                    </button>
+                                </div>
+                            )}
                         </div>
 
                         {/* Bottom tabs */}

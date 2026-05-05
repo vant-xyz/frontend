@@ -198,6 +198,11 @@ export interface AssetVantPriceResponse {
   price: number;
 }
 
+export interface TokenPricesResponse {
+  success: boolean;
+  prices: Record<string, number>;
+}
+
 // Price API functions
 export function connectToPriceFeed(
   token: string,
@@ -279,6 +284,23 @@ export async function getAssetVantPrice(asset: string): Promise<AssetVantPriceRe
 
   if (!response.ok) {
     throw new Error(`Failed to fetch Vant price for ${asset}`);
+  }
+
+  return response.json();
+}
+
+export async function getTokenPrices(tickers: string[]): Promise<TokenPricesResponse> {
+  const query = encodeURIComponent(tickers.join(","));
+  const response = await fetch(`${API_BASE_URL}/prices/tokens?tickers=${query}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch token prices");
   }
 
   return response.json();
