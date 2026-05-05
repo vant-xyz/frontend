@@ -735,6 +735,21 @@ export interface TradesResponse {
   count: string;
 }
 
+export interface MarketVolume {
+  market_id: string;
+  trade_count: number;
+  volume: number;
+  yes_volume: number;
+  no_volume: number;
+  yes_volume_shares: number;
+  no_volume_shares: number;
+}
+
+export interface MarketVolumeResponse {
+  success: boolean;
+  volume: MarketVolume;
+}
+
 // Markets API functions
 export async function getTrades(
   id: string,
@@ -753,6 +768,22 @@ export async function getTrades(
 
   if (!response.ok) {
     throw new Error("Failed to fetch markets");
+  }
+
+  return response.json();
+}
+
+export async function getMarketVolume(id: string): Promise<MarketVolumeResponse> {
+  const response = await fetch(`${API_BASE_URL}/markets/${id}/volume`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch market volume");
   }
 
   return response.json();

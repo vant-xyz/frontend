@@ -40,6 +40,7 @@ import { getWallets } from "@wallet-standard/app";
 const DEVNET_WSOL_MINT = "So11111111111111111111111111111111111111112";
 
 type Step = "intro" | "connect" | "shield" | "unshield" | "done";
+type FlowMode = "deposit" | "withdraw";
 
 interface PrivateDepositModalProps {
   isOpen: boolean;
@@ -58,6 +59,7 @@ export function PrivateDepositModal({ isOpen, onClose, isDemoMode }: PrivateDepo
   const [unshieldAmount, setUnshieldAmount] = useState("");
   const [isShielding, setIsShielding] = useState(false);
   const [isUnshielding, setIsUnshielding] = useState(false);
+  const [flowMode, setFlowMode] = useState<FlowMode>("deposit");
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 1024);
@@ -74,6 +76,7 @@ export function PrivateDepositModal({ isOpen, onClose, isDemoMode }: PrivateDepo
       setUmbraClient(null);
       setShieldAmount("");
       setUnshieldAmount("");
+      setFlowMode("deposit");
     }
   }, [isOpen]);
 
@@ -148,7 +151,7 @@ export function PrivateDepositModal({ isOpen, onClose, isDemoMode }: PrivateDepo
       } else {
         console.log("Already registered — skipping");
       }
-      setStep("shield");
+      setStep(flowMode === "withdraw" ? "unshield" : "shield");
     } catch (err) {
       console.log("Connect error:", err);
       toast.error(err instanceof Error ? err.message : "Failed to connect wallet");
@@ -248,13 +251,20 @@ export function PrivateDepositModal({ isOpen, onClose, isDemoMode }: PrivateDepo
               </p>
             </div>
 
-            <Button
-              onClick={() => setStep("connect")}
-              className="w-full h-10 rounded-xl bg-red-600 hover:bg-red-500 text-white font-black uppercase tracking-widest text-[10px] shadow-none"
-            >
-              Get Started
-              <ArrowRight size={14} className="ml-2" />
-            </Button>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                onClick={() => { setFlowMode("deposit"); setStep("connect"); }}
+                className="h-10 rounded-xl bg-red-600 hover:bg-red-500 text-white font-black uppercase tracking-widest text-[10px] shadow-none"
+              >
+                Private Deposit
+              </Button>
+              <Button
+                onClick={() => { setFlowMode("withdraw"); setStep("connect"); }}
+                className="h-10 rounded-xl bg-white text-black hover:bg-gray-200 font-black uppercase tracking-widest text-[10px] shadow-none"
+              >
+                Private Withdraw
+              </Button>
+            </div>
           </div>
         );
 
@@ -327,6 +337,17 @@ export function PrivateDepositModal({ isOpen, onClose, isDemoMode }: PrivateDepo
         return (
           <div className="space-y-6 py-4">
             <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Unshield to Vantic Wallet</p>
+
+            <div className="space-y-2">
+              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Amount</p>
+              <Input
+                type="number"
+                value={unshieldAmount}
+                onChange={(e) => setUnshieldAmount(e.target.value)}
+                placeholder="0.00"
+                className="bg-white/5 border-white/10 rounded-xl h-11 text-white"
+              />
+            </div>
 
             <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5 space-y-3">
               <div className="flex items-center justify-between">

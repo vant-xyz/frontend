@@ -215,7 +215,10 @@ export function BalanceModal({
           Sell
         </Button>
 
-        <Button className="flex-1 bg-white text-black hover:bg-gray-200 font-black h-10 rounded-xl uppercase text-[10px] tracking-widest shadow-none">
+        <Button
+          className="flex-1 bg-white text-black hover:bg-gray-200 font-black h-10 rounded-xl uppercase text-[10px] tracking-widest shadow-none"
+          onClick={() => { onClose(); onOpenPrivateDeposit(); }}
+        >
           Withdraw
         </Button>
         <Button

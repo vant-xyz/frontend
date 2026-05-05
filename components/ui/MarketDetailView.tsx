@@ -7,6 +7,8 @@ import {
     getMarket,
     Trades,
     getTrades,
+    getMarketVolume,
+    MarketVolume,
     BalanceInfo,
     getBalance,
     Position,
@@ -26,6 +28,7 @@ import { toast } from "sonner";
 import { QuickTradeModal } from "../../components/dashboard/crypto/quick-trade-modal";
 import { Loader } from "@/components/ui/loader";
 import { OpinionTrendChart } from "@/components/ui/OpinionTrendChart";
+import { CandlestickChart } from "@/components/ui/CandlestickChart";
 import { useParams, useRouter } from "next/navigation";
 import { useDashboard } from "@/hooks/use-dashboard";
 import { SharePositionModal } from "./sharePositionModal";
@@ -35,6 +38,7 @@ export default function MarketDetailView() {
     const [market, setMarket] = useState<Market | null>(null);
     const [balance, setBalance] = useState<BalanceInfo | null>(null);
     const [marketTrades, setMarketTrades] = useState<Trades[] | null>(null)
+    const [marketVolume, setMarketVolume] = useState<MarketVolume | null>(null);
     const [userOrders, setUserOrders] = useState<Order[] | null>(null)
     const [loadingOrders, setIsLoadingOrders] = useState(false);
     const [positions, setPositions] = useState<Position[] | null>(null);
@@ -51,6 +55,8 @@ export default function MarketDetailView() {
         return "50";
     });
     const [quantity, setQuantity] = useState(0);
+    const [inputMode, setInputMode] = useState<"shares" | "usd">("shares");
+    const [usdAmount, setUsdAmount] = useState<string>("");
     const [submitting, setSubmitting] = useState(false);
     const [isQuickTradeOpen, setIsQuickTradeOpen] = useState(false);
     const [showCancelModal, setShowCancelModal] = useState(false);
@@ -59,6 +65,7 @@ export default function MarketDetailView() {
     const [orderToCancel, setOrderToCancel] = useState<string | null>(null);
     const [timeLeft, setTimeLeft] = useState<{ seconds: number; text: string }>({ seconds: 0, text: "" });
     const [mobileTab, setMobileTab] = useState<"chart" | "book" | "order">("chart");
+    const [chartType, setChartType] = useState<"opinion" | "candlestick">("opinion");
     const [sharePosition, setSharePosition] = useState<{
         pos: Position;
         pnl: number;
@@ -156,24 +163,44 @@ export default function MarketDetailView() {
     }, [id])
 
     useEffect(() => {
-
         if (!id) return;
 
+        let mounted = true;
         const fetchMarket = async () => {
             try {
-                setLoadingMarket(true);
                 const data = await getMarket(id as string);
-                setMarket(data.market);
-                setError(null);
+                if (mounted) {
+                    setMarket(data.market);
+                    setError(null);
+                }
             } catch (err) {
                 console.error(err);
-                setError("Failed to load market");
+                if (mounted) setError("Failed to load market");
             } finally {
-                setLoadingMarket(false);
+                if (mounted) setLoadingMarket(false);
+            }
+        };
+
+        const fetchVolume = async () => {
+            try {
+                const res = await getMarketVolume(id as string);
+                if (mounted) setMarketVolume(res.volume);
+            } catch {
+                if (mounted) setMarketVolume(null);
             }
         };
 
         fetchMarket();
+        fetchVolume();
+        const interval = setInterval(() => {
+            fetchMarket();
+            fetchVolume();
+        }, 1000);
+
+        return () => {
+            mounted = false;
+            clearInterval(interval);
+        };
     }, [id]);
 
     useEffect(() => {
@@ -305,13 +332,17 @@ export default function MarketDetailView() {
 
     const displayStatus = isResolved ? "Resolved" : isSettling ? "Settling" : "Active";
 
-    const sharesTotal = quantity * (selectedSide === "YES" ? lastYes : lastNo) / 100;
-    const youReceive = quantity * 1.00;
+    const pricePerShareDollars = (selectedSide === "YES" ? lastYes : lastNo) / 100;
+    const effectiveQuantity = inputMode === "shares"
+        ? quantity
+        : (parseFloat(usdAmount) || 0) / (pricePerShareDollars > 0 ? pricePerShareDollars : 1);
+    const sharesTotal = effectiveQuantity * pricePerShareDollars;
+    const youReceive = effectiveQuantity * 1.00;
 
     const handlePlaceOrder = async () => {
         const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
         if (!token) { toast.error("Please login to trade"); return; }
-        if (!quantity || quantity <= 0) { toast.error("Enter a valid quantity"); return; }
+        if (!effectiveQuantity || effectiveQuantity <= 0) { toast.error("Enter a valid quantity"); return; }
         try {
             setSubmitting(true);
             await placeOrder(token, {
@@ -319,8 +350,8 @@ export default function MarketDetailView() {
                 side: selectedSide,
                 type: orderType,
                 price: orderType === "LIMIT" ? parseFloat(limitPrice) / 100 : undefined,
-                quantity,
-                is_demo: true
+                quantity: effectiveQuantity,
+                is_demo: isDemoMode
             });
             toast.success("Order placed!");
         } catch (err) {
@@ -498,7 +529,7 @@ export default function MarketDetailView() {
                 {/* Shares */}
                 <div className="bg-white/5 rounded-xl p-3">
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-[10px] text-gray-500 uppercase tracking-wider">Shares</span>
+                        <span className="text-[10px] text-gray-500 uppercase tracking-wider">Order Size</span>
                         <span className="text-[10px] text-gray-400">
                             Balance ${isDemoMode
                                 ? (balance?.total_demo_usd?.toFixed(2) ?? '0.00')
@@ -506,18 +537,43 @@ export default function MarketDetailView() {
                         </span>
                     </div>
 
+                    <div className="grid grid-cols-2 gap-1 mb-3">
+                        <button
+                            onClick={() => setInputMode("shares")}
+                            className={cn(
+                                "py-1.5 rounded-lg text-xs font-semibold transition-colors",
+                                inputMode === "shares" ? "bg-white/15 text-white" : "bg-white/5 text-gray-400 hover:text-gray-200"
+                            )}
+                        >
+                            Shares
+                        </button>
+                        <button
+                            onClick={() => setInputMode("usd")}
+                            className={cn(
+                                "py-1.5 rounded-lg text-xs font-semibold transition-colors",
+                                inputMode === "usd" ? "bg-white/15 text-white" : "bg-white/5 text-gray-400 hover:text-gray-200"
+                            )}
+                        >
+                            USD
+                        </button>
+                    </div>
+
                     <div className="flex items-center gap-3 mb-3">
                         <button
-                            onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                            onClick={() => inputMode === "shares"
+                                ? setQuantity(q => Math.max(0, q - 1))
+                                : setUsdAmount(v => String(Math.max(0, (parseFloat(v || "0") - 5))))}
                             className="w-8 h-8 rounded-lg bg-white/8 hover:bg-white/15 text-gray-300 flex items-center justify-center transition-colors"
                         >
                             <ChevronDown size={14} />
                         </button>
                         <span className="flex-1 text-center text-2xl font-mono font-semibold text-white">
-                            {quantity}
+                            {inputMode === "shares" ? quantity : (parseFloat(usdAmount || "0").toFixed(2))}
                         </span>
                         <button
-                            onClick={() => setQuantity(q => q + 1)}
+                            onClick={() => inputMode === "shares"
+                                ? setQuantity(q => q + 1)
+                                : setUsdAmount(v => String((parseFloat(v || "0") + 5)))}
                             className="w-8 h-8 rounded-lg bg-white/8 hover:bg-white/15 text-gray-300 flex items-center justify-center transition-colors"
                         >
                             <ChevronUp size={14} />
@@ -540,11 +596,14 @@ export default function MarketDetailView() {
                                     const maxAffordable = Math.floor(userBalance / pricePerShare);
 
                                     if (label === "25%") {
-                                        setQuantity(Math.max(1, Math.floor(maxAffordable * 0.25)));
+                                        const q = Math.max(0, Math.floor(maxAffordable * 0.25));
+                                        inputMode === "shares" ? setQuantity(q) : setUsdAmount(String((q * pricePerShare).toFixed(2)));
                                     } else if (label === "50%") {
-                                        setQuantity(Math.max(1, Math.floor(maxAffordable * 0.5)));
+                                        const q = Math.max(0, Math.floor(maxAffordable * 0.5));
+                                        inputMode === "shares" ? setQuantity(q) : setUsdAmount(String((q * pricePerShare).toFixed(2)));
                                     } else {
-                                        setQuantity(Math.max(1, maxAffordable));
+                                        const q = Math.max(0, maxAffordable);
+                                        inputMode === "shares" ? setQuantity(q) : setUsdAmount(String((q * pricePerShare).toFixed(2)));
                                     }
                                 }}
                                 className="flex-1 py-1.5 text-[10px] font-semibold border border-white/10 rounded-lg text-gray-400 hover:border-white/25 hover:text-gray-200 transition-colors"
@@ -568,7 +627,7 @@ export default function MarketDetailView() {
                 </div>
 
                 {/* CTA */}
-                <button onClick={handlePlaceOrder} disabled={submitting || quantity <= 0}
+                <button onClick={handlePlaceOrder} disabled={submitting || effectiveQuantity <= 0}
                     className={cn(
                         "w-full py-3 rounded-xl text-sm font-black uppercase tracking-widest transition-all",
                         "disabled:opacity-40 disabled:cursor-not-allowed",
@@ -580,7 +639,7 @@ export default function MarketDetailView() {
                     )}>
                     {submitting
                         ? <Loader className="mx-auto" />
-                        : `${orderMode === "SELL" ? "Sell" : "Buy"} ${selectedSide} · ${quantity} shares`}
+                        : `${orderMode === "SELL" ? "Sell" : "Buy"} ${selectedSide} · ${effectiveQuantity.toFixed(2)} shares`}
                 </button>
             </div>
         </div>
@@ -591,7 +650,14 @@ export default function MarketDetailView() {
             <div className="h-screen bg-[#0a0a0a] text-white flex flex-col mx-auto overflow-hidden">
 
                 {/* ── Top bar ─────────────────────────────────────────────────────── */}
-                <div className="flex items-start gap-3 px-4 lg:px-6 py-4 border-b border-white/8">
+                <div
+                    className="flex items-start gap-3 px-4 lg:px-6 py-4 border-b border-white/8 relative overflow-hidden"
+                    style={market.market_type === "GEM" && market.market_image_banner ? {
+                        backgroundImage: `linear-gradient(rgba(0,0,0,.65), rgba(0,0,0,.85)), url(${market.market_image_banner})`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center"
+                    } : undefined}
+                >
                     <button onClick={goBack}
                         className="mt-0.5 p-1.5 rounded-lg hover:bg-white/8 transition-colors text-gray-500 hover:text-white shrink-0">
                         <ArrowLeft size={17} />
@@ -603,7 +669,7 @@ export default function MarketDetailView() {
                             <span className="text-green-400 font-mono font-semibold">Yes {lastYes.toFixed(1)}¢</span>
                             <span className="text-red-400 font-mono font-semibold">No {lastNo.toFixed(1)}¢</span>
                             <span className="text-gray-500">
-                                Vol <span className="text-gray-300">${((market.target_price ?? 0) / 100).toFixed(1)}K</span>
+                                Vol <span className="text-gray-300">${(marketVolume?.volume ?? 0).toFixed(2)}</span>
                             </span>
                             <span className="flex items-center gap-1 text-gray-500">
                                 <Clock size={10} />
@@ -630,6 +696,10 @@ export default function MarketDetailView() {
                                 : "Active"
                         }
                     </Badge>
+                    <div className="ml-2 text-right shrink-0">
+                        <p className="text-[10px] text-gray-400 uppercase tracking-widest">Current</p>
+                        <p className="text-lg font-mono text-white">{(market.current_price ?? 50).toFixed(1)}¢</p>
+                    </div>
                 </div>
 
                 {/* ── Mobile tab switcher ──────────────────────────────────────────── */}
@@ -658,7 +728,25 @@ export default function MarketDetailView() {
                     )}>
                         {/* Chart */}
                         <div className="">
-                            <OpinionTrendChart marketId={market.id} title="YES / NO Sentiment" />
+                            {chartType === "opinion" ? (
+                                <OpinionTrendChart marketId={market.id} title="YES / NO Sentiment" />
+                            ) : (
+                                <CandlestickChart title={`${market.asset || "Asset"} Spot Price`} />
+                            )}
+                            <div className="flex justify-end gap-2 px-3 py-2 border border-white/10 rounded-xl mt-2 bg-white/[0.02]">
+                                <button
+                                    onClick={() => setChartType("opinion")}
+                                    className={cn("px-3 py-1 rounded-md text-xs", chartType === "opinion" ? "bg-white/15 text-white" : "text-gray-400 hover:text-white")}
+                                >
+                                    Trend
+                                </button>
+                                <button
+                                    onClick={() => setChartType("candlestick")}
+                                    className={cn("px-3 py-1 rounded-md text-xs", chartType === "candlestick" ? "bg-white/15 text-white" : "text-gray-400 hover:text-white")}
+                                >
+                                    Candle
+                                </button>
+                            </div>
                         </div>
 
                         {/* Bottom tabs */}
