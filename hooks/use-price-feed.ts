@@ -25,13 +25,10 @@ export function usePriceFeed({ usePolling = false, pollingInterval = 2000 }: Use
   const fetchPrices = useCallback(async () => {
     try {
       const pricesRes = await getLatestPrices();
-      console.log("[PriceFeed] Raw response:", pricesRes);
       
       // The API returns { prices: {...}, success: true }
       const rawPrices: Record<string, any> = (pricesRes as any).prices || {};
-      
-      console.log("[PriceFeed] Parsed prices:", rawPrices);
-      
+       
       const mappedPrices: Partial<PriceData> = {
         BTC: rawPrices["BTC-USD"] || null,
         ETH: rawPrices["ETH-USD"] || null,
@@ -45,7 +42,6 @@ export function usePriceFeed({ usePolling = false, pollingInterval = 2000 }: Use
           ...prev,
           ...mappedPrices,
         };
-        console.log("[PriceFeed] Updated prices:", updated);
         return updated;
       });
     } catch (err) {

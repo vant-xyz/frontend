@@ -51,6 +51,7 @@ const REAL_ASSETS: AssetConfig[] = [
   { key: "naira", label: "USD Balance", symbol: "USD", isNaira: true },
   { key: "vusd", label: "vUSD", symbol: "vUSD", isVNaira: true },
   { key: "sol", label: "Solana", symbol: "SOL", icon: "/media/images/token_icons/solana.png" },
+  { key: "wsol", label: "Wrapped Solana", symbol: "WSOL", icon: "/media/images/token_icons/solana.png" },
   { key: "eth_base", label: "Ethereum (Base)", symbol: "ETH", icon: "/media/images/token_icons/eth.png" },
   { key: "usdc_sol", label: "USDC (Solana)", symbol: "USDC", icon: "/media/images/token_icons/usdc.png" },
   { key: "usdc_base", label: "USDC (Base)", symbol: "USDC", icon: "/media/images/token_icons/usdc.png" },

@@ -28,3 +28,7 @@ next-env.d.ts
 
 qwen-code-export-2026-03-16T17-47-09-543Z.json
 qwen-code-export-2026-03-16T18-12-29-468Z.json
+
+#scripts 
+
+.sh*

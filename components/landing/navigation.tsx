@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { AuthModal } from "./auth-modal";
 import { WaitlistModal } from "./waitlist-modal";
-import type { AuthResponse } from "@/lib/api";
+import { getUserProfile, type AuthResponse } from "@/lib/api";
 
 interface NavigationProps {
   onWaitlistOpen?: () => void;
@@ -16,6 +16,39 @@ export function Navigation({ onWaitlistOpen }: NavigationProps) {
   const [isWaitlistModalOpen, setIsWaitlistModalOpen] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [user, setUser] = useState<AuthResponse["user"] | null>(null);
+
+  useEffect(() => {
+  async function initUser() {
+    const token = localStorage.getItem("auth_token_temp");
+    const storedUser = localStorage.getItem("user");
+
+    if (token) {
+      try {
+        const data = await getUserProfile(token);
+
+        if (data?.user) {
+          setUser(data.user);
+          localStorage.setItem("user", JSON.stringify(data.user));
+          return;
+        }
+      } catch (err) {
+        console.error("Failed to fetch profile", err);
+      }
+    }
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch {
+        localStorage.removeItem("user");
+        setUser(null);
+      }
+    } else {
+      setUser(null);
+    }
+  }
+
+  initUser();
+}, []);
 
   const isAuthEnabled = process.env.NEXT_PUBLIC_ENABLE_AUTH === "true";
 
@@ -57,9 +90,8 @@ export function Navigation({ onWaitlistOpen }: NavigationProps) {
   return (
     <>
       <header
-        className={`fixed top-4 left-0 right-0 z-40 transition-all duration-500 flex justify-center px-4 ${
-          isScrolled ? "opacity-100" : "opacity-100"
-        }`}
+        className={`fixed top-4 left-0 right-0 z-40 transition-all duration-500 flex justify-center px-4 ${isScrolled ? "opacity-100" : "opacity-100"
+          }`}
       >
         <nav className="w-full max-w-4xl flex items-center justify-between px-6 py-4 bg-black/80 backdrop-blur-md border border-black rounded-2xl shadow-lg">
           {/* Logo */}
@@ -173,7 +205,7 @@ export function Navigation({ onWaitlistOpen }: NavigationProps) {
                   >
                     Join Waitlist
                   </Button>
-                  
+
                   {/* Authenticate - controlled by ENABLE_AUTH env */}
                   {isAuthEnabled ? (
                     <Button

@@ -1,24 +1,28 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Market, getOrderbook, OrderbookSnapshot, placeOrder, OrderSide, OrderType } from "@/lib/api";
+import { Market, getOrderbook, OrderbookSnapshot, placeOrder, OrderSide, OrderType, getUserProfile, UserProfile } from "@/lib/api";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Clock, TrendingUp, TrendingDown, Activity, Target } from "lucide-react";
+import { ArrowLeft, Clock, TrendingUp, TrendingDown, Activity, Target, LineChart, BarChart2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { QuickTradeModal } from "./quick-trade-modal";
 import { Loader } from "@/components/ui/loader";
 
+import { CandlestickChart } from "@/components/ui/CandlestickChart";
+import { OpinionTrendChart } from "@/components/ui/OpinionTrendChart";
+
 interface MarketDetailViewProps {
   market: Market;
   onBack: () => void;
 }
+
 
 export function MarketDetailView({ market, onBack }: MarketDetailViewProps) {
   const [orderbook, setOrderbook] = useState<OrderbookSnapshot | null>(null);
@@ -26,10 +30,30 @@ export function MarketDetailView({ market, onBack }: MarketDetailViewProps) {
   const [orderType, setOrderType] = useState<OrderType>("MARKET");
   const [selectedSide, setSelectedSide] = useState<OrderSide>("YES");
   const [price, setPrice] = useState<string>("");
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [quantity, setQuantity] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
   const [isQuickTradeOpen, setIsQuickTradeOpen] = useState(false);
   const [timeLeft, setTimeLeft] = useState<{ seconds: number; text: string }>({ seconds: 0, text: "" });
+  const token = localStorage.getItem("auth_token_temp")
+  const [chartType, setChartType] = useState<'candlestick' | 'opinion'>('candlestick');
+
+
+
+
+  useEffect(() => {
+    const getProfile = async () => {
+      if (token) {
+        try {
+          const userData = await getUserProfile(token);
+          setUserProfile(userData.user);
+        } catch (err) {
+          console.error("Failed to fetch user profile:", err);
+        }
+      }
+    };
+    getProfile();
+  }, [token])
 
   const loadOrderbook = useCallback(async () => {
     try {
@@ -59,7 +83,7 @@ export function MarketDetailView({ market, onBack }: MarketDetailViewProps) {
       } else {
         const minutes = Math.floor(diff / 60000);
         const seconds = Math.floor((diff % 60000) / 1000);
-        setTimeLeft({ 
+        setTimeLeft({
           seconds: diff / 1000,
           text: `${minutes}:${seconds.toString().padStart(2, '0')}`
         });
@@ -71,23 +95,39 @@ export function MarketDetailView({ market, onBack }: MarketDetailViewProps) {
     return () => clearInterval(interval);
   }, [market.end_time_utc]);
 
-  const currentPrice = market.current_price 
+  const currentPrice = market.current_price
     ? (market.current_price / 100).toFixed(2)
     : "0.00";
-  
+
   const targetPrice = market.target_price
     ? (market.target_price / 100).toFixed(2)
     : "0.00";
 
-  const lastTradedPrice = orderbook?.last_traded_price 
+  const lastTradedPrice = orderbook?.last_traded_price
     ? orderbook.last_traded_price.toFixed(2)
     : "0.00";
+
+  const currentPriceNum = market.current_price
+    ? market.current_price / 100
+    : 0.50;
+
+  // Preset handlers - UPDATED
+  const presets = [10, 25, 50, 100];
+
+  const handlePreset = (amount: number) => {
+    setQuantity(amount.toString());
+  };
+
+  const handleMax = () => {
+    const maxPossible = Math.floor(1000 / currentPriceNum);
+    setQuantity(Math.max(10, maxPossible).toString());
+  };
 
   const timeLeftText = formatDistanceToNow(new Date(market.end_time_utc), { addSuffix: true });
 
   const handlePlaceOrder = async () => {
     const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
-    
+
     if (!token) {
       toast.error("Please login to trade");
       return;
@@ -120,15 +160,15 @@ export function MarketDetailView({ market, onBack }: MarketDetailViewProps) {
     }
   };
 
-  const maxWin = quantity 
+  const maxWin = quantity
     ? (parseFloat(quantity) * 100).toFixed(2)
     : "0.00";
 
   const estimatedCost = quantity && orderType === "MARKET"
     ? (parseFloat(quantity) * (orderbook?.last_traded_price || 50)).toFixed(2)
     : quantity && price
-    ? (parseFloat(quantity) * parseFloat(price)).toFixed(2)
-    : "0.00";
+      ? (parseFloat(quantity) * parseFloat(price)).toFixed(2)
+      : "0.00";
 
   return (
     <>
@@ -192,6 +232,23 @@ export function MarketDetailView({ market, onBack }: MarketDetailViewProps) {
           </CardContent>
         </Card>
 
+        {/* Chart section — only for crypto markets */}
+        <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
+          {/* Chart */}
+          <div className="p-4">
+            {chartType === 'candlestick' ? (
+              <CandlestickChart title="BTC Spot Price (1m)" />
+            ) : (
+              <OpinionTrendChart
+                marketId={market.id}
+                title="YES / NO Sentiment"
+              />
+            )}
+          </div>
+
+          {/* Switcher (BOTTOM, centered) */}
+          <div className="flex items-center justify-end gap-1 px-4 pb-3 border-b border-white/10"> <button onClick={() => setChartType('candlestick')} className={cn("p-2 rounded-lg transition-colors", chartType === 'candlestick' ? "bg-white/10 text-white" : "text-gray-500 hover:text-gray-300 hover:bg-white/5")} title="Candlestick chart" > <BarChart2 size={16} /> </button> <button onClick={() => setChartType('opinion')} className={cn("p-2 rounded-lg transition-colors", chartType === 'opinion' ? "bg-white/10 text-white" : "text-gray-500 hover:text-gray-300 hover:bg-white/5")} title="Opinion trend" > <LineChart size={16} /> </button> </div>
+        </div>
         <div className="grid lg:grid-cols-2 gap-6">
           {/* Orderbook */}
           <Card className="bg-white/5 border-white/10">
@@ -204,18 +261,18 @@ export function MarketDetailView({ market, onBack }: MarketDetailViewProps) {
                   <TabsTrigger value="YES">YES</TabsTrigger>
                   <TabsTrigger value="NO">NO</TabsTrigger>
                 </TabsList>
-                
+
                 <TabsContent value="YES" className="mt-4">
-                  <OrderbookTable 
-                    bids={orderbook?.yes_bids || []} 
+                  <OrderbookTable
+                    bids={orderbook?.yes_bids || []}
                     asks={orderbook?.yes_asks || []}
                     loading={loading}
                   />
                 </TabsContent>
-                
+
                 <TabsContent value="NO" className="mt-4">
-                  <OrderbookTable 
-                    bids={orderbook?.no_bids || []} 
+                  <OrderbookTable
+                    bids={orderbook?.no_bids || []}
                     asks={orderbook?.no_asks || []}
                     loading={loading}
                   />
@@ -224,127 +281,160 @@ export function MarketDetailView({ market, onBack }: MarketDetailViewProps) {
             </CardContent>
           </Card>
 
-          {/* Order Form */}
-          <Card className="bg-white/5 border-white/10">
-            <CardHeader className="pb-2">
-              <h3 className="font-semibold text-white">Place Order</h3>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Side Selection */}
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  variant={selectedSide === "YES" ? "default" : "outline"}
-                  className={cn(
-                    "h-12",
-                    selectedSide === "YES" 
-                      ? "bg-green-600 hover:bg-green-700" 
-                      : "border-white/20 text-gray-300 hover:bg-white/5"
-                  )}
-                  onClick={() => setSelectedSide("YES")}
-                >
-                  YES
-                </Button>
-                <Button
-                  variant={selectedSide === "NO" ? "default" : "outline"}
-                  className={cn(
-                    "h-12",
-                    selectedSide === "NO" 
-                      ? "bg-red-600 hover:bg-red-700" 
-                      : "border-white/20 text-gray-300 hover:bg-white/5"
-                  )}
-                  onClick={() => setSelectedSide("NO")}
-                >
-                  NO
-                </Button>
-              </div>
+          <div className="space-y-6">
+            {/* <PositionCard
+              side="NO"
+              shares={250}
+              avgEntry={0.42}
+              currentPrice={orderbook?.last_traded_price ?? 0.50}
+              unrealizedPnl={32.50}
+              pnlPercent={18.4}
+            /> */}
 
-              {/* Order Type */}
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  variant={orderType === "MARKET" ? "default" : "outline"}
-                  className={cn(
-                    orderType === "MARKET" 
-                      ? "bg-white/10 hover:bg-white/20" 
-                      : "border-white/20 text-gray-300 hover:bg-white/5"
-                  )}
-                  onClick={() => setOrderType("MARKET")}
-                >
-                  Market
-                </Button>
-                <Button
-                  variant={orderType === "LIMIT" ? "default" : "outline"}
-                  className={cn(
-                    orderType === "LIMIT" 
-                      ? "bg-white/10 hover:bg-white/20" 
-                      : "border-white/20 text-gray-300 hover:bg-white/5"
-                  )}
-                  onClick={() => setOrderType("LIMIT")}
-                >
-                  Limit
-                </Button>
-              </div>
+            {/* Order Form */}
+            <Card className="bg-white/5 border-white/10">
+              <CardHeader className="pb-2">
+                <h3 className="font-semibold text-white">Place Order</h3>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Side Selection */}
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    variant={selectedSide === "YES" ? "default" : "outline"}
+                    className={cn(
+                      "h-12",
+                      selectedSide === "YES"
+                        ? "bg-green-600 hover:bg-green-700"
+                        : "border-white/20 text-gray-300 hover:bg-white/5"
+                    )}
+                    onClick={() => setSelectedSide("YES")}
+                  >
+                    YES
+                  </Button>
+                  <Button
+                    variant={selectedSide === "NO" ? "default" : "outline"}
+                    className={cn(
+                      "h-12",
+                      selectedSide === "NO"
+                        ? "bg-red-600 hover:bg-red-700"
+                        : "border-white/20 text-gray-300 hover:bg-white/5"
+                    )}
+                    onClick={() => setSelectedSide("NO")}
+                  >
+                    NO
+                  </Button>
+                </div>
 
-              {/* Price Input (Limit only) */}
-              {orderType === "LIMIT" && (
+                {/* Order Type */}
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    variant={orderType === "MARKET" ? "default" : "outline"}
+                    className={cn(
+                      orderType === "MARKET"
+                        ? "bg-white/10 hover:bg-white/20"
+                        : "border-white/20 text-gray-300 hover:bg-white/5"
+                    )}
+                    onClick={() => setOrderType("MARKET")}
+                  >
+                    Market
+                  </Button>
+                  <Button
+                    variant={orderType === "LIMIT" ? "default" : "outline"}
+                    className={cn(
+                      orderType === "LIMIT"
+                        ? "bg-white/10 hover:bg-white/20"
+                        : "border-white/20 text-gray-300 hover:bg-white/5"
+                    )}
+                    onClick={() => setOrderType("LIMIT")}
+                  >
+                    Limit
+                  </Button>
+                </div>
+
+                {/* Price Input (Limit only) */}
+                {orderType === "LIMIT" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="price" className="text-gray-400">
+                      Price (USD per share)
+                    </Label>
+                    <Input
+                      id="price"
+                      type="number"
+                      placeholder="0.00"
+                      value={price}
+                      onChange={(e) => setPrice(e.target.value)}
+                      className="bg-white/5 border-white/10 text-white h-12"
+                      step="0.01"
+                      min="0.01"
+                      max="99.99"
+                    />
+                  </div>
+                )}
+
+                {/* Quantity Input */}
                 <div className="space-y-2">
-                  <Label htmlFor="price" className="text-gray-400">
-                    Price (USD per share)
+                  <Label htmlFor="quantity" className="text-gray-400">
+                    Quantity (shares)
                   </Label>
+
+                  {/* Preset Buttons */}
+                  <div className="grid grid-cols-5 gap-2 mb-4">
+                    {presets.map((amt) => (
+                      <Button
+                        key={amt}
+                        variant={parseFloat(quantity) === amt ? "default" : "outline"}
+                        onClick={() => handlePreset(amt)}
+                        className="h-12 font-medium"
+                      >
+                        {amt}
+                      </Button>
+                    ))}
+                    <Button
+                      variant="outline"
+                      onClick={handleMax}
+                      className="h-12 font-medium"
+                    >
+                      MAX
+                    </Button>
+                  </div>
+
                   <Input
-                    id="price"
+                    id="quantity"
                     type="number"
-                    placeholder="0.00"
-                    value={price}
-                    onChange={(e) => setPrice(e.target.value)}
+                    placeholder="0"
+                    value={quantity}
+                    onChange={(e) => setQuantity(e.target.value)}
                     className="bg-white/5 border-white/10 text-white h-12"
-                    step="0.01"
-                    min="0.01"
-                    max="99.99"
+                    step="1"
+                    min="1"
                   />
                 </div>
-              )}
-
-              {/* Quantity Input */}
-              <div className="space-y-2">
-                <Label htmlFor="quantity" className="text-gray-400">
-                  Quantity (shares)
-                </Label>
-                <Input
-                  id="quantity"
-                  type="number"
-                  placeholder="0"
-                  value={quantity}
-                  onChange={(e) => setQuantity(e.target.value)}
-                  className="bg-white/5 border-white/10 text-white h-12"
-                  step="1"
-                  min="1"
-                />
-              </div>
-
-              {/* Summary */}
-              <div className="pt-4 border-t border-white/10 space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Estimated Cost</span>
-                  <span className="text-white font-mono">${estimatedCost}</span>
+                {/* Summary */}
+                <div className="pt-4 border-t border-white/10 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Estimated Cost</span>
+                    <span className="text-white font-mono">${estimatedCost}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Max Win</span>
+                    <span className="text-green-400 font-mono">${maxWin}</span>
+                  </div>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Max Win</span>
-                  <span className="text-green-400 font-mono">${maxWin}</span>
-                </div>
-              </div>
 
-              <Button
-                className="w-full h-12 bg-red-600 hover:bg-red-700 text-white font-semibold"
-                onClick={handlePlaceOrder}
-                disabled={submitting || !quantity}
-              >
-                {submitting ? "Placing Order..." : `Buy ${selectedSide}`}
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+                <Button
+                  className="w-full h-12 bg-red-600 hover:bg-red-700 text-white font-semibold"
+                  onClick={handlePlaceOrder}
+                  disabled={submitting || !quantity}
+                >
+                  {submitting ? "Placing Order..." : `Buy ${selectedSide}`}
+                </Button>
+              </CardContent>
+            </Card>
+          </div>   {/* Right column ends here */}
+        </div>     {/* Grid ends here */}
+      </div>       {/* Main space-y-6 ends here */}
 
+      {/* Quick Trade Modal */}
       <QuickTradeModal
         isOpen={isQuickTradeOpen}
         onClose={() => setIsQuickTradeOpen(false)}
@@ -355,59 +445,96 @@ export function MarketDetailView({ market, onBack }: MarketDetailViewProps) {
   );
 }
 
+
+
 interface OrderbookTableProps {
   bids: { price: number; quantity: number; orders: number }[];
   asks: { price: number; quantity: number; orders: number }[];
   loading: boolean;
 }
 
+
 function OrderbookTable({ bids, asks, loading }: OrderbookTableProps) {
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <Loader className="w-6 h-6 text-red-600" />
-      </div>
-    );
+    return <div className="text-center py-6 text-gray-400">Loading...</div>;
   }
 
-  const sortedBids = [...bids].sort((a, b) => b.price - a.price).slice(0, 10);
-  const sortedAsks = [...asks].sort((a, b) => a.price - b.price).slice(0, 10);
+  const sortedBids = [...bids].sort((a, b) => b.price - a.price).slice(0, 15);
+  const sortedAsks = [...asks].sort((a, b) => a.price - b.price).slice(0, 15);
+
+  // cumulative depth
+  let cumulative = 0;
+  const asksWithDepth = sortedAsks.map(a => {
+    cumulative += a.quantity;
+    return { ...a, cumulative };
+  });
+
+  cumulative = 0;
+  const bidsWithDepth = sortedBids.map(b => {
+    cumulative += b.quantity;
+    return { ...b, cumulative };
+  });
+
+  const maxDepth = Math.max(
+    ...asksWithDepth.map(a => a.cumulative),
+    ...bidsWithDepth.map(b => b.cumulative),
+    1
+  );
+
+  const bestBid = sortedBids[0]?.price || 0;
+  const bestAsk = sortedAsks[0]?.price || 0;
+  const mid = bestBid && bestAsk ? ((bestBid + bestAsk) / 2).toFixed(2) : "--";
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-3 text-xs text-gray-500 pb-2 border-b border-white/10">
-        <span>Price (USD)</span>
-        <span className="text-center">Shares</span>
-        <span className="text-right">Orders</span>
-      </div>
-      
-      {/* Asks (sellers) - red */}
-      <div className="space-y-1">
-        {sortedAsks.slice().reverse().map((ask, i) => (
-          <div key={`ask-${i}`} className="grid grid-cols-3 text-sm">
-            <span className="text-red-400 font-mono">{ask.price.toFixed(2)}</span>
-            <span className="text-center text-gray-300">{ask.quantity}</span>
-            <span className="text-right text-gray-500">{ask.orders}</span>
-          </div>
-        ))}
+    <div className="text-[11px] font-mono">
+      {/* Header */}
+      <div className="grid grid-cols-3 px-2 text-gray-500 pb-1">
+        <span>Price</span>
+        <span className="text-center">Size</span>
+        <span className="text-right">Total</span>
       </div>
 
-      {/* Spread */}
-      {sortedBids.length > 0 && sortedAsks.length > 0 && (
-        <div className="py-2 text-center text-xs text-gray-500 border-y border-white/10">
-          Spread: ${(sortedAsks[0]?.price - sortedBids[0]?.price).toFixed(2)}
-        </div>
-      )}
+      {/* ASKS */}
+      <div>
+        {asksWithDepth.slice().reverse().map((a, i) => {
+          const width = (a.cumulative / maxDepth) * 100;
 
-      {/* Bids (buyers) - green */}
-      <div className="space-y-1">
-        {sortedBids.map((bid, i) => (
-          <div key={`bid-${i}`} className="grid grid-cols-3 text-sm">
-            <span className="text-green-400 font-mono">{bid.price.toFixed(2)}</span>
-            <span className="text-center text-gray-300">{bid.quantity}</span>
-            <span className="text-right text-gray-500">{bid.orders}</span>
-          </div>
-        ))}
+          return (
+            <div key={i} className="relative grid grid-cols-3 px-2 py-[1px]">
+              <div
+                className="absolute right-0 top-0 h-full bg-red-500/20"
+                style={{ width: `${width}%` }}
+              />
+              <span className="text-red-400 z-10">{a.price.toFixed(2)}</span>
+              <span className="text-center text-gray-300 z-10">{a.quantity}</span>
+              <span className="text-right text-gray-500 z-10">{a.cumulative}</span>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* MID */}
+      <div className="text-center py-2 border-y border-white/10 my-1 text-white">
+        ${mid}
+      </div>
+
+      {/* BIDS */}
+      <div>
+        {bidsWithDepth.map((b, i) => {
+          const width = (b.cumulative / maxDepth) * 100;
+
+          return (
+            <div key={i} className="relative grid grid-cols-3 px-2 py-[1px]">
+              <div
+                className="absolute right-0 top-0 h-full bg-green-500/20"
+                style={{ width: `${width}%` }}
+              />
+              <span className="text-green-400 z-10">{b.price.toFixed(2)}</span>
+              <span className="text-center text-gray-300 z-10">{b.quantity}</span>
+              <span className="text-right text-gray-500 z-10">{b.cumulative}</span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

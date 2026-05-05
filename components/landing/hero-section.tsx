@@ -25,7 +25,7 @@ export function HeroSection() {
     const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
     
     if (token) {
-      router.push("/app");
+      router.push("/app/general");
     } else {
       setIsAuthModalOpen(true);
     }
