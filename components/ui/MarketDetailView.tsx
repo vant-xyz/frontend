@@ -60,6 +60,7 @@ export default function MarketDetailView() {
     const [quantity, setQuantity] = useState("0");
     const [inputMode, setInputMode] = useState<"shares" | "usd">("shares");
     const [usdAmount, setUsdAmount] = useState<string>("");
+    const [isOrderInputFocused, setIsOrderInputFocused] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [isQuickTradeOpen, setIsQuickTradeOpen] = useState(false);
     const [showCancelModal, setShowCancelModal] = useState(false);
@@ -139,12 +140,13 @@ export default function MarketDetailView() {
         fetchUserPositions();
         fetchOpenOrders();
         const interval = setInterval(() => {
+            if (isOrderInputFocused) return;
             fetchUserPositions();
             fetchOpenOrders();
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [id, token, fetchUserPositions, fetchOpenOrders]);
+    }, [id, token, fetchUserPositions, fetchOpenOrders, isOrderInputFocused]);
 
     console.log("positions", positions)
 
@@ -152,7 +154,7 @@ export default function MarketDetailView() {
         if (!id) return
         const fetchMarketTrades = async () => {
             try {
-                setLoadingMarketTrades(true);
+                if (!marketTrades) setLoadingMarketTrades(true);
                 const data = await getTrades(id as string);
                 setMarketTrades(data.trades);
                 setError(null);
@@ -164,9 +166,12 @@ export default function MarketDetailView() {
             }
         };
         fetchMarketTrades();
-        const interval = setInterval(fetchMarketTrades, 1000);
+        const interval = setInterval(() => {
+            if (isOrderInputFocused) return;
+            fetchMarketTrades();
+        }, 1000);
         return () => clearInterval(interval);
-    }, [id])
+    }, [id, marketTrades, isOrderInputFocused])
 
     useEffect(() => {
         if (!id) return;
@@ -199,6 +204,7 @@ export default function MarketDetailView() {
         fetchMarket();
         fetchVolume();
         const interval = setInterval(() => {
+            if (isOrderInputFocused) return;
             fetchMarket();
             fetchVolume();
         }, 1000);
@@ -207,7 +213,7 @@ export default function MarketDetailView() {
             mounted = false;
             clearInterval(interval);
         };
-    }, [id]);
+    }, [id, isOrderInputFocused]);
 
     useEffect(() => {
         if (!token) return;
@@ -260,9 +266,12 @@ export default function MarketDetailView() {
     useEffect(() => {
         if (!market?.id) return
         loadOrderbook();
-        const i = setInterval(loadOrderbook, 500);
+        const i = setInterval(() => {
+            if (isOrderInputFocused) return;
+            loadOrderbook();
+        }, 500);
         return () => clearInterval(i);
-    }, [market?.id, loadOrderbook]);
+    }, [market?.id, loadOrderbook, isOrderInputFocused]);
 
     useEffect(() => {
         if (!market?.id) return;
@@ -626,6 +635,8 @@ export default function MarketDetailView() {
                                 }
                                 setUsdAmount(e.target.value);
                             }}
+                            onFocus={() => setIsOrderInputFocused(true)}
+                            onBlur={() => setIsOrderInputFocused(false)}
                             className="w-full bg-white/5 border-white/10 text-white h-11 font-mono"
                             min="0"
                             step="0.01"
@@ -642,9 +653,7 @@ export default function MarketDetailView() {
                                     const pricePerShare = selectedSide === "YES" ? lastYes / 100 : lastNo / 100;
                                     if (pricePerShare <= 0) return;
 
-                                    const userBalance = isDemoMode
-                                        ? (balance?.total_demo_usd ?? 0)
-                                        : (balance?.total_usd ?? 0);
+                                    const userBalance = tradingBalance;
 
                                     const maxAffordable = Math.floor(userBalance / pricePerShare);
 
@@ -789,7 +798,7 @@ export default function MarketDetailView() {
                                     title="YES / NO Sentiment"
                                     forcedYesCents={lastYes}
                                     forcedNoCents={lastNo}
-                                    rightSlot={market.market_type === "CAPPM" ? (
+                                    leftSlot={market.market_type === "CAPPM" ? (
                                         <div className="flex items-center gap-1 border border-white/10 rounded-lg p-1 bg-black/40">
                                             <button
                                                 onClick={() => setChartType("opinion")}
@@ -812,7 +821,7 @@ export default function MarketDetailView() {
                                 <CandlestickChart
                                     marketId={market.id}
                                     title={`${market.asset || "Asset"} Spot Price`}
-                                    rightSlot={(
+                                    leftSlot={(
                                         <div className="flex items-center gap-1 border border-white/10 rounded-lg p-1 bg-black/40">
                                             <button
                                                 onClick={() => setChartType("opinion")}

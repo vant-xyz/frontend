@@ -16,6 +16,7 @@ import { getMarketOpinionTrend } from '@/lib/api';
 interface OpinionTrendChartProps {
   marketId: string;
   title?: string;
+  leftSlot?: ReactNode;
   rightSlot?: ReactNode;
   forcedYesCents?: number | null;
   forcedNoCents?: number | null;
@@ -24,6 +25,7 @@ interface OpinionTrendChartProps {
 export function OpinionTrendChart({
   marketId,
   title = 'Opinion Trend',
+  leftSlot,
   rightSlot,
   forcedYesCents,
   forcedNoCents,
@@ -117,7 +119,8 @@ export function OpinionTrendChart({
 
   return (
     <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
-      <div className="flex justify-end px-6 py-4 border-b border-white/10">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+        <div>{leftSlot}</div>
 
         <div className="flex gap-4">
           <span className="text-green-400">
