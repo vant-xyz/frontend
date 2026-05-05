@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Market, placeOrder, OrderSide } from "@/lib/api";
+import { Market, placeOrder, OrderSide, getOrderbook } from "@/lib/api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -29,9 +29,36 @@ export function QuickTradeModal({
   const isDemoMode = typeof window !== "undefined" ? localStorage.getItem("mode") === "demo" : false;
 
   const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
+  const [quoteCents, setQuoteCents] = useState<{ yes: number; no: number }>({ yes: 50, no: 50 });
 
-  const yesPriceCents = market.current_price ?? 50;
-  const noPriceCents = Math.max(0, 100 - yesPriceCents);
+  const toCents = (v?: number) => {
+    const n = Number(v ?? 0);
+    if (!Number.isFinite(n)) return 0;
+    return n <= 1 ? n * 100 : n;
+  };
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      try {
+        const ob = await getOrderbook(market.id);
+        const yes = toCents(ob.orderbook?.yes_bids?.[0]?.price) || toCents(ob.orderbook?.last_traded_price) || 50;
+        const no = toCents(ob.orderbook?.no_asks?.[0]?.price) || Math.max(0, 100 - yes);
+        if (active) setQuoteCents({ yes, no });
+      } catch {
+        if (active) setQuoteCents({ yes: 50, no: 50 });
+      }
+    };
+    load();
+    const i = setInterval(load, 1000);
+    return () => {
+      active = false;
+      clearInterval(i);
+    };
+  }, [market.id]);
+
+  const yesPriceCents = quoteCents.yes;
+  const noPriceCents = quoteCents.no;
   const pricePerShare = Math.max(0.01, (selectedSide === "YES" ? yesPriceCents : noPriceCents) / 100);
   const derivedQuantity = inputMode === "shares"
     ? parseFloat(quantity) || 0

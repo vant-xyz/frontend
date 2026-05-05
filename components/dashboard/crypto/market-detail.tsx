@@ -40,6 +40,15 @@ export function MarketDetailView({ market, onBack }: MarketDetailViewProps) {
   const token = localStorage.getItem("auth_token")
   const [chartType, setChartType] = useState<'candlestick' | 'opinion'>('candlestick');
 
+  const toCents = (v?: number) => {
+    const n = Number(v ?? 0);
+    if (!Number.isFinite(n)) return 0;
+    return n <= 1 ? n * 100 : n;
+  };
+  const fromCentsToDollars = (cents: number) => cents / 100;
+  const yesCents = toCents(orderbook?.yes_bids?.[0]?.price) || toCents(orderbook?.last_traded_price) || 50;
+  const noCents = toCents(orderbook?.no_asks?.[0]?.price) || Math.max(0, 100 - yesCents);
+  const selectedSideDollars = fromCentsToDollars(selectedSide === "YES" ? yesCents : noCents);
 
 
 
@@ -106,7 +115,7 @@ export function MarketDetailView({ market, onBack }: MarketDetailViewProps) {
     : "0.00";
 
   const lastTradedPrice = orderbook?.last_traded_price
-    ? orderbook.last_traded_price.toFixed(2)
+    ? (toCents(orderbook.last_traded_price) / 100).toFixed(3)
     : "0.00";
 
   const currentPriceNum = market.current_price
@@ -166,14 +175,14 @@ export function MarketDetailView({ market, onBack }: MarketDetailViewProps) {
   const effectiveQuantity = useMemo(() => {
     if (inputMode === "shares") return parseFloat(quantity) || 0;
     const usd = parseFloat(usdAmount) || 0;
-    const px = orderType === "LIMIT" ? (parseFloat(price) || 0) : (orderbook?.last_traded_price || 50);
+    const px = orderType === "LIMIT" ? (parseFloat(price) || 0) : selectedSideDollars;
     return px > 0 ? usd / px : 0;
-  }, [inputMode, quantity, usdAmount, orderType, price, orderbook?.last_traded_price]);
+  }, [inputMode, quantity, usdAmount, orderType, price, selectedSideDollars]);
 
   const maxWin = effectiveQuantity ? (effectiveQuantity * 100).toFixed(2) : "0.00";
 
   const estimatedCost = effectiveQuantity && orderType === "MARKET"
-    ? (effectiveQuantity * (orderbook?.last_traded_price || 50)).toFixed(2)
+    ? (effectiveQuantity * selectedSideDollars).toFixed(2)
     : effectiveQuantity && price
       ? (effectiveQuantity * parseFloat(price)).toFixed(2)
       : "0.00";
@@ -321,7 +330,7 @@ export function MarketDetailView({ market, onBack }: MarketDetailViewProps) {
                     )}
                     onClick={() => setSelectedSide("YES")}
                   >
-                    YES
+                    YES {yesCents.toFixed(1)}¢
                   </Button>
                   <Button
                     variant={selectedSide === "NO" ? "default" : "outline"}
@@ -333,7 +342,7 @@ export function MarketDetailView({ market, onBack }: MarketDetailViewProps) {
                     )}
                     onClick={() => setSelectedSide("NO")}
                   >
-                    NO
+                    NO {noCents.toFixed(1)}¢
                   </Button>
                 </div>
 
@@ -513,7 +522,8 @@ function OrderbookTable({ bids, asks, loading }: OrderbookTableProps) {
 
   const bestBid = sortedBids[0]?.price || 0;
   const bestAsk = sortedAsks[0]?.price || 0;
-  const mid = bestBid && bestAsk ? ((bestBid + bestAsk) / 2).toFixed(2) : "--";
+  const toCents = (v: number) => (v <= 1 ? v * 100 : v);
+  const mid = bestBid && bestAsk ? ((toCents(bestBid) + toCents(bestAsk)) / 2).toFixed(1) : "--";
 
   return (
     <div className="text-[11px] font-mono">
@@ -535,7 +545,7 @@ function OrderbookTable({ bids, asks, loading }: OrderbookTableProps) {
                 className="absolute right-0 top-0 h-full bg-red-500/20"
                 style={{ width: `${width}%` }}
               />
-              <span className="text-red-400 z-10">{a.price.toFixed(2)}</span>
+              <span className="text-red-400 z-10">{toCents(a.price).toFixed(1)}¢</span>
               <span className="text-center text-gray-300 z-10">{a.quantity}</span>
               <span className="text-right text-gray-500 z-10">{a.cumulative}</span>
             </div>
@@ -545,7 +555,7 @@ function OrderbookTable({ bids, asks, loading }: OrderbookTableProps) {
 
       {/* MID */}
       <div className="text-center py-2 border-y border-white/10 my-1 text-white">
-        ${mid}
+        {mid}¢
       </div>
 
       {/* BIDS */}
@@ -559,7 +569,7 @@ function OrderbookTable({ bids, asks, loading }: OrderbookTableProps) {
                 className="absolute right-0 top-0 h-full bg-green-500/20"
                 style={{ width: `${width}%` }}
               />
-              <span className="text-green-400 z-10">{b.price.toFixed(2)}</span>
+              <span className="text-green-400 z-10">{toCents(b.price).toFixed(1)}¢</span>
               <span className="text-center text-gray-300 z-10">{b.quantity}</span>
               <span className="text-right text-gray-500 z-10">{b.cumulative}</span>
             </div>

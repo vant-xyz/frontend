@@ -66,15 +66,15 @@ export function OpinionTrendChart({
       priceLineVisible: false,
     });
 
-    // const noSeries = chart.addSeries(LineSeries, {
-    //   color: '#ef4444',
-    //   lineWidth: 2,
-    //   lastValueVisible: true,
-    //   priceLineVisible: false,
-    // });
+    const noSeries = chart.addSeries(LineSeries, {
+      color: '#ef4444',
+      lineWidth: 2,
+      lastValueVisible: true,
+      priceLineVisible: false,
+    });
 
     yesSeriesRef.current = yesSeries;
-    // noSeriesRef.current = noSeries;
+    noSeriesRef.current = noSeries;
     chartRef.current = chart;
 
     // Resize
@@ -90,16 +90,16 @@ export function OpinionTrendChart({
       if (!param.time) return;
 
       const y = param.seriesData.get(yesSeries) as LineData | undefined;
-      // const n = param.seriesData.get(noSeries) as LineData | undefined;
+      const n = param.seriesData.get(noSeries) as LineData | undefined;
 
       if (y) setCurrentYes(y.value);
-      // if (n) setCurrentNo(n.value);
+      if (n) setCurrentNo(n.value);
     });
 
     loadTrendData(
       marketId,
       yesSeries,
-      // noSeries,
+      noSeries,
       chart,
       setCurrentYes,
       setCurrentNo,
@@ -143,6 +143,7 @@ export function OpinionTrendChart({
 async function loadTrendData(
   marketId: string,
   yesSeries: ISeriesApi<'Line'>,
+  noSeries: ISeriesApi<'Line'>,
   chart: IChartApi,
   setYes: (v: number) => void,
   setNo: (v: number) => void,
@@ -164,18 +165,23 @@ async function loadTrendData(
       time: t as UTCTimestamp, // ✅ FIX
       value: +yes.toFixed(1),
     });
+    noData.push({
+      time: t as UTCTimestamp,
+      value: +(100 - yes).toFixed(1),
+    });
   }
 
   setAnimating(true);
 
   setTimeout(() => {
     yesSeries.setData(yesData);
+    noSeries.setData(noData);
 
     chart.timeScale().fitContent();
 
     const last = yesData[yesData.length - 1];
     setYes(last.value);
-    // setNo(100 - last.value);
+    setNo(100 - last.value);
 
     setAnimating(false);
   }, 200);

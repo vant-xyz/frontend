@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createChart, IChartApi, CandlestickSeries } from 'lightweight-charts';
 import { cn } from '@/lib/utils';
+import { getLatestPrices } from '@/lib/api';
 
 interface CandlestickChartProps {
   title?: string;
@@ -12,12 +13,11 @@ export function CandlestickChart({ title = "BTC Spot Price (5m)" }: CandlestickC
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<any>(null);
-  const wsRef = useRef<WebSocket | null>(null);
   const candlesRef = useRef<Map<number, any>>(new Map());
-  const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [lastPrice, setLastPrice] = useState<string>("--");
-  const [isLive, setIsLive] = useState(false);
+  const [isLive, setIsLive] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -79,74 +79,45 @@ export function CandlestickChart({ title = "BTC Spot Price (5m)" }: CandlestickC
 
     fetchHistory();
 
-    const connect = () => {
-      if (wsRef.current?.readyState === WebSocket.OPEN) return;
-
-      const ws = new WebSocket('wss://ws-feed.exchange.coinbase.com');
-      wsRef.current = ws;
-
-      ws.onopen = () => {
-        ws.send(JSON.stringify({
-          type: 'subscribe',
-          product_ids: ['BTC-USD'],
-          channels: ['ticker'],
-        }));
+    const poll = async () => {
+      try {
+        const p = await getLatestPrices();
+        const price = parseFloat(p.BTC?.price || "");
+        if (!Number.isFinite(price) || price <= 0) return;
+        setLastPrice(price.toFixed(2));
         setIsLive(true);
         setError(null);
-      };
 
-      ws.onmessage = (event) => {
-        try {
-          const msg = JSON.parse(event.data);
-          if (msg.type !== 'ticker') return;
-
-          const price = parseFloat(msg.price);
-          if (isNaN(price)) return;
-
-          setLastPrice(price.toFixed(2));
-
-          const tickerTime = Math.floor(new Date(msg.time).getTime() / 1000);
-          const bucketTime = Math.floor(tickerTime / 60) * 60;
-
-          const existing = candlesRef.current.get(bucketTime);
-          const candle = existing
-            ? {
-                time: bucketTime,
-                open: existing.open,
-                high: Math.max(existing.high, price),
-                low: Math.min(existing.low, price),
-                close: price,
-              }
-            : {
-                time: bucketTime,
-                open: price,
-                high: price,
-                low: price,
-                close: price,
-              };
-
-          candlesRef.current.set(bucketTime, candle);
-          seriesRef.current?.update(candle);
-        } catch (err) {
-          console.error("WS parse error:", err);
-        }
-      };
-
-      ws.onerror = () => setIsLive(false);
-
-      ws.onclose = () => {
+        const now = Math.floor(Date.now() / 1000);
+        const bucketTime = Math.floor(now / 60) * 60;
+        const existing = candlesRef.current.get(bucketTime);
+        const candle = existing
+          ? {
+              time: bucketTime,
+              open: existing.open,
+              high: Math.max(existing.high, price),
+              low: Math.min(existing.low, price),
+              close: price,
+            }
+          : {
+              time: bucketTime,
+              open: price,
+              high: price,
+              low: price,
+              close: price,
+            };
+        candlesRef.current.set(bucketTime, candle);
+        seriesRef.current?.update(candle);
+      } catch {
         setIsLive(false);
-
-        reconnectTimer.current = setTimeout(connect, 3000);
-      };
+      }
     };
-
-    connect();
+    poll();
+    pollRef.current = setInterval(poll, 1000);
 
     return () => {
       resizeObserver.disconnect();
-      if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
-      wsRef.current?.close();
+      if (pollRef.current) clearInterval(pollRef.current);
       chart.remove();
     };
   }, []);
@@ -163,7 +134,7 @@ export function CandlestickChart({ title = "BTC Spot Price (5m)" }: CandlestickC
             <span className="text-green-400 font-mono text-xl font-medium">${lastPrice}</span>
           )}
           <span className={cn("text-xs font-medium", isLive ? "text-green-400" : "text-red-400")}>
-            {isLive ? "Live" : "Reconnecting..."}
+            {isLive ? "Live" : "Disconnected"}
           </span>
         </div>
       </div>

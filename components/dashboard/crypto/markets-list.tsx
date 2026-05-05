@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Market, OrderSide } from "@/lib/api";
+import { Market, OrderSide, getOrderbook } from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Share2, Target } from "lucide-react";
@@ -92,6 +92,13 @@ export function MarketCard({ market, onQuickTrade }: MarketCardProps) {
   const router = useRouter();
   const [timeLeft, setTimeLeft] = useState<{ seconds: number; text: string }>({ seconds: 0, text: "" });
   const [shareOpen, setShareOpen] = useState(false);
+  const [yesNoCents, setYesNoCents] = useState<{ yes: number; no: number }>({ yes: 50, no: 50 });
+
+  const toCents = (v?: number) => {
+    const n = Number(v ?? 0);
+    if (!Number.isFinite(n)) return 0;
+    return n <= 1 ? n * 100 : n;
+  };
 
   useEffect(() => {
     const updateTimeLeft = () => {
@@ -116,12 +123,34 @@ export function MarketCard({ market, onQuickTrade }: MarketCardProps) {
     return () => clearInterval(interval);
   }, [market.end_time_utc]);
 
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      try {
+        const ob = await getOrderbook(market.id);
+        const bestYesBid = toCents(ob.orderbook?.yes_bids?.[0]?.price);
+        const bestNoAsk = toCents(ob.orderbook?.no_asks?.[0]?.price);
+        const yes = bestYesBid > 0 ? bestYesBid : toCents(ob.orderbook?.last_traded_price) || 50;
+        const no = bestNoAsk > 0 ? bestNoAsk : Math.max(0, 100 - yes);
+        if (active) setYesNoCents({ yes, no });
+      } catch {
+        if (active) setYesNoCents({ yes: 50, no: 50 });
+      }
+    };
+    load();
+    const i = setInterval(load, 1000);
+    return () => {
+      active = false;
+      clearInterval(i);
+    };
+  }, [market.id]);
+
   const openDetails = () => router.push(`/market/${market.id}`);
 
   const currentPriceDollars = (market.current_price ?? 50) / 100;
   const targetPrice = market.target_price ? (market.target_price / 100).toFixed(2) : "0.00";
-  const yesPriceDollars = currentPriceDollars;
-  const noPriceDollars = Math.max(0, (100 - (market.current_price ?? 50)) / 100);
+  const yesPriceCents = yesNoCents.yes;
+  const noPriceCents = yesNoCents.no;
   const isSettling = timeLeft.seconds <= 0;
 
   const avatarSrc = `/media/images/crypto_assets/${(market.asset || "BTC").toLowerCase()}.png`;
@@ -209,14 +238,14 @@ export function MarketCard({ market, onQuickTrade }: MarketCardProps) {
                   className="h-12 border-green-500/50 text-green-400 hover:bg-green-500/10 hover:text-green-300 font-semibold"
                   onClick={() => onQuickTrade(market, "YES")}
                 >
-                  YES @ ${yesPriceDollars.toFixed(2)}
+                  YES @ {yesPriceCents.toFixed(1)}¢
                 </Button>
                 <Button
                   variant="outline"
                   className="h-12 border-red-500/50 text-red-400 hover:bg-red-500/10 hover:text-red-300 font-semibold"
                   onClick={() => onQuickTrade(market, "NO")}
                 >
-                  NO @ ${noPriceDollars.toFixed(2)}
+                  NO @ {noPriceCents.toFixed(1)}¢
                 </Button>
               </div>
             )}
