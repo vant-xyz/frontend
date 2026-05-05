@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import {
   createChart,
   IChartApi,
@@ -16,11 +16,17 @@ import { getMarketOpinionTrend } from '@/lib/api';
 interface OpinionTrendChartProps {
   marketId: string;
   title?: string;
+  rightSlot?: ReactNode;
+  forcedYesCents?: number | null;
+  forcedNoCents?: number | null;
 }
 
 export function OpinionTrendChart({
   marketId,
   title = 'Opinion Trend',
+  rightSlot,
+  forcedYesCents,
+  forcedNoCents,
 }: OpinionTrendChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -116,11 +122,12 @@ export function OpinionTrendChart({
 
         <div className="flex gap-4">
           <span className="text-green-400">
-            YES {currentYes?.toFixed(0)}¢
+            YES {(forcedYesCents ?? currentYes ?? 0).toFixed(1)}¢
           </span>
           <span className="text-red-400">
-            NO {currentNo?.toFixed(0)}¢
+            NO {(forcedNoCents ?? currentNo ?? 0).toFixed(1)}¢
           </span>
+          {rightSlot}
         </div>
       </div>
 

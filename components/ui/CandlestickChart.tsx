@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import { createChart, IChartApi, CandlestickSeries } from 'lightweight-charts';
 import { cn } from '@/lib/utils';
 import { getLatestPrices, getMarketCandles } from '@/lib/api';
@@ -8,9 +8,10 @@ import { getLatestPrices, getMarketCandles } from '@/lib/api';
 interface CandlestickChartProps {
   marketId: string;
   title?: string;
+  rightSlot?: ReactNode;
 }
 
-export function CandlestickChart({ marketId, title = "BTC Spot Price (5m)" }: CandlestickChartProps) {
+export function CandlestickChart({ marketId, title = "BTC Spot Price (5m)", rightSlot }: CandlestickChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<any>(null);
@@ -129,6 +130,7 @@ export function CandlestickChart({ marketId, title = "BTC Spot Price (5m)" }: Ca
           {lastPrice !== "--" && (
             <span className="text-green-400 font-mono text-xl font-medium">${lastPrice}</span>
           )}
+          {rightSlot}
           <span className={cn("text-xs font-medium", isLive ? "text-green-400" : "text-red-400")}>
             {isLive ? "Live" : "Disconnected"}
           </span>

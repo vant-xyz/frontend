@@ -11,6 +11,7 @@ import {
     MarketVolume,
     BalanceInfo,
     getBalance,
+    getTokenPrices,
     Position,
     getUserPositions,
     Order,
@@ -38,6 +39,7 @@ export default function MarketDetailView() {
     const { id } = useParams()
     const [market, setMarket] = useState<Market | null>(null);
     const [balance, setBalance] = useState<BalanceInfo | null>(null);
+    const [tokenUsdMap, setTokenUsdMap] = useState<Record<string, number>>({});
     const [marketTrades, setMarketTrades] = useState<Trades[] | null>(null)
     const [marketVolume, setMarketVolume] = useState<MarketVolume | null>(null);
     const [userOrders, setUserOrders] = useState<Order[] | null>(null)
@@ -55,7 +57,7 @@ export default function MarketDetailView() {
     const [limitPrice, setLimitPrice] = useState(() => {
         return "50";
     });
-    const [quantity, setQuantity] = useState(0);
+    const [quantity, setQuantity] = useState("0");
     const [inputMode, setInputMode] = useState<"shares" | "usd">("shares");
     const [usdAmount, setUsdAmount] = useState<string>("");
     const [submitting, setSubmitting] = useState(false);
@@ -224,6 +226,24 @@ export default function MarketDetailView() {
         fetchBalance()
     }, [token])
 
+    useEffect(() => {
+        let active = true;
+        const loadTokenUsd = async () => {
+            try {
+                const res = await getTokenPrices(["SOL", "USDC", "USDT", "USDG", "ETH"]);
+                if (active) setTokenUsdMap(res.prices || {});
+            } catch {
+                if (active) setTokenUsdMap({});
+            }
+        };
+        loadTokenUsd();
+        const i = setInterval(loadTokenUsd, 10000);
+        return () => {
+            active = false;
+            clearInterval(i);
+        };
+    }, []);
+
 
     const loadOrderbook = useCallback(async () => {
         if (!market?.id) return;
@@ -349,8 +369,31 @@ export default function MarketDetailView() {
         const n = p?.price ? Number(p.price) : NaN;
         return Number.isFinite(n) && n > 0 ? n : null;
     })();
+    const tradingBalance = isDemoMode ? (balance?.total_demo_usd ?? 0) : (balance?.total_usd ?? 0);
+    const cumulativeAssetUsd = (() => {
+        if (!balance) return 0;
+        if (isDemoMode) {
+            const solPx = tokenUsdMap.SOL ?? 0;
+            const usdcPx = tokenUsdMap.USDC ?? 1;
+            return (balance.demo_sol ?? 0) * solPx + (balance.demo_usdc_sol ?? 0) * usdcPx + (balance.demo_naira ?? 0);
+        }
+        const solPx = tokenUsdMap.SOL ?? 0;
+        const usdcPx = tokenUsdMap.USDC ?? 1;
+        const usdtPx = tokenUsdMap.USDT ?? 1;
+        const usdgPx = tokenUsdMap.USDG ?? 1;
+        const ethPx = tokenUsdMap.ETH ?? 0;
+        return (balance.sol ?? 0) * solPx +
+            (balance.wsol ?? 0) * solPx +
+            (balance.usdc_sol ?? 0) * usdcPx +
+            (balance.usdc_base ?? 0) * usdcPx +
+            (balance.usdt_sol ?? 0) * usdtPx +
+            (balance.usdg_sol ?? 0) * usdgPx +
+            (balance.eth_base ?? 0) * ethPx +
+            (balance.naira ?? 0) +
+            (balance.vusd ?? 0);
+    })();
     const effectiveQuantity = inputMode === "shares"
-        ? quantity
+        ? (parseFloat(quantity) || 0)
         : (parseFloat(usdAmount) || 0) / (pricePerShareDollars > 0 ? pricePerShareDollars : 1);
     const sharesTotal = effectiveQuantity * pricePerShareDollars;
     const youReceive = effectiveQuantity * 1.00;
@@ -547,9 +590,7 @@ export default function MarketDetailView() {
                     <div className="flex items-center justify-between mb-2">
                         <span className="text-[10px] text-gray-500 uppercase tracking-wider">Order Size</span>
                         <span className="text-[10px] text-gray-400">
-                            Balance ${isDemoMode
-                                ? (balance?.total_demo_usd?.toFixed(2) ?? '0.00')
-                                : (balance?.total_usd?.toFixed(2) ?? '0.00')}
+                            Balance ${tradingBalance.toFixed(2)} (${cumulativeAssetUsd.toFixed(2)} assets)
                         </span>
                     </div>
 
@@ -577,7 +618,7 @@ export default function MarketDetailView() {
                     <div className="flex items-center gap-3 mb-3">
                         <button
                             onClick={() => inputMode === "shares"
-                                ? setQuantity(q => Math.max(0, q - 1))
+                                ? setQuantity(q => String(Math.max(0, (parseFloat(q) || 0) - 1)))
                                 : setUsdAmount(v => String(Math.max(0, (parseFloat(v || "0") - 5))))}
                             className="w-8 h-8 rounded-lg bg-white/8 hover:bg-white/15 text-gray-300 flex items-center justify-center transition-colors"
                         >
@@ -585,11 +626,10 @@ export default function MarketDetailView() {
                         </button>
                         <Input
                             type="number"
-                            value={inputMode === "shares" ? String(quantity) : usdAmount}
+                            value={inputMode === "shares" ? quantity : usdAmount}
                             onChange={(e) => {
                                 if (inputMode === "shares") {
-                                    const next = parseFloat(e.target.value);
-                                    setQuantity(Number.isFinite(next) ? Math.max(0, next) : 0);
+                                    setQuantity(e.target.value);
                                     return;
                                 }
                                 setUsdAmount(e.target.value);
@@ -601,7 +641,7 @@ export default function MarketDetailView() {
                         />
                         <button
                             onClick={() => inputMode === "shares"
-                                ? setQuantity(q => q + 1)
+                                ? setQuantity(q => String((parseFloat(q) || 0) + 1))
                                 : setUsdAmount(v => String((parseFloat(v || "0") + 5)))}
                             className="w-8 h-8 rounded-lg bg-white/8 hover:bg-white/15 text-gray-300 flex items-center justify-center transition-colors"
                         >
@@ -626,13 +666,13 @@ export default function MarketDetailView() {
 
                                     if (label === "25%") {
                                         const q = Math.max(0, Math.floor(maxAffordable * 0.25));
-                                        inputMode === "shares" ? setQuantity(q) : setUsdAmount(String((q * pricePerShare).toFixed(2)));
+                                        inputMode === "shares" ? setQuantity(String(q)) : setUsdAmount(String((q * pricePerShare).toFixed(2)));
                                     } else if (label === "50%") {
                                         const q = Math.max(0, Math.floor(maxAffordable * 0.5));
-                                        inputMode === "shares" ? setQuantity(q) : setUsdAmount(String((q * pricePerShare).toFixed(2)));
+                                        inputMode === "shares" ? setQuantity(String(q)) : setUsdAmount(String((q * pricePerShare).toFixed(2)));
                                     } else {
                                         const q = Math.max(0, maxAffordable);
-                                        inputMode === "shares" ? setQuantity(q) : setUsdAmount(String((q * pricePerShare).toFixed(2)));
+                                        inputMode === "shares" ? setQuantity(String(q)) : setUsdAmount(String((q * pricePerShare).toFixed(2)));
                                     }
                                 }}
                                 className="flex-1 py-1.5 text-[10px] font-semibold border border-white/10 rounded-lg text-gray-400 hover:border-white/25 hover:text-gray-200 transition-colors"
@@ -695,24 +735,6 @@ export default function MarketDetailView() {
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                             <h1 className="text-base lg:text-lg font-semibold text-white leading-snug">{market.title}</h1>
-                            {market.market_type === "CAPPM" && (
-                                <div className="flex items-center gap-1 border border-white/10 rounded-lg p-1 bg-black/40">
-                                    <button
-                                        onClick={() => setChartType("opinion")}
-                                        className={cn("p-1 rounded-md transition-colors", chartType === "opinion" ? "bg-white/15 text-white" : "text-gray-400 hover:text-white")}
-                                        title="Trend chart"
-                                    >
-                                        <LineChart size={14} />
-                                    </button>
-                                    <button
-                                        onClick={() => setChartType("candlestick")}
-                                        className={cn("p-1 rounded-md transition-colors", chartType === "candlestick" ? "bg-white/15 text-white" : "text-gray-400 hover:text-white")}
-                                        title="Candlestick chart"
-                                    >
-                                        <BarChart2 size={14} />
-                                    </button>
-                                </div>
-                            )}
                         </div>
                         <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1.5 text-xs">
                             <span className="text-green-400 font-mono font-semibold">Yes {lastYes.toFixed(1)}¢</span>
@@ -778,9 +800,53 @@ export default function MarketDetailView() {
                         {/* Chart */}
                         <div className="">
                             {market.market_type === "GEM" || chartType === "opinion" ? (
-                                <OpinionTrendChart marketId={market.id} title="YES / NO Sentiment" />
+                                <OpinionTrendChart
+                                    marketId={market.id}
+                                    title="YES / NO Sentiment"
+                                    forcedYesCents={lastYes}
+                                    forcedNoCents={lastNo}
+                                    rightSlot={market.market_type === "CAPPM" ? (
+                                        <div className="flex items-center gap-1 border border-white/10 rounded-lg p-1 bg-black/40">
+                                            <button
+                                                onClick={() => setChartType("opinion")}
+                                                className={cn("p-1 rounded-md transition-colors", chartType === "opinion" ? "bg-white/15 text-white" : "text-gray-400 hover:text-white")}
+                                                title="Trend chart"
+                                            >
+                                                <LineChart size={14} />
+                                            </button>
+                                            <button
+                                                onClick={() => setChartType("candlestick")}
+                                                className={cn("p-1 rounded-md transition-colors", chartType === "candlestick" ? "bg-white/15 text-white" : "text-gray-400 hover:text-white")}
+                                                title="Candlestick chart"
+                                            >
+                                                <BarChart2 size={14} />
+                                            </button>
+                                        </div>
+                                    ) : null}
+                                />
                             ) : (
-                                <CandlestickChart marketId={market.id} title={`${market.asset || "Asset"} Spot Price`} />
+                                <CandlestickChart
+                                    marketId={market.id}
+                                    title={`${market.asset || "Asset"} Spot Price`}
+                                    rightSlot={(
+                                        <div className="flex items-center gap-1 border border-white/10 rounded-lg p-1 bg-black/40">
+                                            <button
+                                                onClick={() => setChartType("opinion")}
+                                                className={cn("p-1 rounded-md transition-colors", chartType === "opinion" ? "bg-white/15 text-white" : "text-gray-400 hover:text-white")}
+                                                title="Trend chart"
+                                            >
+                                                <LineChart size={14} />
+                                            </button>
+                                            <button
+                                                onClick={() => setChartType("candlestick")}
+                                                className={cn("p-1 rounded-md transition-colors", chartType === "candlestick" ? "bg-white/15 text-white" : "text-gray-400 hover:text-white")}
+                                                title="Candlestick chart"
+                                            >
+                                                <BarChart2 size={14} />
+                                            </button>
+                                        </div>
+                                    )}
+                                />
                             )}
                         </div>
 
@@ -958,10 +1024,8 @@ export default function MarketDetailView() {
                                                     {trade.side}
                                                 </span>
 
-                                                <span className="text-xs text-center text-gray-300 font-mono">{(trade.price * 100).toFixed(1)}¢</span>
-                                                <span className="text-right text-xs text-gray-400 font-mono">
-                                                    ${(trade.price * trade.quantity).toFixed(2)}
-                                                </span>
+                                                <span className="text-xs text-center text-gray-300 font-mono">{trade.quantity.toFixed(3)}</span>
+                                                <span className="text-right text-xs text-gray-400 font-mono">{(trade.price * 100).toFixed(1)}¢</span>
                                             </div>
                                         ))}
                                     </div>

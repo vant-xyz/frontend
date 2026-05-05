@@ -20,6 +20,7 @@ export function HistoryClient({ initialTransactions }: HistoryClientProps) {
   const [tab, setTab] = useState<"transactions" | "trades">("transactions");
   const [tradeView, setTradeView] = useState<"list" | "calendar">("list");
   const [positions, setPositions] = useState<Position[]>([]);
+  const [calendarMonth, setCalendarMonth] = useState<string>("2026-05");
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -43,6 +44,28 @@ export function HistoryClient({ initialTransactions }: HistoryClientProps) {
       map.set(key, current + Number(p.realized_pnl || 0));
     }
     return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+  }, [positions]);
+
+  const monthOptions = useMemo(() => {
+    const start = new Date("2026-05-01T00:00:00Z");
+    const end = new Date();
+    end.setMonth(end.getMonth() + 6);
+    const out: string[] = [];
+    const d = new Date(start);
+    while (d <= end) {
+      out.push(format(d, "yyyy-MM"));
+      d.setMonth(d.getMonth() + 1);
+    }
+    return out;
+  }, []);
+
+  const dayPnlMap = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const p of positions) {
+      const key = format(new Date(p.created_at), "yyyy-MM-dd");
+      m.set(key, (m.get(key) || 0) + Number(p.realized_pnl || 0));
+    }
+    return m;
   }, [positions]);
 
   const getIcon = (type: string) => {
@@ -174,7 +197,7 @@ export function HistoryClient({ initialTransactions }: HistoryClientProps) {
                       <p className="text-[10px] text-gray-500 mt-1">{format(new Date(p.created_at), "MMM d, yyyy")}</p>
                     </div>
                     <div className="text-right">
-                      <p className={cn("text-sm font-black", Number(p.realized_pnl) >= 0 ? "text-green-400" : "text-red-400")}>${Number(p.realized_pnl).toFixed(2)}</p>
+                      <p className={cn("text-sm font-black", (Number(p.payout_amount) === 0 && p.status === "SETTLED") ? "text-red-400" : Number(p.realized_pnl) >= 0 ? "text-green-400" : "text-red-400")}>${Number(p.realized_pnl).toFixed(2)}</p>
                       <Badge className={cn("mt-1 uppercase text-[8px] font-black", p.status === "ACTIVE" ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/20" : p.status === "SETTLED" ? "bg-green-500/10 text-green-500 border-green-500/20" : "bg-gray-500/10 text-gray-400 border-gray-500/20")}>{p.status}</Badge>
                     </div>
                   </div>
@@ -198,21 +221,49 @@ export function HistoryClient({ initialTransactions }: HistoryClientProps) {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
-              {monthlyPnl.map(([month, pnl]) => {
-                const isPos = pnl >= 0;
-                const intensity = Math.min(0.9, Math.max(0.2, Math.abs(pnl) / 500));
-                return (
-                  <div
-                    key={month}
-                    className="rounded-xl border border-white/10 p-3"
-                    style={{ background: isPos ? `rgba(34,197,94,${intensity})` : `rgba(239,68,68,${intensity})` }}
-                  >
-                    <p className="text-[10px] text-white/90 font-bold">{month}</p>
-                    <p className="text-xs text-white font-black mt-2">${pnl.toFixed(2)}</p>
-                  </div>
-                );
-              })}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    const idx = monthOptions.indexOf(calendarMonth);
+                    if (idx > 0) setCalendarMonth(monthOptions[idx - 1]);
+                  }}
+                >
+                  Prev
+                </Button>
+                <div className="text-sm font-bold text-white min-w-[110px] text-center">{calendarMonth}</div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    const idx = monthOptions.indexOf(calendarMonth);
+                    if (idx < monthOptions.length - 1) setCalendarMonth(monthOptions[idx + 1]);
+                  }}
+                >
+                  Next
+                </Button>
+              </div>
+              <div className="grid grid-cols-7 gap-2">
+                {Array.from({ length: new Date(Number(calendarMonth.slice(0, 4)), Number(calendarMonth.slice(5, 7)), 0).getDate() }, (_, i) => i + 1).map((day) => {
+                  const y = Number(calendarMonth.slice(0, 4));
+                  const m = Number(calendarMonth.slice(5, 7));
+                  const dt = new Date(Date.UTC(y, m - 1, day));
+                  const key = format(dt, "yyyy-MM-dd");
+                  const pnl = dayPnlMap.get(key) ?? 0;
+                  const today = new Date();
+                  const future = dt.getTime() > new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate())).getTime();
+                  const intensity = Math.min(0.9, Math.max(0.2, Math.abs(pnl) / 500));
+                  const bg = future ? "rgba(107,114,128,0.15)" : pnl === 0 ? "rgba(255,255,255,0.03)" : pnl > 0 ? `rgba(34,197,94,${intensity})` : `rgba(239,68,68,${intensity})`;
+                  return (
+                    <div key={key} className="rounded-xl border border-white/10 p-2" style={{ background: bg, opacity: future ? 0.55 : 1 }}>
+                      <p className="text-[10px] text-white/80 font-bold">{day}</p>
+                      <p className="text-[10px] text-white font-black mt-2">{future ? "—" : `$${pnl.toFixed(2)}`}</p>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>
