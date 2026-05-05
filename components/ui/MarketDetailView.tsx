@@ -256,7 +256,7 @@ export default function MarketDetailView() {
         const i = setInterval(tick, 1000);
         return () => clearInterval(i);
     }, [market?.end_time_utc]);
-    const lastYes = orderbook?.yes_bids?.[0]?.price ?? (market.current_price ?? 50);
+    const lastYes = orderbook?.yes_bids?.[0]?.price ?? (market?.current_price ?? 50);
     const lastNo = orderbook?.no_asks?.[0]?.price ?? Math.max(0, 100 - lastYes);
 
     useEffect(() => {
@@ -325,11 +325,11 @@ export default function MarketDetailView() {
         setShowClosePositionModal(true);
     };
 
-    const currentPriceCents = market.current_price ?? lastYes;
+    const currentPriceCents = market?.current_price ?? lastYes;
     const lastTradedPrice = orderbook?.last_traded_price ?? currentPriceCents;
     const isSettling = timeLeft.seconds <= 0;
     const isUrgent = timeLeft.seconds > 0 && timeLeft.seconds <= 20;
-    const isResolved = market.status === "resolved";
+    const isResolved = market?.status === "resolved";
 
     const displayStatus = isResolved ? "Resolved" : isSettling ? "Settling" : "Active";
 
