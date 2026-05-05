@@ -121,11 +121,7 @@ export function CandlestickChart({ marketId, title = "BTC Spot Price (5m)", righ
 
   return (
     <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
-      <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
-        <div className="flex flex-col">
-          <h3 className="text-lg font-semibold text-white">{title}</h3>
-          <span className="text-xs text-gray-500">Live market data</span>
-        </div>
+      <div className="flex items-center justify-end px-6 py-4 border-b border-white/10">
         <div className="flex items-center gap-3">
           {lastPrice !== "--" && (
             <span className="text-green-400 font-mono text-xl font-medium">${lastPrice}</span>

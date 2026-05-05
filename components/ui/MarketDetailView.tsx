@@ -369,7 +369,7 @@ export default function MarketDetailView() {
         const n = p?.price ? Number(p.price) : NaN;
         return Number.isFinite(n) && n > 0 ? n : null;
     })();
-    const tradingBalance = isDemoMode ? (balance?.total_demo_usd ?? 0) : (balance?.total_usd ?? 0);
+    const tradingBalance = isDemoMode ? (balance?.demo_naira ?? 0) : (balance?.naira ?? 0);
     const cumulativeAssetUsd = (() => {
         if (!balance) return 0;
         if (isDemoMode) {
@@ -615,15 +615,7 @@ export default function MarketDetailView() {
                         </button>
                     </div>
 
-                    <div className="flex items-center gap-3 mb-3">
-                        <button
-                            onClick={() => inputMode === "shares"
-                                ? setQuantity(q => String(Math.max(0, (parseFloat(q) || 0) - 1)))
-                                : setUsdAmount(v => String(Math.max(0, (parseFloat(v || "0") - 5))))}
-                            className="w-8 h-8 rounded-lg bg-white/8 hover:bg-white/15 text-gray-300 flex items-center justify-center transition-colors"
-                        >
-                            <ChevronDown size={14} />
-                        </button>
+                    <div className="mb-3">
                         <Input
                             type="number"
                             value={inputMode === "shares" ? quantity : usdAmount}
@@ -634,19 +626,11 @@ export default function MarketDetailView() {
                                 }
                                 setUsdAmount(e.target.value);
                             }}
-                            className="flex-1 text-center text-2xl font-mono font-semibold text-white bg-transparent border-0 h-auto p-0 focus-visible:ring-0"
+                            className="w-full bg-white/5 border-white/10 text-white h-11 font-mono"
                             min="0"
                             step="0.01"
                             inputMode="decimal"
                         />
-                        <button
-                            onClick={() => inputMode === "shares"
-                                ? setQuantity(q => String((parseFloat(q) || 0) + 1))
-                                : setUsdAmount(v => String((parseFloat(v || "0") + 5)))}
-                            className="w-8 h-8 rounded-lg bg-white/8 hover:bg-white/15 text-gray-300 flex items-center justify-center transition-colors"
-                        >
-                            <ChevronUp size={14} />
-                        </button>
                     </div>
 
                     {/* 25% 50% MAX Buttons */}

@@ -117,8 +117,7 @@ export function OpinionTrendChart({
 
   return (
     <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
-      <div className="flex justify-between px-6 py-4 border-b border-white/10">
-        <h3 className="text-sm text-white">{title}</h3>
+      <div className="flex justify-end px-6 py-4 border-b border-white/10">
 
         <div className="flex gap-4">
           <span className="text-green-400">
