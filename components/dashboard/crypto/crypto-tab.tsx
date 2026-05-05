@@ -12,7 +12,7 @@ import { ReelAnimation } from "@/components/landing/reel-animation";
 
 export function CryptoTab() {
   const [selectedMarket, setSelectedMarket] = useState<Market | null>(null);
-  const { prices } = usePriceFeed({ usePolling: true, pollingInterval: 2000 });
+  const { prices } = usePriceFeed({ usePolling: true, pollingInterval: 1000 });
   const [markets, setMarkets] = useState<Market[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +32,7 @@ export function CryptoTab() {
 
     useEffect(() => {
         loadMarkets();
-        const interval = setInterval(loadMarkets, 2000);
+        const interval = setInterval(loadMarkets, 1000);
         return () => clearInterval(interval);
     }, [loadMarkets]);
 

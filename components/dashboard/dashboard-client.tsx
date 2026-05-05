@@ -143,6 +143,7 @@ export function DashboardClient({ children }: DashboardClientProps) {
       <PrivateDepositModal
         isOpen={isPrivateDepositOpen}
         onClose={() => setIsPrivateDepositOpen(false)}
+        isDemoMode={isDemoMode}
       />
 
       <SellCryptoModal 

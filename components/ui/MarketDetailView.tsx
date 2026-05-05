@@ -27,7 +27,6 @@ import { QuickTradeModal } from "../../components/dashboard/crypto/quick-trade-m
 import { Loader } from "@/components/ui/loader";
 import { OpinionTrendChart } from "@/components/ui/OpinionTrendChart";
 import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
 import { useDashboard } from "@/hooks/use-dashboard";
 import { SharePositionModal } from "./sharePositionModal";
 
@@ -74,6 +73,13 @@ export default function MarketDetailView() {
     const token = localStorage.getItem("auth_token");
     const { isDemoMode } = useDashboard();
     const router = useRouter();
+    const goBack = () => {
+        if (typeof window !== "undefined" && window.history.length > 1) {
+            router.back();
+            return;
+        }
+        router.push("/app/general");
+    };
 
 
     useEffect(() => {
@@ -270,12 +276,13 @@ export default function MarketDetailView() {
                         We couldn't find any market with that ID.
                     </p>
 
-                    <Link
-                        href="/app/general"
+                    <button
+                        type="button"
+                        onClick={goBack}
                         className="inline-flex items-center gap-2 px-8 py-3.5 bg-red-600 hover:bg-red-500 text-white font-semibold rounded-2xl transition-all active:scale-95"
                     >
                         ← Return to Markets
-                    </Link>
+                    </button>
                 </div>
             </div>
         );
@@ -293,7 +300,7 @@ export default function MarketDetailView() {
 
     const lastTradedPrice = orderbook?.last_traded_price ?? 0;
     const isSettling = timeLeft.seconds <= 0;
-    const isUrgent = timeLeft.seconds > 0 && timeLeft.seconds <= 60;
+    const isUrgent = timeLeft.seconds > 0 && timeLeft.seconds <= 20;
     const isResolved = market.status === "resolved";
 
     const displayStatus = isResolved ? "Resolved" : isSettling ? "Settling" : "Active";
@@ -390,10 +397,24 @@ export default function MarketDetailView() {
 
                 {/* Footer */}
                 <div className="flex gap-4 px-4 py-3 border-t border-white/8 bg-white/3">
-                    <button className={cn("flex-1 py-2 rounded-lg text-xs font-bold transition-all", "bg-green-500/15 text-green-400 hover:bg-green-500/25")}>
+                    <button
+                        onClick={() => {
+                            setSelectedSide("YES");
+                            setOrderMode("BUY");
+                            setMobileTab("order");
+                        }}
+                        className={cn("flex-1 py-2 rounded-lg text-xs font-bold transition-all", "bg-green-500/15 text-green-400 hover:bg-green-500/25")}
+                    >
                         YES {lastYes.toFixed(1)}¢
                     </button>
-                    <button className={cn("flex-1 py-2 rounded-lg text-xs font-bold transition-all", "bg-red-500/15 text-red-400 hover:bg-red-500/25")}>
+                    <button
+                        onClick={() => {
+                            setSelectedSide("NO");
+                            setOrderMode("BUY");
+                            setMobileTab("order");
+                        }}
+                        className={cn("flex-1 py-2 rounded-lg text-xs font-bold transition-all", "bg-red-500/15 text-red-400 hover:bg-red-500/25")}
+                    >
                         NO {lastNo.toFixed(1)}¢
                     </button>
                 </div>
@@ -571,7 +592,7 @@ export default function MarketDetailView() {
 
                 {/* ── Top bar ─────────────────────────────────────────────────────── */}
                 <div className="flex items-start gap-3 px-4 lg:px-6 py-4 border-b border-white/8">
-                    <button onClick={() => router.push("/app/general")}
+                    <button onClick={goBack}
                         className="mt-0.5 p-1.5 rounded-lg hover:bg-white/8 transition-colors text-gray-500 hover:text-white shrink-0">
                         <ArrowLeft size={17} />
                     </button>

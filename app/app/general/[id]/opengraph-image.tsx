@@ -1,109 +1,86 @@
-import { getMarket, Market } from '@/lib/api';
-import { ImageResponse } from 'next/og';
+import { getMarket, getTrades, Market } from "@/lib/api";
+import { ImageResponse } from "next/og";
 
-export const runtime = 'edge';
+export const runtime = "edge";
 
-export default async function Image({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default async function Image({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   let market: Market;
+  let volume = 0;
 
   try {
-    const res = await getMarket(params.id);
+    const res = await getMarket(id);
     market = res.market;
-  } catch (e) {
-    market = { title: "Vantic Market", current_price: 5000 } as any;
+  } catch {
+    market = { title: "Vantic Market", current_price: 50, market_type: "GEM" } as Market;
   }
 
-  const yesPrice = Math.round((market.current_price ?? 50) / 100);
-  const noPrice = 100 - yesPrice;
+  try {
+    const trades = await getTrades(id, 200);
+    volume = trades.trades.reduce((acc, t) => acc + Number(t.price || 0) * Number(t.quantity || 0), 0) / 100;
+  } catch {
+    volume = 0;
+  }
+
+  const yesPrice = Number((((market.current_price ?? 50) as number) / 100).toFixed(2));
+  const noPrice = Number((100 - yesPrice).toFixed(2));
+  const rightImage = market.market_image_small || `/media/images/crypto_assets/${(market.asset || "btc").toLowerCase()}.png`;
 
   return new ImageResponse(
     (
       <div
         style={{
-          height: '100%',
-          width: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: '#0a0a0a',
-          color: 'white',
-          fontFamily: 'Inter, sans-serif',
+          height: "100%",
+          width: "100%",
+          display: "flex",
+          background: "#000",
+          color: "white",
+          fontFamily: "Inter, sans-serif",
         }}
       >
         <div
           style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: 'linear-gradient(145deg, #1f1f1f, #0a0a0a)',
-            width: '100%',
-            height: '100%',
-            padding: '60px 80px',
-            border: '24px solid #22c55e',
+            width: "50%",
+            height: "100%",
+            background: "#000",
+            padding: "48px",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
           }}
         >
-          {/* Title */}
-          <div
-            style={{
-              fontSize: 52,
-              fontWeight: 700,
-              textAlign: 'center',
-              lineHeight: 1.1,
-              marginBottom: 48,
-            }}
-          >
-            {market.title}
+          <div style={{ fontSize: 18, color: "#888" }}>Vantic • {market.market_type}</div>
+          <div style={{ fontSize: 48, fontWeight: 800, lineHeight: 1.12 }}>{market.title}</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ fontSize: 34, color: "#22c55e", fontWeight: 700 }}>YES {yesPrice.toFixed(2)}¢</div>
+            <div style={{ fontSize: 34, color: "#ef4444", fontWeight: 700 }}>NO {noPrice.toFixed(2)}¢</div>
+            <div style={{ fontSize: 24, color: "#bbb" }}>Volume ${volume.toFixed(2)}</div>
           </div>
+        </div>
 
-          {/* Prices */}
-          <div style={{ display: 'flex', gap: 60, marginBottom: 60 }}>
-            <div
-              style={{
-                background: '#22c55e',
-                color: '#000',
-                padding: '18px 48px',
-                borderRadius: 999,
-                fontSize: 42,
-                fontWeight: 700,
-              }}
-            >
-              YES {yesPrice}¢
-            </div>
-            <div
-              style={{
-                background: '#ef4444',
-                color: '#fff',
-                padding: '18px 48px',
-                borderRadius: 999,
-                fontSize: 42,
-                fontWeight: 700,
-              }}
-            >
-              NO {noPrice}¢
-            </div>
-          </div>
-
-          {/* Footer */}
-          <div
+        <div
+          style={{
+            width: "50%",
+            height: "100%",
+            background: "#000",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            overflow: "hidden",
+          }}
+        >
+          <img
+            src={rightImage}
+            alt="market visual"
             style={{
-              fontSize: 28,
-              opacity: 0.85,
+              width: market.market_type === "GEM" ? "100%" : "auto",
+              height: market.market_type === "GEM" ? "100%" : "70%",
+              objectFit: market.market_type === "GEM" ? "cover" : "contain",
             }}
-          >
-            Vantic • Fastest Prediction Market on Solana
-          </div>
+          />
         </div>
       </div>
     ),
-    {
-      width: 1200,
-      height: 630,
-    }
+    { width: 1200, height: 630 }
   );
 }

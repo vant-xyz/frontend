@@ -1,13 +1,12 @@
-import { Metadata } from "next";
-import MarketDetailView from "@/components/ui/MarketDetailView";
+import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { getMarket } from "@/lib/api";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
   try {
-    const res = await getMarket(id);
-    const market = res.market;
-    const title = market.title || "Vantic Prediction Market";
+    const { market } = await getMarket(id);
+    const title = market.title || "Vantic Market";
     return {
       title,
       description: market.description || "Trade YES/NO on Vantic",
@@ -15,7 +14,6 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
         title,
         description: market.description || "Real-time prediction market",
         images: [{ url: `/app/general/${id}/opengraph-image`, width: 1200, height: 630, alt: title }],
-        siteName: "Vantic",
       },
       twitter: {
         card: "summary_large_image",
@@ -28,6 +26,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   }
 }
 
-export default function Page() {
-  return <MarketDetailView />;
+export default async function MarketCanonicalPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  redirect(`/app/general/${id}`);
 }

@@ -44,9 +44,10 @@ type Step = "intro" | "connect" | "shield" | "unshield" | "done";
 interface PrivateDepositModalProps {
   isOpen: boolean;
   onClose: () => void;
+  isDemoMode: boolean;
 }
 
-export function PrivateDepositModal({ isOpen, onClose }: PrivateDepositModalProps) {
+export function PrivateDepositModal({ isOpen, onClose, isDemoMode }: PrivateDepositModalProps) {
   const [isMobile, setIsMobile] = useState(false);
   const [step, setStep] = useState<Step>("intro");
   const [connecting, setConnecting] = useState(false);
@@ -116,9 +117,9 @@ export function PrivateDepositModal({ isOpen, onClose }: PrivateDepositModalProp
 
       const client = await getUmbraClient({
         signer,
-        network: "devnet",
-        rpcUrl: "https://api.devnet.solana.com",
-        rpcSubscriptionsUrl: "wss://api.devnet.solana.com",
+        network: isDemoMode ? "devnet" : "mainnet",
+        rpcUrl: isDemoMode ? "https://api.devnet.solana.com" : "https://api.mainnet-beta.solana.com",
+        rpcSubscriptionsUrl: isDemoMode ? "wss://api.devnet.solana.com" : "wss://api.mainnet-beta.solana.com",
         deferMasterSeedSignature: false,
       });
 
@@ -178,7 +179,7 @@ export function PrivateDepositModal({ isOpen, onClose }: PrivateDepositModalProp
 
       setUnshieldAmount(shieldAmount);
       setStep("unshield");
-      toast.success("USDC shielded into Umbra");
+      toast.success("Funds shielded into Umbra");
     } catch (err) {
       console.log(err);
       toast.error(err instanceof Error ? err.message : "Shield failed");
@@ -305,7 +306,7 @@ export function PrivateDepositModal({ isOpen, onClose }: PrivateDepositModalProp
               <div className="flex items-start gap-2 p-3 rounded-xl bg-white/[0.03] border border-white/5">
                 <Info size={13} className="text-gray-500 mt-0.5 shrink-0" />
                 <p className="text-[11px] text-gray-500">
-                  USDC will be deposited into your Umbra encrypted balance. Make sure your external wallet has enough USDC and SOL for fees.
+                  Funds will be deposited into your Umbra encrypted balance. Make sure your external wallet has enough balance and SOL for fees.
                 </p>
               </div>
             </div>

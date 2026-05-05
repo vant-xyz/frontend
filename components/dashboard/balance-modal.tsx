@@ -215,21 +215,17 @@ export function BalanceModal({
           Sell
         </Button>
 
-        {!isDemoMode && (
-          <>
-            <Button className="flex-1 bg-white text-black hover:bg-gray-200 font-black h-10 rounded-xl uppercase text-[10px] tracking-widest shadow-none">
-              Withdraw
-            </Button>
-            <Button
-              className="flex-1 bg-white/5 text-white hover:bg-white/10 font-black h-10 rounded-xl gap-1.5 uppercase text-[10px] tracking-widest shadow-none border border-white/10"
-              onClick={() => { onClose(); onOpenPrivateDeposit(); }}
-              title="Deposit privately — source wallet is not linked to your Vantic identity on-chain"
-            >
-              <ShieldCheck size={13} />
-              Private
-            </Button>
-          </>
-        )}
+        <Button className="flex-1 bg-white text-black hover:bg-gray-200 font-black h-10 rounded-xl uppercase text-[10px] tracking-widest shadow-none">
+          Withdraw
+        </Button>
+        <Button
+          className="flex-1 bg-white/5 text-white hover:bg-white/10 font-black h-10 rounded-xl gap-1.5 uppercase text-[10px] tracking-widest shadow-none border border-white/10"
+          onClick={() => { onClose(); onOpenPrivateDeposit(); }}
+          title="Deposit privately — source wallet is not linked to your Vantic identity on-chain"
+        >
+          <ShieldCheck size={13} />
+          Private
+        </Button>
       </div>
 
       {isDemoMode && !canFundDemo && (

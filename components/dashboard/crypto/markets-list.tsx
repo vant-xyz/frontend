@@ -1,34 +1,29 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { getMarkets, Market, OrderSide } from "@/lib/api";
+import { useEffect, useState } from "react";
+import { Market, OrderSide } from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Clock, MoreHorizontal, Target } from "lucide-react";
+import { Clock, Share2, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { QuickTradeModal } from "./quick-trade-modal";
-import { usePriceFeed } from "@/hooks/use-price-feed";
 import { cn } from "@/lib/utils";
 import { Loader } from "@/components/ui/loader";
 import { useRouter } from "next/navigation";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 export interface MarketsListProps {
-  loading: boolean,
-  error: string | null,
-  markets: Market[]
+  loading: boolean;
+  error: string | null;
+  markets: Market[];
   reloadMarkets: () => Promise<void>;
 }
 
 export function MarketsList({ loading, error, reloadMarkets, markets }: MarketsListProps) {
-
   const [selectedMarket, setSelectedMarket] = useState<Market | null>(null);
   const [selectedSide, setSelectedSide] = useState<OrderSide>("YES");
   const [isQuickTradeOpen, setIsQuickTradeOpen] = useState(false);
-  const router = useRouter()
-
-
-  const { prices } = usePriceFeed({ usePolling: true, pollingInterval: 500 });
-
 
   const handleQuickTrade = (market: Market, side: OrderSide) => {
     setSelectedMarket(market);
@@ -69,12 +64,7 @@ export function MarketsList({ loading, error, reloadMarkets, markets }: MarketsL
     <>
       <div className="space-y-4">
         {markets.map((market) => (
-          <MarketCard
-            key={market.id}
-            market={market}
-            onQuickTrade={handleQuickTrade}
-            prices={prices}
-          />
+          <MarketCard key={market.id} market={market} onQuickTrade={handleQuickTrade} />
         ))}
       </div>
 
@@ -96,12 +86,12 @@ export function MarketsList({ loading, error, reloadMarkets, markets }: MarketsL
 export interface MarketCardProps {
   market: Market;
   onQuickTrade: (market: Market, side: OrderSide) => void;
-  prices: any;
 }
 
-export function MarketCard({ market, onQuickTrade, prices }: MarketCardProps) {
-  const router = useRouter()
+export function MarketCard({ market, onQuickTrade }: MarketCardProps) {
+  const router = useRouter();
   const [timeLeft, setTimeLeft] = useState<{ seconds: number; text: string }>({ seconds: 0, text: "" });
+  const [shareOpen, setShareOpen] = useState(false);
 
   useEffect(() => {
     const updateTimeLeft = () => {
@@ -116,7 +106,7 @@ export function MarketCard({ market, onQuickTrade, prices }: MarketCardProps) {
         const seconds = Math.floor((diff % 60000) / 1000);
         setTimeLeft({
           seconds: diff / 1000,
-          text: `${minutes}:${seconds.toString().padStart(2, '0')}`
+          text: `${minutes}:${seconds.toString().padStart(2, "0")}`,
         });
       }
     };
@@ -126,130 +116,154 @@ export function MarketCard({ market, onQuickTrade, prices }: MarketCardProps) {
     return () => clearInterval(interval);
   }, [market.end_time_utc]);
 
-     const handleViewDetails = (market: Market) => {
-    router.push(`/app/general/${market.id}`);
-  };
+  const openDetails = () => router.push(`/market/${market.id}`);
 
-
-  const currentPrice = market.current_price
-    ? (market.current_price / 100).toFixed(2)
-    : "0.00";
-
-  const targetPrice = market.target_price
-    ? (market.target_price / 100).toFixed(2)
-    : "0.00";
-
-  const sharePrice = 50;
-
+  const currentPrice = market.current_price ? (market.current_price / 100).toFixed(2) : "0.00";
+  const targetPrice = market.target_price ? (market.target_price / 100).toFixed(2) : "0.00";
+  const yesPrice = Number(currentPrice);
+  const noPrice = Math.max(0, 100 - yesPrice).toFixed(2);
   const isSettling = timeLeft.seconds <= 0;
 
+  const avatarSrc = `/media/images/crypto_assets/${(market.asset || "BTC").toLowerCase()}.png`;
+  const bgImage = market.market_image_small || avatarSrc;
+  const shareUrl = `${typeof window !== "undefined" ? window.location.origin : "https://vantic.xyz"}/market/${market.id}`;
+
   return (
-    <Card className="bg-white/5 border-white/10 hover:bg-white/10 transition-all group">
-      <CardContent className="pt-6 space-y-4">
-        {/* Header */}
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3">
-            {/* Logo Image */}
-            <img
-              src={
-                market.market_image_small
-                  ? market.market_image_small
-                  : `/media/images/crypto_assets/${(market.asset || 'BTC').toLowerCase()}.png`
-              }
-              alt={market.title || market.asset || 'Market'}
-              className="w-10 h-10 rounded-xl object-cover"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                if (market.market_image_small && target.src.includes(market.market_image_small)) {
-                  target.src = `/media/images/crypto_assets/${(market.asset || 'BTC').toLowerCase()}.png`;
-                } else {
-                  target.style.display = 'none';
-                }
-              }}
-            />
-            <div>
-              <h3 className="font-semibold text-white group-hover:text-red-400 transition-colors">
-                {market.title}
-              </h3>
-              <div className="flex items-center gap-2 text-xs">
-                <span className={cn(
-                  "flex items-center gap-1 font-mono",
-                  timeLeft.seconds <= 60 && timeLeft.seconds > 0 ? "text-red-400" : "text-gray-400"
-                )}>
-                  <Clock size={12} />
-                  {timeLeft.text}
-                </span>
-                <span>•</span>
-                <span className="text-gray-400">{market.market_type}</span>
-              </div>
-            </div>
-          </div>
-          <Badge variant="outline" className={cn(
-            "border-green-500/50 text-green-400",
-            isSettling && "border-yellow-500/50 text-yellow-400"
-          )}>
-            {isSettling ? "Settling" : "Active"}
-          </Badge>
-        </div>
-
-        {/* Description */}
-        <p className="text-sm text-gray-400 line-clamp-2">
-          {market.description}
-        </p>
-
-        {/* Price Info & Trade Buttons */}
-        <div className="pt-4 border-t border-white/5">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-6">
+    <>
+      <Card className="relative overflow-hidden bg-white/5 border-white/10 hover:bg-white/10 transition-all group cursor-pointer" onClick={openDetails}>
+        <div
+          className="pointer-events-none absolute inset-0 opacity-15"
+          style={{
+            backgroundImage: `url(${bgImage})`,
+            backgroundSize: "180px",
+            backgroundRepeat: "no-repeat",
+            backgroundPosition: "right -22px top -10px",
+            transform: "rotate(-8deg)",
+            transformOrigin: "top right",
+          }}
+        />
+        <CardContent className="relative pt-6 space-y-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <img src={avatarSrc} alt={market.asset || "asset"} className="w-10 h-10 rounded-xl object-cover border border-white/10" />
               <div>
-                <p className="text-gray-500 text-xs mb-1">Current Price</p>
-                <p className="text-lg font-mono text-white">${currentPrice}</p>
-              </div>
-              <div>
-                <p className="text-gray-500 text-xs mb-1">Target</p>
-                <p className="text-lg font-mono text-white flex items-center gap-2">
-                  <Target size={16} className={market.direction === "Above" ? "text-green-400" : "text-red-400"} />
-                  ${targetPrice}
-                </p>
+                <h3 className="font-semibold text-white group-hover:text-red-400 transition-colors">{market.title}</h3>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className={cn("flex items-center gap-1 font-mono", timeLeft.seconds <= 20 && timeLeft.seconds > 0 ? "text-red-400" : "text-gray-400")}>
+                    <Clock size={12} />
+                    {timeLeft.text}
+                  </span>
+                  <span className="text-gray-600">•</span>
+                  <span className="text-gray-400">{market.market_type}</span>
+                </div>
               </div>
             </div>
 
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-10 w-10 text-gray-400 hover:text-white hover:bg-white/10"
-              onClick={()=>handleViewDetails(market)}
-            >
-              <MoreHorizontal size={20} />
-            </Button>
-          </div>
-
-          {/* YES/NO Buttons or Settling */}
-          {isSettling ? (
-            <div className="py-4 text-center flex items-center justify-center gap-2">
-              <Loader className="w-5 h-5 text-yellow-400" />
-              <p className="text-yellow-400 font-semibold animate-pulse">Settling...</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className={cn("border-green-500/50 text-green-400", isSettling && "border-yellow-500/50 text-yellow-400")}>
+                {isSettling ? "Settling" : "Active"}
+              </Badge>
               <Button
-                variant="outline"
-                className="h-12 border-green-500/50 text-green-400 hover:bg-green-500/10 hover:text-green-300 font-semibold"
-                onClick={() => onQuickTrade(market, "YES")}
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-gray-400 hover:text-white hover:bg-white/10"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShareOpen(true);
+                }}
               >
-                YES @ ${sharePrice}
+                <Share2 size={16} />
+              </Button>
+            </div>
+          </div>
+
+          <p className="text-sm text-gray-400 line-clamp-2">{market.description}</p>
+
+          <div className="pt-4 border-t border-white/5">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-6">
+                <div>
+                  <p className="text-gray-500 text-xs mb-1">Current Price</p>
+                  <p className="text-lg font-mono text-white">${currentPrice}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500 text-xs mb-1">Target</p>
+                  <p className="text-lg font-mono text-white flex items-center gap-2">
+                    <Target size={16} className={market.direction === "Above" ? "text-green-400" : "text-red-400"} />
+                    ${targetPrice}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {isSettling ? (
+              <div className="py-4 text-center flex items-center justify-center gap-2">
+                <Loader className="w-5 h-5 text-yellow-400" />
+                <p className="text-yellow-400 font-semibold animate-pulse">Settling...</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3" onClick={(e) => e.stopPropagation()}>
+                <Button
+                  variant="outline"
+                  className="h-12 border-green-500/50 text-green-400 hover:bg-green-500/10 hover:text-green-300 font-semibold"
+                  onClick={() => onQuickTrade(market, "YES")}
+                >
+                  YES @ ${yesPrice.toFixed(2)}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-12 border-red-500/50 text-red-400 hover:bg-red-500/10 hover:text-red-300 font-semibold"
+                  onClick={() => onQuickTrade(market, "NO")}
+                >
+                  NO @ ${noPrice}
+                </Button>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Dialog open={shareOpen} onOpenChange={setShareOpen}>
+        <DialogContent className="bg-black border-white/10 text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle>Share Market</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-xs text-gray-400">{shareUrl}</p>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(shareUrl);
+                    toast.success("Link copied");
+                  } catch {
+                    toast.error("Failed to copy link");
+                  }
+                }}
+              >
+                Copy Link
               </Button>
               <Button
                 variant="outline"
-                className="h-12 border-red-500/50 text-red-400 hover:bg-red-500/10 hover:text-red-300 font-semibold"
-                onClick={() => onQuickTrade(market, "NO")}
+                onClick={async () => {
+                  try {
+                    if (navigator.share) {
+                      await navigator.share({ title: market.title, text: market.description, url: shareUrl });
+                    } else {
+                      await navigator.clipboard.writeText(shareUrl);
+                      toast.success("Link copied");
+                    }
+                  } catch {
+                    // no-op
+                  }
+                }}
               >
-                NO @ ${sharePrice}
+                Share
               </Button>
             </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
