@@ -496,20 +496,24 @@ export function HistoryClient({ initialTransactions }: HistoryClientProps) {
       {/* Position detail */}
       {isMobile ? (
         <Drawer open={!!posDetail} onOpenChange={(open) => !open && setPosDetail(null)}>
-          <DrawerContent className="bg-black border-white/10 px-4 pb-8 outline-none">
-            <DrawerHeader className="px-0">
+          <DrawerContent className="bg-black border-white/10 px-4 pb-8 outline-none max-h-[92vh] flex flex-col">
+            <DrawerHeader className="px-0 shrink-0">
               <DrawerTitle className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em]">Trade Details</DrawerTitle>
             </DrawerHeader>
-            {posDetailContent}
+            <div className="overflow-y-auto flex-1">
+              {posDetailContent}
+            </div>
           </DrawerContent>
         </Drawer>
       ) : (
         <Dialog open={!!posDetail} onOpenChange={(open) => !open && setPosDetail(null)}>
-          <DialogContent className="max-w-md bg-black border-white/10 p-8 rounded-3xl shadow-2xl outline-none border">
-            <DialogHeader className="p-0 mb-4">
+          <DialogContent className="max-w-md bg-black border-white/10 p-8 rounded-3xl shadow-2xl outline-none border max-h-[90vh] flex flex-col">
+            <DialogHeader className="p-0 mb-4 shrink-0">
               <DialogTitle className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em]">Trade Details</DialogTitle>
             </DialogHeader>
-            {posDetailContent}
+            <div className="overflow-y-auto flex-1">
+              {posDetailContent}
+            </div>
           </DialogContent>
         </Dialog>
       )}
