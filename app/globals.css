@@ -128,6 +128,24 @@
   .opacity-3 {
     opacity: 0.03;
   }
+
+  @keyframes maintenanceOrbit {
+    0% {
+      clip-path: inset(0 100% calc(100% - 2px) 0);
+    }
+    25% {
+      clip-path: inset(0 0 calc(100% - 2px) calc(100% - 2px));
+    }
+    50% {
+      clip-path: inset(calc(100% - 2px) 0 0 calc(100% - 2px));
+    }
+    75% {
+      clip-path: inset(calc(100% - 2px) calc(100% - 2px) 0 0);
+    }
+    100% {
+      clip-path: inset(0 100% calc(100% - 2px) 0);
+    }
+  }
 }
 
 /* globals.css */
