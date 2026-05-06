@@ -1,4 +1,10 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+const PUBLIC_PROXY_BASE = "/api/public";
+
+function viaPublicProxy(path: string): string {
+  const normalized = path.startsWith("/") ? path.slice(1) : path;
+  return `${PUBLIC_PROXY_BASE}/${normalized}`;
+}
 
 export interface WaitlistRequest {
   email: string;
@@ -242,12 +248,8 @@ export function connectToPriceFeed(
 }
 
 export async function getLatestPrices(): Promise<PriceData> {
-  const response = await fetch(`${API_BASE_URL}/prices`, {
+  const response = await fetch(viaPublicProxy("prices"), {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
-    },
   });
 
   if (!response.ok) {
@@ -258,12 +260,8 @@ export async function getLatestPrices(): Promise<PriceData> {
 }
 
 export async function getVantRate(): Promise<VantRateResponse> {
-  const response = await fetch(`${API_BASE_URL}/prices/vant`, {
+  const response = await fetch(viaPublicProxy("prices/vant"), {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
-    },
   });
 
   if (!response.ok) {
@@ -274,12 +272,8 @@ export async function getVantRate(): Promise<VantRateResponse> {
 }
 
 export async function getAssetVantPrice(asset: string): Promise<AssetVantPriceResponse> {
-  const response = await fetch(`${API_BASE_URL}/prices/vant/${asset}`, {
+  const response = await fetch(viaPublicProxy(`prices/vant/${asset}`), {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
-    },
   });
 
   if (!response.ok) {
@@ -291,12 +285,8 @@ export async function getAssetVantPrice(asset: string): Promise<AssetVantPriceRe
 
 export async function getTokenPrices(tickers: string[]): Promise<TokenPricesResponse> {
   const query = encodeURIComponent(tickers.join(","));
-  const response = await fetch(`${API_BASE_URL}/prices/tokens?tickers=${query}`, {
+  const response = await fetch(viaPublicProxy(`prices/tokens?tickers=${query}`), {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4",
-    },
   });
 
   if (!response.ok) {
@@ -811,12 +801,8 @@ export async function getTrades(
   const params = new URLSearchParams();
   params.append("limit", limit.toString());
 
-  const response = await fetch(`${API_BASE_URL}/markets/${id}/trades?${params.toString()}`, {
+  const response = await fetch(viaPublicProxy(`markets/${id}/trades?${params.toString()}`), {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
-    },
   });
 
   if (!response.ok) {
@@ -827,12 +813,8 @@ export async function getTrades(
 }
 
 export async function getMarketVolume(id: string): Promise<MarketVolumeResponse> {
-  const response = await fetch(`${API_BASE_URL}/markets/${id}/volume`, {
+  const response = await fetch(viaPublicProxy(`markets/${id}/volume`), {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
-    },
   });
 
   if (!response.ok) {
@@ -843,12 +825,8 @@ export async function getMarketVolume(id: string): Promise<MarketVolumeResponse>
 }
 
 export async function getMarketCandles(id: string): Promise<MarketCandlesResponse> {
-  const response = await fetch(`${API_BASE_URL}/markets/${id}/candles`, {
+  const response = await fetch(viaPublicProxy(`markets/${id}/candles`), {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4",
-    },
   });
   if (!response.ok) {
     throw new Error("Failed to fetch market candles");
@@ -857,12 +835,8 @@ export async function getMarketCandles(id: string): Promise<MarketCandlesRespons
 }
 
 export async function getMarketOpinionTrend(id: string): Promise<MarketOpinionTrendResponse> {
-  const response = await fetch(`${API_BASE_URL}/markets/${id}/opinion-trend`, {
+  const response = await fetch(viaPublicProxy(`markets/${id}/opinion-trend`), {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4",
-    },
   });
   if (!response.ok) {
     throw new Error("Failed to fetch market opinion trend");
@@ -882,12 +856,8 @@ export async function getMarkets(
   if (asset) params.append("asset", asset);
   params.append("limit", limit.toString());
 
-  const response = await fetch(`${API_BASE_URL}/markets?${params.toString()}`, {
+  const response = await fetch(viaPublicProxy(`markets?${params.toString()}`), {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
-    },
   });
 
   if (!response.ok) {
@@ -898,12 +868,8 @@ export async function getMarkets(
 }
 
 export async function getMarket(marketId: string): Promise<MarketResponse> {
-  const response = await fetch(`${API_BASE_URL}/markets/${marketId}`, {
+  const response = await fetch(viaPublicProxy(`markets/${marketId}`), {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
-    },
   });
 
   if (!response.ok) {
@@ -949,12 +915,8 @@ export async function getMarketsOnchain(status?: MarketStatus): Promise<MarketsO
 }
 
 export async function getOrderbook(marketId: string): Promise<OrderbookResponse> {
-  const response = await fetch(`${API_BASE_URL}/markets/${marketId}/orderbook`, {
+  const response = await fetch(viaPublicProxy(`markets/${marketId}/orderbook`), {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
-    },
   });
 
   if (!response.ok) {

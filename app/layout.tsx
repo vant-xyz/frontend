@@ -4,6 +4,7 @@ import { Ubuntu, JetBrains_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { Toaster } from 'sonner'
 import { PWAInstallPrompt } from '@/components/pwa/install-prompt'
+import { MaintenanceGate } from '@/components/system/maintenance-gate'
 import './globals.css'
 
 const ubuntu = Ubuntu({
@@ -123,7 +124,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="Vantic" />
       </head>
       <body className={`${ubuntu.variable} ${jetbrainsMono.variable} font-sans antialiased bg-black text-white`}>
-        {children}
+        <MaintenanceGate>{children}</MaintenanceGate>
         <PWAInstallPrompt />
         <Analytics />
         <Toaster
