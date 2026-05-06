@@ -253,14 +253,6 @@ export async function getLatestPrices(): Promise<PriceData> {
     return proxyResp.json();
   }
 
-  // Fallback: direct public API call
-  if (API_BASE_URL) {
-    const directResp = await fetch(`${API_BASE_URL}/prices`, { method: "GET" });
-    if (directResp.ok) {
-      return directResp.json();
-    }
-  }
-
   throw new Error("Failed to fetch prices");
 }
 
