@@ -169,9 +169,9 @@ export default function MarketDetailView() {
         const interval = setInterval(() => {
             if (isOrderInputFocused) return;
             fetchMarketTrades();
-        }, 1000);
+        }, 2000);
         return () => clearInterval(interval);
-    }, [id, marketTrades, isOrderInputFocused])
+    }, [id, isOrderInputFocused])
 
     useEffect(() => {
         if (!id) return;
@@ -203,15 +203,19 @@ export default function MarketDetailView() {
 
         fetchMarket();
         fetchVolume();
-        const interval = setInterval(() => {
+        const marketInterval = setInterval(() => {
             if (isOrderInputFocused) return;
             fetchMarket();
-            fetchVolume();
         }, 1000);
+        const volumeInterval = setInterval(() => {
+            if (isOrderInputFocused) return;
+            fetchVolume();
+        }, 5000);
 
         return () => {
             mounted = false;
-            clearInterval(interval);
+            clearInterval(marketInterval);
+            clearInterval(volumeInterval);
         };
     }, [id, isOrderInputFocused]);
 

@@ -1,7 +1,6 @@
 import React from "react"
 import type { Metadata } from 'next'
 import { Ubuntu, JetBrains_Mono } from 'next/font/google'
-import localFont from "next/font/local"
 import { Analytics } from '@vercel/analytics/next'
 import { Toaster } from 'sonner'
 import { PWAInstallPrompt } from '@/components/pwa/install-prompt'
@@ -16,17 +15,6 @@ const ubuntu = Ubuntu({
 const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   variable: '--font-jetbrains'
-});
-
-const ibmPlexMono = localFont({
-  src: [
-    { path: "../public/IBM_Plex_Mono/IBMPlexMono-Regular.ttf", weight: "400", style: "normal" },
-    { path: "../public/IBM_Plex_Mono/IBMPlexMono-Medium.ttf", weight: "500", style: "normal" },
-    { path: "../public/IBM_Plex_Mono/IBMPlexMono-SemiBold.ttf", weight: "600", style: "normal" },
-    { path: "../public/IBM_Plex_Mono/IBMPlexMono-Bold.ttf", weight: "700", style: "normal" },
-  ],
-  variable: "--font-ibm-plex-mono",
-  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -134,7 +122,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Vantic" />
       </head>
-      <body className={`${ubuntu.variable} ${jetbrainsMono.variable} ${ibmPlexMono.variable} font-sans antialiased bg-black text-white`}>
+      <body className={`${ubuntu.variable} ${jetbrainsMono.variable} font-sans antialiased bg-black text-white`}>
         {children}
         <PWAInstallPrompt />
         <Analytics />

@@ -23,6 +23,8 @@ export default function GeneralPage() {
   const [selectedSide, setSelectedSide] = useState<OrderSide>("YES");
   const [isQuickTradeOpen, setIsQuickTradeOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState("All");
+  const [quotesByMarket, setQuotesByMarket] = useState<Record<string, { yes: number; no: number }>>({});
+  const [volumeByMarket, setVolumeByMarket] = useState<Record<string, number>>({});
 
   const loadMarkets = useCallback(async () => {
     try {
@@ -41,6 +43,47 @@ export default function GeneralPage() {
     const interval = setInterval(loadMarkets, 1000);
     return () => clearInterval(interval);
   }, [loadMarkets]);
+
+  useEffect(() => {
+    if (!markets.length) return;
+    let active = true;
+    const toCents = (v?: number) => {
+      const n = Number(v ?? 0);
+      if (!Number.isFinite(n)) return 0;
+      return n <= 1 ? n * 100 : n;
+    };
+    const loadShared = async () => {
+      const quoteEntries = await Promise.all(markets.map(async (m) => {
+        try {
+          const ob = await getOrderbook(m.id);
+          const bestYesBid = toCents(ob.orderbook?.yes_bids?.[0]?.price);
+          const bestNoAsk = toCents(ob.orderbook?.no_asks?.[0]?.price);
+          const yes = bestYesBid > 0 ? bestYesBid : toCents(ob.orderbook?.last_traded_price) || 50;
+          const no = bestNoAsk > 0 ? bestNoAsk : Math.max(0, 100 - yes);
+          return [m.id, { yes, no }] as const;
+        } catch {
+          return [m.id, { yes: 50, no: 50 }] as const;
+        }
+      }));
+      const volumeEntries = await Promise.all(markets.map(async (m) => {
+        try {
+          const vol = await getMarketVolume(m.id);
+          return [m.id, Number(vol.volume?.volume ?? 0)] as const;
+        } catch {
+          return [m.id, 0] as const;
+        }
+      }));
+      if (!active) return;
+      setQuotesByMarket(Object.fromEntries(quoteEntries));
+      setVolumeByMarket(Object.fromEntries(volumeEntries));
+    };
+    loadShared();
+    const quotesInterval = setInterval(loadShared, 1000);
+    return () => {
+      active = false;
+      clearInterval(quotesInterval);
+    };
+  }, [markets]);
 
   const filteredMarkets = useMemo(() => {
     if (activeCategory === "All") return markets;
@@ -97,7 +140,14 @@ export default function GeneralPage() {
         <div className="overflow-x-auto">
           <div className="flex gap-3">
             {markets.slice(0, 4).map((m) => (
-              <GemCard key={m.id} market={m} onQuickTrade={handleQuickTrade} compact />
+              <GemCard
+                key={m.id}
+                market={m}
+                onQuickTrade={handleQuickTrade}
+                compact
+                liveQuote={quotesByMarket[m.id]}
+                liveVolume={volumeByMarket[m.id]}
+              />
             ))}
           </div>
         </div>
@@ -126,7 +176,13 @@ export default function GeneralPage() {
 
         <div className="space-y-4">
           {filteredMarkets.map((m) => (
-            <GemCard key={m.id} market={m} onQuickTrade={handleQuickTrade} />
+            <GemCard
+              key={m.id}
+              market={m}
+              onQuickTrade={handleQuickTrade}
+              liveQuote={quotesByMarket[m.id]}
+              liveVolume={volumeByMarket[m.id]}
+            />
           ))}
         </div>
       </div>
@@ -146,18 +202,22 @@ export default function GeneralPage() {
   );
 }
 
-function GemCard({ market, onQuickTrade, compact = false }: { market: Market; onQuickTrade: (market: Market, side: OrderSide) => void; compact?: boolean }) {
+function GemCard({
+  market,
+  onQuickTrade,
+  compact = false,
+  liveQuote,
+  liveVolume,
+}: {
+  market: Market;
+  onQuickTrade: (market: Market, side: OrderSide) => void;
+  compact?: boolean;
+  liveQuote?: { yes: number; no: number };
+  liveVolume?: number;
+}) {
   const router = useRouter();
   const [shareOpen, setShareOpen] = useState(false);
   const [timeText, setTimeText] = useState("--:--");
-  const [yesNoCents, setYesNoCents] = useState<{ yes: number; no: number }>({ yes: 50, no: 50 });
-  const [volumeUsd, setVolumeUsd] = useState<number>(0);
-
-  const toCents = (v?: number) => {
-    const n = Number(v ?? 0);
-    if (!Number.isFinite(n)) return 0;
-    return n <= 1 ? n * 100 : n;
-  };
 
   useEffect(() => {
     const tick = () => {
@@ -183,36 +243,8 @@ function GemCard({ market, onQuickTrade, compact = false }: { market: Market; on
     return () => clearInterval(interval);
   }, [market.end_time_utc]);
 
-  useEffect(() => {
-    let active = true;
-    const load = async () => {
-      try {
-        const ob = await getOrderbook(market.id);
-        const bestYesBid = toCents(ob.orderbook?.yes_bids?.[0]?.price);
-        const bestNoAsk = toCents(ob.orderbook?.no_asks?.[0]?.price);
-        const yes = bestYesBid > 0 ? bestYesBid : toCents(ob.orderbook?.last_traded_price) || 50;
-        const no = bestNoAsk > 0 ? bestNoAsk : Math.max(0, 100 - yes);
-        if (active) setYesNoCents({ yes, no });
-      } catch {
-        if (active) setYesNoCents({ yes: 50, no: 50 });
-      }
-      try {
-        const vol = await getMarketVolume(market.id);
-        if (active) setVolumeUsd(Number(vol.volume?.volume ?? 0));
-      } catch {
-        if (active) setVolumeUsd(0);
-      }
-    };
-    load();
-    const interval = setInterval(load, 1000);
-    return () => {
-      active = false;
-      clearInterval(interval);
-    };
-  }, [market.id]);
-
-  const yesCents = yesNoCents.yes;
-  const noCents = yesNoCents.no;
+  const yesCents = liveQuote?.yes ?? (market.current_price ?? 50);
+  const noCents = liveQuote?.no ?? Math.max(0, 100 - yesCents);
   const banner = market.market_image_banner || market.market_image_small || "/media/images/hero_image.png";
   const shareUrl = `${typeof window !== "undefined" ? window.location.origin : "https://vantic.xyz"}/market/${market.id}`;
   const previewImageUrl = `${typeof window !== "undefined" ? window.location.origin : "https://vantic.xyz"}/app/general/${market.id}/opengraph-image`;
@@ -240,7 +272,7 @@ function GemCard({ market, onQuickTrade, compact = false }: { market: Market; on
               <p className="text-xs text-gray-400 mb-1">{compact ? "🔥 Trending" : (market.category || "General")}</p>
               <h3 className="text-sm font-semibold text-white line-clamp-2">{market.title}</h3>
               <p className="mt-2 text-xs text-gray-400 flex items-center gap-1"><Clock size={12} />{timeText}</p>
-              <p className="mt-1 text-xs text-gray-400">Vol ${volumeUsd.toFixed(2)}</p>
+              <p className="mt-1 text-xs text-gray-400">Vol ${(liveVolume ?? 0).toFixed(2)}</p>
             </div>
             <Button
               variant="ghost"
