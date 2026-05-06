@@ -1,23 +1,32 @@
-import { getMarket, getTrades, Market } from "@/lib/api";
+import { Market } from "@/lib/api";
 import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
 
 export default async function Image({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://vcs-api.vantic.xyz";
   let market: Market;
   let volume = 0;
 
   try {
-    const res = await getMarket(id);
-    market = res.market;
+    const res = await fetch(`${apiUrl}/markets/${id}`, { next: { revalidate: 60 } });
+    if (!res.ok) throw new Error("not ok");
+    const data = await res.json();
+    market = data.market;
   } catch {
     market = { title: "Vantic Market", current_price: 50, market_type: "GEM" } as Market;
   }
 
   try {
-    const trades = await getTrades(id, 200);
-    volume = trades.trades.reduce((acc, t) => acc + Number(t.price || 0) * Number(t.quantity || 0), 0) / 100;
+    const res = await fetch(`${apiUrl}/markets/${id}/trades?limit=200`, { next: { revalidate: 60 } });
+    if (res.ok) {
+      const data = await res.json();
+      volume = (data.trades || []).reduce(
+        (acc: number, t: any) => acc + Number(t.price || 0) * Number(t.quantity || 0),
+        0
+      ) / 100;
+    }
   } catch {
     volume = 0;
   }

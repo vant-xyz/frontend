@@ -187,10 +187,11 @@ export function HistoryClient({ initialTransactions }: HistoryClientProps) {
   const posDetailContent = posDetail && (() => {
     const { pos, market } = posDetail;
     const outcome = positionOutcome(pos);
-    const multiplier = pos.total_cost > 0 ? Number(pos.payout_amount) / pos.total_cost : null;
+    const stake = pos.total_cost > 0 ? pos.total_cost : pos.shares * (pos.avg_entry_price || 0);
+    const multiplier = stake > 0 ? Number(pos.payout_amount) / stake : null;
     const avgPriceCents = (pos.avg_entry_price || 0) * 100;
     const payoutAmount = Number(pos.payout_amount || 0);
-    const paidOutPct = pos.total_cost > 0 ? (payoutAmount / pos.total_cost) * 100 : 0;
+    const paidOutPct = stake > 0 ? (payoutAmount / stake) * 100 : 0;
 
     return (
       <div className="space-y-5 py-6 px-1">
@@ -227,6 +228,10 @@ export function HistoryClient({ initialTransactions }: HistoryClientProps) {
           <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5">
             <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Entry Price</p>
             <p className="text-base font-black text-white font-mono">{avgPriceCents.toFixed(1)}¢</p>
+          </div>
+          <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5">
+            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Stake</p>
+            <p className="text-base font-black text-white font-mono">${stake.toFixed(2)}</p>
           </div>
           <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 col-span-2">
             <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Amount Paid Out</p>
