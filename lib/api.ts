@@ -337,6 +337,7 @@ export interface BalanceInfo {
   total_demo_usd: number;
   vusd: number;
   // Real assets
+  palm_usd?: number;
   usdc_sol: number;
   wsol: number;
   usdc_base: number;

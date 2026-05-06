@@ -429,7 +429,7 @@ export default function MarketDetailView() {
         }
     };
 
-    const OrderbookPanel = () => {
+    const orderbookPanel = (() => {
         const bids = orderbook?.yes_bids || [];
         const asks = orderbook?.yes_asks || [];
         const sortedBids = [...bids].sort((a, b) => b.price - a.price).slice(0, 12);
@@ -519,9 +519,9 @@ export default function MarketDetailView() {
                 </div>
             </div>
         );
-    };
+    })();
 
-    const OrderForm = () => (
+    const orderForm = (
         <div className="flex flex-col h-full">
             {/* Buy / Sell + Market type */}
             <div className="p-4 border-b border-white/8 space-y-3">
@@ -624,7 +624,7 @@ export default function MarketDetailView() {
                         </button>
                     </div>
 
-                    <div className="mb-3">
+                    <div className="mb-3 flex items-stretch gap-1">
                         <Input
                             type="number"
                             value={inputMode === "shares" ? quantity : usdAmount}
@@ -637,11 +637,39 @@ export default function MarketDetailView() {
                             }}
                             onFocus={() => setIsOrderInputFocused(true)}
                             onBlur={() => setIsOrderInputFocused(false)}
-                            className="w-full bg-white/5 border-white/10 text-white h-11 font-mono"
+                            className="flex-1 bg-white/5 border-white/10 text-white h-11 font-mono"
                             min="0"
                             step="0.01"
                             inputMode="decimal"
                         />
+                        <div className="flex flex-col gap-0.5">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (inputMode === "shares") {
+                                        setQuantity(String(Math.max(0, (parseFloat(quantity) || 0) + 1)));
+                                    } else {
+                                        setUsdAmount((Math.max(0, (parseFloat(usdAmount) || 0) + 1)).toFixed(2));
+                                    }
+                                }}
+                                className="flex-1 w-8 rounded-md bg-white/8 hover:bg-white/15 text-gray-400 hover:text-white transition-colors flex items-center justify-center"
+                            >
+                                <ChevronUp size={12} />
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (inputMode === "shares") {
+                                        setQuantity(String(Math.max(0, (parseFloat(quantity) || 0) - 1)));
+                                    } else {
+                                        setUsdAmount((Math.max(0, (parseFloat(usdAmount) || 0) - 1)).toFixed(2));
+                                    }
+                                }}
+                                className="flex-1 w-8 rounded-md bg-white/8 hover:bg-white/15 text-gray-400 hover:text-white transition-colors flex items-center justify-center"
+                            >
+                                <ChevronDown size={12} />
+                            </button>
+                        </div>
                     </div>
 
                     {/* 25% 50% MAX Buttons */}
@@ -1125,7 +1153,7 @@ export default function MarketDetailView() {
                         "w-full lg:w-[280px] xl:w-[320px] flex flex-col border border-white/8 rounded-xl shrink-0 bg-[#0a0a0a] overflow-hidden",
                         mobileTab === "book" ? "flex" : "hidden lg:flex"
                     )}>
-                        <OrderbookPanel />
+                        {orderbookPanel}
                     </div>
 
                     {/* RIGHT — Order form (desktop always visible, mobile only when tab=order) */}
@@ -1133,7 +1161,7 @@ export default function MarketDetailView() {
                         "w-full lg:w-[320px] xl:w-[360px] flex flex-col rounded-xl shrink-0 bg-[#0a0a0a] border border-white/8 overflow-hidden",
                         mobileTab === "order" ? "flex" : "hidden lg:flex"
                     )}>
-                        <OrderForm />
+                        {orderForm}
                     </div>
                 </div>
             </div>

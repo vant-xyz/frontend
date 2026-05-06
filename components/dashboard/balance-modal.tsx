@@ -51,6 +51,7 @@ interface AssetConfig {
 const REAL_ASSETS: AssetConfig[] = [
   { key: "naira", label: "USD Balance", symbol: "USD", isNaira: true },
   { key: "vusd", label: "vUSD", symbol: "vUSD", isVNaira: true },
+  { key: "palm_usd", label: "Palm USD", symbol: "PUSD", icon: "/media/images/token_icons/PalmUSD.png" },
   { key: "sol", label: "Solana", symbol: "SOL", icon: "/media/images/token_icons/solana.png" },
   { key: "wsol", label: "Wrapped Solana", symbol: "WSOL", icon: "/media/images/token_icons/solana.png" },
   { key: "eth_base", label: "Ethereum (Base)", symbol: "ETH", icon: "/media/images/token_icons/eth.png" },
@@ -123,7 +124,7 @@ export function BalanceModal({
   const handleRequestDemoFunds = async () => {
     setIsFunding(true);
     try {
-      const res = await onFundDemo(20000);
+      const res = await onFundDemo(200);
       toast.success(res.message || "Account funded successfully");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to request funds");
@@ -216,7 +217,7 @@ export function BalanceModal({
       </div>
 
       {/* Action Buttons */}
-      <div className="px-4 flex flex-row gap-2 shrink-0">
+      <div className={cn("px-4 shrink-0", isDemoMode ? "grid grid-cols-2 gap-2" : "flex flex-row gap-2")}>
         {isDemoMode && (
           <Button 
             className="flex-1 bg-blue-600 text-white hover:bg-blue-500 font-black h-10 rounded-xl gap-2 disabled:opacity-50 disabled:cursor-not-allowed uppercase text-[10px] tracking-widest"

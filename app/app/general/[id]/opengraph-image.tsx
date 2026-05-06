@@ -24,7 +24,9 @@ export default async function Image({ params }: { params: Promise<{ id: string }
 
   const yesPrice = Number((market.current_price ?? 50).toFixed(1));
   const noPrice = Number((100 - (market.current_price ?? 50)).toFixed(1));
-  const rightImage = market.market_image_small || `/media/images/crypto_assets/${(market.asset || "btc").toLowerCase()}.png`;
+  const BASE_URL = "https://vantic.xyz";
+  const rawImage = market.market_image_small || `/media/images/crypto_assets/${(market.asset || "btc").toLowerCase()}.png`;
+  const rightImage = rawImage.startsWith("http") ? rawImage : `${BASE_URL}${rawImage}`;
 
   return new ImageResponse(
     (
