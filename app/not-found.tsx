@@ -39,6 +39,9 @@ export default function NotFound() {
         <p className="text-gray-400 mb-8 leading-relaxed">
           The page you're looking for doesn't exist or has been moved.
         </p>
+        <p className="text-sm text-zinc-500 mb-8">
+          Plot twist: even our prediction market couldn&apos;t predict this URL.
+        </p>
 
         {/* CTA Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
