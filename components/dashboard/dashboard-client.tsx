@@ -108,7 +108,12 @@ export function DashboardClient({ children }: DashboardClientProps) {
             </Button>
             <BalanceWidget 
               totalBalance={totalBalance ?? null} 
-              onClick={() => setIsBalanceModalOpen(true)} 
+              onClick={() => {
+                if (!isDemoMode) {
+                  toggleDemoReal();
+                }
+                setIsBalanceModalOpen(true);
+              }} 
               variant="desktop" 
             />
           </div>

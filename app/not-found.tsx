@@ -9,41 +9,32 @@ export const metadata: Metadata = {
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col items-center justify-center px-6">
+    <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center px-6">
       <div className="flex items-center gap-2.5 mb-16">
-        <Image src="/icon.png" alt="Vantic" width={20} height={20} className="rounded-sm opacity-60" />
-        <span className="text-[10px] font-black tracking-[0.35em] uppercase text-gray-600">Vantic</span>
+        <Image src="/icon.png" alt="Vantic" width={22} height={22} className="rounded-sm" />
+        <span className="text-[10px] font-black tracking-[0.3em] uppercase text-gray-500">Vantic</span>
       </div>
 
-      <div className="text-center max-w-xs">
-        <p className="text-[9px] font-black tracking-[0.35em] uppercase text-red-500/80 mb-6">
+      <div className="w-full max-w-xs text-center">
+        <p className="text-[10px] font-black tracking-[0.3em] uppercase text-red-500 mb-3">
           Error 404
         </p>
-
-        <div
-          className="text-[96px] font-black leading-none text-white mb-8 select-none"
-          style={{ textShadow: "0 0 48px rgba(220,38,38,0.35), 0 0 96px rgba(220,38,38,0.1)" }}
-        >
-          404
-        </div>
-
-        <h1 className="text-base font-black uppercase tracking-widest text-white mb-3">
-          Page not found
-        </h1>
+        <h1 className="text-7xl font-black text-white mb-6">404</h1>
+        <p className="text-sm font-bold text-white mb-2">Page not found</p>
         <p className="text-xs text-gray-500 leading-relaxed mb-10">
-          This page was delisted, moved, or never existed. Even our prediction engine couldn't see this one coming.
+          This page was moved, deleted, or never existed.
         </p>
 
-        <div className="flex gap-3 justify-center">
+        <div className="flex gap-3">
           <Link
             href="/app/general"
-            className="flex-1 py-3 bg-red-600 hover:bg-red-500 active:bg-red-700 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all text-center"
+            className="flex-1 py-3 bg-red-600 hover:bg-red-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-colors text-center"
           >
             Markets
           </Link>
           <Link
             href="/"
-            className="flex-1 py-3 bg-white/5 hover:bg-white/10 border border-white/8 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all text-center"
+            className="flex-1 py-3 border border-white/10 hover:bg-white/5 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-colors text-center"
           >
             Home
           </Link>
@@ -59,7 +50,7 @@ export default function NotFound() {
           <Link
             key={href}
             href={href}
-            className="text-[9px] font-bold uppercase tracking-widest text-gray-700 hover:text-gray-500 transition-colors"
+            className="text-[9px] font-bold uppercase tracking-widest text-gray-700 hover:text-gray-400 transition-colors"
           >
             {label}
           </Link>

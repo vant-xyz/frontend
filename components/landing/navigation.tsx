@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { AuthModal } from "./auth-modal";
-import { WaitlistModal } from "./waitlist-modal";
 import { getUserProfile, type AuthResponse } from "@/lib/api";
 
 interface NavigationProps {
@@ -13,7 +12,6 @@ interface NavigationProps {
 export function Navigation({ onWaitlistOpen }: NavigationProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [isWaitlistModalOpen, setIsWaitlistModalOpen] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [user, setUser] = useState<AuthResponse["user"] | null>(null);
 
@@ -196,17 +194,6 @@ export function Navigation({ onWaitlistOpen }: NavigationProps) {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <Button
-                    onClick={() => {
-                      setIsWaitlistModalOpen(true);
-                      setIsMobileDrawerOpen(false);
-                    }}
-                    className="w-full bg-red-600 text-white font-semibold hover:bg-red-500 h-12"
-                  >
-                    Join Waitlist
-                  </Button>
-
-                  {/* Authenticate - controlled by ENABLE_AUTH env */}
                   {isAuthEnabled ? (
                     <Button
                       onClick={() => {
@@ -260,10 +247,6 @@ export function Navigation({ onWaitlistOpen }: NavigationProps) {
         onAuthSuccess={handleAuthSuccess}
       />
 
-      <WaitlistModal
-        isOpen={isWaitlistModalOpen}
-        onClose={() => setIsWaitlistModalOpen(false)}
-      />
     </>
   );
 }

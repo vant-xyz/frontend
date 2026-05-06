@@ -25,6 +25,7 @@ import type { BalanceInfo } from "@/lib/api";
 import { getTokenPrices } from "@/lib/api";
 import { Fuel, Copy, ExternalLink, ArrowDownLeft, Landmark, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 interface BalanceModalProps {
   isOpen: boolean;
@@ -79,10 +80,12 @@ export function BalanceModal({
   onOpenPrivateDeposit,
   isSyncing,
 }: BalanceModalProps) {
+  const router = useRouter();
   const [isMobile, setIsMobile] = useState(false);
   const [isFunding, setIsFunding] = useState(false);
   const [isSellModalOpen, setIsSellModalOpen] = useState(false);
   const [tokenUsdMap, setTokenUsdMap] = useState<Record<string, number>>({});
+  const [showRealOverlay, setShowRealOverlay] = useState(false);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -99,6 +102,15 @@ export function BalanceModal({
       onSync();
     }
   }, [isOpen, onSync]);
+
+  useEffect(() => {
+    if (isOpen && !isDemoMode) {
+      setShowRealOverlay(true);
+      const t = setTimeout(() => setShowRealOverlay(false), 5000);
+      return () => clearTimeout(t);
+    }
+    setShowRealOverlay(false);
+  }, [isOpen, isDemoMode]);
 
   const formatNaira = (value: number | undefined) => {
     if (value === undefined) return "$0.00";
@@ -268,11 +280,30 @@ export function BalanceModal({
       )}
 
       {/* Assets List */}
-      <div className="space-y-4 shrink-0">
-        <div className="px-4">
+      <div className="space-y-4 shrink-0 relative">
+        {showRealOverlay && (
+          <div className="absolute inset-0 z-20 rounded-2xl bg-black/75 border border-white/10 flex items-center justify-center p-4 text-center">
+            <p className="text-sm text-zinc-200 font-medium leading-relaxed">
+              Real trading is not live. You can fund your account pending launch date.
+              <br />
+              <span className="text-zinc-400">Real Trading is coming soon.</span>
+            </p>
+          </div>
+        )}
+        <div className="px-4 flex items-center justify-between">
           <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
             Your Assets
           </h3>
+          <Button
+            size="sm"
+            className="h-7 px-3 bg-white/10 hover:bg-white/15 text-white border border-white/10 rounded-lg text-[10px] font-bold uppercase tracking-widest"
+            onClick={() => {
+              onClose();
+              router.push("/app/account?tab=wallets");
+            }}
+          >
+            Fund
+          </Button>
         </div>
         
         <ScrollArea className="h-[300px] px-4">

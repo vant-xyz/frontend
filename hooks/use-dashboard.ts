@@ -23,9 +23,11 @@ export function useDashboard() {
   const [balance, setBalance] = useState<BalanceInfo | null>(null);
   const [isDemoMode, setIsDemoMode] = useState(() => {
     if (typeof window !== "undefined") {
-      return localStorage.getItem("vant_mode") === "demo";
+      const stored = localStorage.getItem("vant_mode");
+      if (!stored) return true;
+      return stored === "demo";
     }
-    return false;
+    return true;
   });
   const [prices, setPrices] = useState<PriceData & { vant_rate: number | null }>({
     BTC: null, ETH: null, SOL: null, USDC: null, USDT: null, vant_rate: null,

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { UserResponse, updateUserProfile, uploadProfileImage, checkUsernameExists } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +33,7 @@ interface AccountClientProps {
 }
 
 export function AccountClient({ initialData, token }: AccountClientProps) {
+  const searchParams = useSearchParams();
   const { isDemoMode } = useDashboard();
   const [user, setUser] = useState(initialData.user);
   const [wallet] = useState(initialData.wallet);
@@ -142,8 +144,11 @@ export function AccountClient({ initialData, token }: AccountClientProps) {
     return `https://${prefix}basescan.org/address/${address}`;
   };
 
+  const requestedTab = searchParams.get("tab");
+  const initialTab = requestedTab === "wallets" ? "wallets" : "profile";
+
   return (
-    <Tabs defaultValue="profile" className="w-full space-y-6">
+    <Tabs defaultValue={initialTab} className="w-full space-y-6">
       <div className="flex justify-center w-full">
         <TabsList className="bg-white/5 border border-white/10 p-1 h-12 rounded-2xl w-full max-w-md">
           <TabsTrigger value="profile" className="flex-1 rounded-xl text-xs font-bold uppercase tracking-widest data-[state=active]:bg-red-600 data-[state=active]:text-white">

@@ -1,144 +1,72 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { useRouter } from "next/navigation";
 
 export function VantVsSection() {
-  const [isVisible, setIsVisible] = useState(false);
-  const sectionRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) setIsVisible(true);
-      },
-      { threshold: 0.1 }
-    );
-
-    if (sectionRef.current) observer.observe(sectionRef.current);
-    return () => observer.disconnect();
-  }, []);
-
   return (
-    <section
-      id="vant-vs"
-      ref={sectionRef}
-      className="relative py-24 lg:py-32 bg-black overflow-hidden"
-    >
-      {/* Red glow effects */}
-      <div className="absolute top-1/4 -right-32 w-96 h-96 bg-red-600 rounded-full opacity-10 blur-3xl" />
-      <div className="absolute bottom-1/4 -left-32 w-96 h-96 bg-red-600 rounded-full opacity-10 blur-3xl" />
+    <section id="vant-vs" className="relative py-20 lg:py-24 bg-black border-y border-white/5 overflow-hidden">
+      <div className="max-w-6xl mx-auto px-6 lg:px-12">
+        <div className="grid md:grid-cols-2 gap-10 items-center">
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.2em] text-red-500 font-bold">VS Events</p>
+            <h2 className="mt-3 text-4xl lg:text-5xl font-black text-white tracking-tight">
+              One-on-one event wagers,
+              <span className="text-zinc-400"> settled by outcome.</span>
+            </h2>
+            <p className="mt-5 text-zinc-300 leading-relaxed max-w-xl">
+              Create a private or public challenge, set stake amount, invite an opponent, and lock both sides into escrow.
+              Once the event result is confirmed, payout is computed and distributed to the winner.
+            </p>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-12">
-        {/* Header */}
-        <div className="mb-20">
-          <h2
-            className={`text-5xl lg:text-6xl font-bold text-white mb-6 transition-all duration-700 ${
-              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-            }`}
-          >
-            Vant <span className="text-red-600">VS</span>
-          </h2>
-          <p className="text-xl text-gray-400 max-w-2xl">
-            The Wager Engine. Set a custom event (COD matches, gaming, etc.), stake against a friend, and the winner takes all. Decentralized escrow for total peace of mind.
-          </p>
-        </div>
+            <div className="mt-7 grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+              <div className="rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2">
+                <p className="text-zinc-500 text-[10px] uppercase tracking-widest">1</p>
+                <p className="text-white font-semibold">Create Event</p>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2">
+                <p className="text-zinc-500 text-[10px] uppercase tracking-widest">2</p>
+                <p className="text-white font-semibold">Stake & Confirm</p>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2">
+                <p className="text-zinc-500 text-[10px] uppercase tracking-widest">3</p>
+                <p className="text-white font-semibold">Settle Winner</p>
+              </div>
+            </div>
 
-        {/* Feature Card */}
-        <Card
-          className={`relative p-12 lg:p-16 bg-gradient-to-br from-red-900/20 to-black border border-red-600/50 rounded-xl overflow-visible transition-all duration-700 ${
-            isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-          }`}
-        >
-          {/* Vertex Brackets */}
-          <div className="absolute top-4 left-4 w-4 h-4 border-t-2 border-l-2 border-red-600" />
-          <div className="absolute top-4 right-4 w-4 h-4 border-t-2 border-r-2 border-red-600" />
-          <div className="absolute bottom-4 left-4 w-4 h-4 border-b-2 border-l-2 border-red-600" />
-          <div className="absolute bottom-4 right-4 w-4 h-4 border-b-2 border-r-2 border-red-600" />
+            <Button
+              onClick={() => router.push("/app/vs")}
+              className="mt-8 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl px-6"
+            >
+              Open VS Events
+            </Button>
+          </div>
 
-          {/* Accent glow */}
-          <div className="absolute top-0 right-0 w-80 h-80 bg-red-600 rounded-full opacity-5 blur-3xl" />
-
-          <CardContent className="relative z-10 p-0">
-            <div className="grid md:grid-cols-2 gap-12 items-center">
-              {/* Left content */}
-              <div>
-                <Badge className="px-4 py-2 bg-red-600/20 border border-red-600/50 rounded-full mb-6 text-red-400 font-semibold">
-                  PEER-TO-PEER WAGERING
-                </Badge>
-
-                <h3 className="text-4xl lg:text-5xl font-bold text-white mb-6">
-                  Wager on Anything
-                </h3>
-
-                <p className="text-lg text-gray-300 mb-8 leading-relaxed">
-                  Create custom markets instantly. Whether it's COD tournament outcomes, gaming tournaments, esports matches, or any event you want to predict on—Vant VS has you covered.
-                </p>
-
-                {/* Features list */}
-                <div className="space-y-4">
-                  {[
-                    "Instant match creation",
-                    "Decentralized escrow protection",
-                    "Smart contract settlements",
-                    "Zero platform interference",
-                  ].map((feature, i) => (
-                    <div key={i} className="flex items-center gap-4">
-                      <div className="w-2 h-2 bg-red-600 rounded-full" />
-                      <span className="text-gray-300">{feature}</span>
-                    </div>
-                  ))}
-                </div>
+          <div className="relative">
+            <div className="rounded-2xl border border-white/10 bg-zinc-950 p-5">
+              <div className="flex items-center justify-between text-xs text-zinc-400">
+                <span>Challenge Graph</span>
+                <span>Minimal Preview</span>
               </div>
 
-              {/* Right side - Visual */}
-              <div className="relative">
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Player 1 */}
-                  <Card className="p-6 bg-black/50 border border-red-600/30 rounded-lg text-center">
-                    <CardContent className="p-0">
-                      <div className="w-16 h-16 bg-gradient-to-br from-red-600/40 to-red-900/20 rounded-full mx-auto mb-4 flex items-center justify-center">
-                        <span className="text-2xl font-bold text-red-500">P1</span>
-                      </div>
-                      <p className="text-white font-semibold mb-3">Your Stake</p>
-                      <p className="text-red-500 text-2xl font-bold">10,000 NGN</p>
-                    </CardContent>
-                  </Card>
+              <div className="mt-5 h-44 rounded-xl border border-white/10 bg-black/60 relative overflow-hidden">
+                <div className="absolute left-8 top-10 w-16 h-16 rounded-full border-2 border-red-500/80 flex items-center justify-center text-red-400 font-bold text-xs">YOU</div>
+                <div className="absolute right-8 top-10 w-16 h-16 rounded-full border-2 border-white/70 flex items-center justify-center text-white font-bold text-xs">OPP</div>
+                <div className="absolute left-1/2 -translate-x-1/2 top-20 text-zinc-300 font-black tracking-widest">VS</div>
 
-                  {/* VS */}
-                  <div className="flex items-center justify-center py-6">
-                    <div className="relative">
-                      <div className="absolute inset-0 bg-red-600 rounded-full opacity-20 blur-xl" />
-                      <span className="relative text-white font-bold text-3xl">VS</span>
-                    </div>
-                  </div>
+                <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 180" fill="none" aria-hidden>
+                  <path d="M95 88 C 145 130, 255 130, 305 88" stroke="rgba(239,68,68,0.75)" strokeWidth="2" strokeDasharray="5 5" />
+                  <path d="M95 88 C 145 48, 255 48, 305 88" stroke="rgba(255,255,255,0.35)" strokeWidth="2" />
+                </svg>
 
-                  {/* Outcome */}
-                  <Card className="col-span-2 p-6 bg-black/50 border border-green-600/30 rounded-lg text-center">
-                    <CardContent className="p-0">
-                      <p className="text-gray-400 text-sm mb-2">POTENTIAL WINNINGS</p>
-                      <p className="text-green-400 text-3xl font-bold">19,500 NGN</p>
-                    </CardContent>
-                  </Card>
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-md bg-white/[0.06] border border-white/15 px-3 py-1 text-[11px] text-zinc-200">
+                  Escrow Locked → Outcome Confirmed → Winner Paid
                 </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* CTA */}
-        <div
-          className={`mt-12 text-center transition-all duration-700 delay-300 ${
-            isVisible ? "opacity-100" : "opacity-0"
-          }`}
-        >
-          <Button className="px-8 py-3 bg-red-600 text-white font-bold rounded hover:bg-red-500 transition-colors" onClick={() => router.push("/app/vs")}>
-            Create Your First VS
-          </Button>
+          </div>
         </div>
       </div>
     </section>
