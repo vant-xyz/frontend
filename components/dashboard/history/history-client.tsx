@@ -186,15 +186,11 @@ export function HistoryClient({ initialTransactions }: HistoryClientProps) {
 
   const posDetailContent = posDetail && (() => {
     const { pos, market } = posDetail;
-    const pnl = Number(pos.realized_pnl);
     const outcome = positionOutcome(pos);
     const multiplier = pos.total_cost > 0 ? Number(pos.payout_amount) / pos.total_cost : null;
-    const pnlPct = pos.total_cost > 0 ? (pnl / pos.total_cost) * 100 : 0;
     const avgPriceCents = (pos.avg_entry_price || 0) * 100;
-    const currentPriceCents =
-      pos.status === "SETTLED" && Number(pos.payout_amount) > 0
-        ? (Number(pos.payout_amount) / pos.shares) * 100
-        : avgPriceCents;
+    const payoutAmount = Number(pos.payout_amount || 0);
+    const paidOutPct = pos.total_cost > 0 ? (payoutAmount / pos.total_cost) * 100 : 0;
 
     return (
       <div className="space-y-5 py-6 px-1">
@@ -221,6 +217,10 @@ export function HistoryClient({ initialTransactions }: HistoryClientProps) {
             <Badge className={cn("text-[10px] font-black uppercase", outcome.cls)}>{outcome.label}</Badge>
           </div>
           <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5">
+            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Resolved Side</p>
+            <p className="text-base font-black text-white">{market?.outcome ?? "—"}</p>
+          </div>
+          <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5">
             <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Shares</p>
             <p className="text-base font-black text-white font-mono">{pos.shares.toFixed(2)}</p>
           </div>
@@ -229,10 +229,10 @@ export function HistoryClient({ initialTransactions }: HistoryClientProps) {
             <p className="text-base font-black text-white font-mono">{avgPriceCents.toFixed(1)}¢</p>
           </div>
           <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 col-span-2">
-            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Profit / Loss</p>
-            <p className={cn("text-xl font-black font-mono", pnl >= 0 ? "text-green-400" : "text-red-400")}>
-              {pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}
-              <span className="text-sm ml-2 opacity-70">({pnlPct >= 0 ? "+" : ""}{pnlPct.toFixed(1)}%)</span>
+            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Amount Paid Out</p>
+            <p className={cn("text-xl font-black font-mono", payoutAmount > 0 ? "text-green-400" : "text-red-400")}>
+              ${payoutAmount.toFixed(2)}
+              <span className="text-sm ml-2 opacity-70">({paidOutPct.toFixed(1)}% of stake)</span>
             </p>
           </div>
           {multiplier !== null && pos.status === "SETTLED" && (
@@ -333,7 +333,10 @@ export function HistoryClient({ initialTransactions }: HistoryClientProps) {
               <div className="grid grid-cols-1 gap-2">
                 {positions.map((pos) => {
                   const outcome = positionOutcome(pos);
+                  const payoutAmount = Number(pos.payout_amount || 0);
+                  const isLost = pos.status === "SETTLED" && payoutAmount <= 0;
                   const pnl = Number(pos.realized_pnl);
+                  const amountColor = isLost ? "text-red-400" : pnl >= 0 ? "text-green-400" : "text-red-400";
                   return (
                     <button
                       key={pos.id}
@@ -359,7 +362,7 @@ export function HistoryClient({ initialTransactions }: HistoryClientProps) {
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <div className="text-right">
-                          <p className={cn("text-sm font-black tabular-nums", pnl >= 0 ? "text-green-400" : "text-red-400")}>
+                          <p className={cn("text-sm font-black tabular-nums", amountColor)}>
                             {pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}
                           </p>
                           <Badge className={cn("mt-0.5 uppercase text-[8px] font-black", outcome.cls)}>{outcome.label}</Badge>

@@ -137,8 +137,12 @@ export function CryptoPriceCard({ symbol, name, priceData }: CryptoPriceCardProp
                 one of the world's largest and most trusted cryptocurrency exchanges.
               </p>
               <div className="pt-4 border-t border-white/10">
-                <p className="text-xs text-gray-500">
-                  Data Provider: <span className="text-gray-300">Coinbase API</span>
+                <p className="text-xs text-gray-500 flex items-center gap-2">
+                  Data Provider:
+                  <span className="text-gray-300 inline-flex items-center gap-1.5">
+                    <img src="/media/images/coinbase-logo.jpg" alt="Coinbase" className="w-4 h-4 rounded-sm object-cover" />
+                    Coinbase
+                  </span>
                 </p>
               </div>
             </div>
@@ -170,8 +174,12 @@ export function CryptoPriceCard({ symbol, name, priceData }: CryptoPriceCardProp
                 one of the world's largest and most trusted cryptocurrency exchanges.
               </p>
               <div className="pt-4 border-t border-white/10">
-                <p className="text-xs text-gray-500">
-                  Data Provider: <span className="text-gray-300">Coinbase API</span>
+                <p className="text-xs text-gray-500 flex items-center gap-2">
+                  Data Provider:
+                  <span className="text-gray-300 inline-flex items-center gap-1.5">
+                    <img src="/media/images/coinbase-logo.jpg" alt="Coinbase" className="w-4 h-4 rounded-sm object-cover" />
+                    Coinbase
+                  </span>
                 </p>
               </div>
             </div>
