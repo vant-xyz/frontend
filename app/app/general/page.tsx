@@ -3,7 +3,7 @@
 import { DashboardClient } from "@/components/dashboard/dashboard-client";
 import { Button } from "@/components/ui/button";
 import { Loader } from "@/components/ui/loader";
-import { getMarkets, Market, OrderSide } from "@/lib/api";
+import { getMarkets, Market, OrderSide, getOrderbook, getMarketVolume } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { HelpCircle, Share2, Clock } from "lucide-react";
@@ -150,6 +150,14 @@ function GemCard({ market, onQuickTrade, compact = false }: { market: Market; on
   const router = useRouter();
   const [shareOpen, setShareOpen] = useState(false);
   const [timeText, setTimeText] = useState("--:--");
+  const [yesNoCents, setYesNoCents] = useState<{ yes: number; no: number }>({ yes: 50, no: 50 });
+  const [volumeUsd, setVolumeUsd] = useState<number>(0);
+
+  const toCents = (v?: number) => {
+    const n = Number(v ?? 0);
+    if (!Number.isFinite(n)) return 0;
+    return n <= 1 ? n * 100 : n;
+  };
 
   useEffect(() => {
     const tick = () => {
@@ -166,15 +174,45 @@ function GemCard({ market, onQuickTrade, compact = false }: { market: Market; on
       const week = Math.floor(day / 7);
       if (week < 4) return setTimeText(`${week}w ${day % 7}d`);
       const month = Math.floor(day / 30);
-      return setTimeText(`${month}mo`);
+      if (month < 12) return setTimeText(`${month}mo`);
+      const year = Math.floor(day / 365);
+      return setTimeText(`${year}y ${Math.floor((day % 365) / 30)}mo`);
     };
     tick();
     const interval = setInterval(tick, 1000);
     return () => clearInterval(interval);
   }, [market.end_time_utc]);
 
-  const yesCents = market.current_price ?? 50;
-  const noCents = Math.max(0, 100 - yesCents);
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      try {
+        const ob = await getOrderbook(market.id);
+        const bestYesBid = toCents(ob.orderbook?.yes_bids?.[0]?.price);
+        const bestNoAsk = toCents(ob.orderbook?.no_asks?.[0]?.price);
+        const yes = bestYesBid > 0 ? bestYesBid : toCents(ob.orderbook?.last_traded_price) || 50;
+        const no = bestNoAsk > 0 ? bestNoAsk : Math.max(0, 100 - yes);
+        if (active) setYesNoCents({ yes, no });
+      } catch {
+        if (active) setYesNoCents({ yes: 50, no: 50 });
+      }
+      try {
+        const vol = await getMarketVolume(market.id);
+        if (active) setVolumeUsd(Number(vol.volume?.volume ?? 0));
+      } catch {
+        if (active) setVolumeUsd(0);
+      }
+    };
+    load();
+    const interval = setInterval(load, 1000);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [market.id]);
+
+  const yesCents = yesNoCents.yes;
+  const noCents = yesNoCents.no;
   const banner = market.market_image_banner || market.market_image_small || "/media/images/hero_image.png";
   const shareUrl = `${typeof window !== "undefined" ? window.location.origin : "https://vantic.xyz"}/market/${market.id}`;
   const previewImageUrl = `${typeof window !== "undefined" ? window.location.origin : "https://vantic.xyz"}/app/general/${market.id}/opengraph-image`;
@@ -199,9 +237,10 @@ function GemCard({ market, onQuickTrade, compact = false }: { market: Market; on
         <div className="relative">
           <div className="flex items-start justify-between gap-2">
             <div>
-              <p className="text-xs text-gray-400 mb-1">🔥 Trending</p>
+              <p className="text-xs text-gray-400 mb-1">{compact ? "🔥 Trending" : (market.category || "General")}</p>
               <h3 className="text-sm font-semibold text-white line-clamp-2">{market.title}</h3>
               <p className="mt-2 text-xs text-gray-400 flex items-center gap-1"><Clock size={12} />{timeText}</p>
+              <p className="mt-1 text-xs text-gray-400">Vol ${volumeUsd.toFixed(2)}</p>
             </div>
             <Button
               variant="ghost"
@@ -228,7 +267,16 @@ function GemCard({ market, onQuickTrade, compact = false }: { market: Market; on
           <DialogHeader><DialogTitle>Share Market</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div className="rounded-lg overflow-hidden border border-white/10">
-              <img src={previewImageUrl} alt={`${market.title} preview`} className="w-full h-auto object-cover" />
+              <img
+                src={previewImageUrl}
+                alt={`${market.title} preview`}
+                className="w-full h-auto object-cover"
+                onError={(e) => {
+                  const target = e.currentTarget as HTMLImageElement;
+                  target.onerror = null;
+                  target.src = market.market_image_banner || market.market_image_small || "/media/images/hero_image.png";
+                }}
+              />
             </div>
             <p className="text-xs text-gray-400">{shareUrl}</p>
             <div className="grid grid-cols-2 gap-2">

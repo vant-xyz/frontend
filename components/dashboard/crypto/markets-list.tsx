@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Market, OrderSide, getOrderbook, PriceData } from "@/lib/api";
+import { Market, OrderSide, getOrderbook, getMarketVolume, PriceData } from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Share2, Target } from "lucide-react";
@@ -95,6 +95,7 @@ export function MarketCard({ market, onQuickTrade, prices }: MarketCardProps) {
   const [timeLeft, setTimeLeft] = useState<{ seconds: number; text: string }>({ seconds: 0, text: "" });
   const [shareOpen, setShareOpen] = useState(false);
   const [yesNoCents, setYesNoCents] = useState<{ yes: number; no: number }>({ yes: 50, no: 50 });
+  const [volumeUsd, setVolumeUsd] = useState(0);
 
   const toCents = (v?: number) => {
     const n = Number(v ?? 0);
@@ -137,6 +138,12 @@ export function MarketCard({ market, onQuickTrade, prices }: MarketCardProps) {
         if (active) setYesNoCents({ yes, no });
       } catch {
         if (active) setYesNoCents({ yes: 50, no: 50 });
+      }
+      try {
+        const vol = await getMarketVolume(market.id);
+        if (active) setVolumeUsd(Number(vol.volume?.volume ?? 0));
+      } catch {
+        if (active) setVolumeUsd(0);
       }
     };
     load();
@@ -231,6 +238,10 @@ export function MarketCard({ market, onQuickTrade, prices }: MarketCardProps) {
                     ${targetPrice}
                   </p>
                 </div>
+                <div>
+                  <p className="text-gray-500 text-xs mb-1">Volume</p>
+                  <p className="text-lg font-mono text-white">${volumeUsd.toFixed(2)}</p>
+                </div>
               </div>
             </div>
 
@@ -268,7 +279,16 @@ export function MarketCard({ market, onQuickTrade, prices }: MarketCardProps) {
           </DialogHeader>
           <div className="space-y-3">
             <div className="rounded-lg overflow-hidden border border-white/10">
-              <img src={previewImageUrl} alt={`${market.title} preview`} className="w-full h-auto object-cover" />
+              <img
+                src={previewImageUrl}
+                alt={`${market.title} preview`}
+                className="w-full h-auto object-cover"
+                onError={(e) => {
+                  const target = e.currentTarget as HTMLImageElement;
+                  target.onerror = null;
+                  target.src = market.market_image_small || `/media/images/crypto_assets/${(market.asset || "btc").toLowerCase()}.png`;
+                }}
+              />
             </div>
             <p className="text-xs text-gray-400">{shareUrl}</p>
             <div className="grid grid-cols-2 gap-2">

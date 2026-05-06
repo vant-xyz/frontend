@@ -280,9 +280,40 @@ export default function MarketDetailView() {
             if (diff <= 0) {
                 setTimeLeft({ seconds: 0, text: "Expired" });
             } else {
-                const m = Math.floor(diff / 60000);
-                const s = Math.floor((diff % 60000) / 1000);
-                setTimeLeft({ seconds: diff / 1000, text: `${m}:${s.toString().padStart(2, "0")}` });
+                const sec = Math.floor(diff / 1000);
+                let text = "";
+                if (sec < 60) {
+                    text = `${sec}s`;
+                } else {
+                    const min = Math.floor(sec / 60);
+                    if (min < 60) {
+                        text = `${min}m ${sec % 60}s`;
+                    } else {
+                        const hr = Math.floor(min / 60);
+                        if (hr < 24) {
+                            text = `${hr}h ${min % 60}m`;
+                        } else {
+                            const day = Math.floor(hr / 24);
+                            if (day < 7) {
+                                text = `${day}d ${hr % 24}h`;
+                            } else {
+                                const week = Math.floor(day / 7);
+                                if (week < 4) {
+                                    text = `${week}w ${day % 7}d`;
+                                } else {
+                                    const month = Math.floor(day / 30);
+                                    if (month < 12) {
+                                        text = `${month}mo`;
+                                    } else {
+                                        const year = Math.floor(day / 365);
+                                        text = `${year}y ${Math.floor((day % 365) / 30)}mo`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                setTimeLeft({ seconds: diff / 1000, text });
             }
         };
         tick();
@@ -788,10 +819,12 @@ export default function MarketDetailView() {
                                 : "Active"
                         }
                     </Badge>
-                    <div className="ml-2 text-right shrink-0">
-                        <p className="text-[10px] text-gray-400 uppercase tracking-widest">Current</p>
-                        <p className="text-lg font-mono text-white">{market.market_type === "CAPPM" ? `$${(liveAssetPrice ?? ((market.current_price ?? 0) / 100)).toFixed(2)}` : `${currentPriceCents.toFixed(1)}¢`}</p>
-                    </div>
+                    {market.market_type === "CAPPM" && (
+                        <div className="ml-2 text-right shrink-0">
+                            <p className="text-[10px] text-gray-400 uppercase tracking-widest">Current</p>
+                            <p className="text-lg font-mono text-white">${(liveAssetPrice ?? ((market.current_price ?? 0) / 100)).toFixed(2)}</p>
+                        </div>
+                    )}
                 </div>
 
                 {/* ── Mobile tab switcher ──────────────────────────────────────────── */}

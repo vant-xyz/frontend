@@ -7,18 +7,19 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   try {
     const { market } = await getMarket(id);
     const title = market.title || "Vantic Market";
+    const ogImageUrl = `https://vantic.xyz/app/general/${id}/opengraph-image`;
     return {
       title,
       description: market.description || "Trade YES/NO on Vantic",
       openGraph: {
         title,
         description: market.description || "Real-time prediction market",
-        images: [{ url: `/app/general/${id}/opengraph-image`, width: 1200, height: 630, alt: title }],
+        images: [{ url: ogImageUrl, width: 1200, height: 630, alt: title }],
       },
       twitter: {
         card: "summary_large_image",
         title,
-        images: [`/app/general/${id}/opengraph-image`],
+        images: [ogImageUrl],
       },
     };
   } catch {
