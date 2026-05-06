@@ -51,7 +51,7 @@ interface AssetConfig {
 const REAL_ASSETS: AssetConfig[] = [
   { key: "naira", label: "USD Balance", symbol: "USD", isNaira: true },
   { key: "vusd", label: "vUSD", symbol: "vUSD", isVNaira: true },
-  { key: "palm_usd", label: "Palm USD", symbol: "PUSD", icon: "/media/images/token_icons/PalmUSD.png" },
+  { key: "pusd_sol", label: "Palm USD", symbol: "PUSD", icon: "/media/images/token_icons/PalmUSD.png" },
   { key: "sol", label: "Solana", symbol: "SOL", icon: "/media/images/token_icons/solana.png" },
   { key: "wsol", label: "Wrapped Solana", symbol: "WSOL", icon: "/media/images/token_icons/solana.png" },
   { key: "eth_base", label: "Ethereum (Base)", symbol: "ETH", icon: "/media/images/token_icons/eth.png" },

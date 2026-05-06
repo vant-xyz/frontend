@@ -165,7 +165,7 @@ export async function setUsername(username: string, email: string, token: string
 }
 
 export async function logout(token: string): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/logout`, {
+  const response = await fetch(`${API_BASE_URL}/auth/logout`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -324,7 +324,7 @@ export interface BalanceInfo {
   total_demo_usd: number;
   vusd: number;
   // Real assets
-  palm_usd?: number;
+  pusd_sol?: number;
   usdc_sol: number;
   wsol: number;
   usdc_base: number;

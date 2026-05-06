@@ -13,7 +13,7 @@ function buildSupportHref(error: Error & { digest?: string }) {
   const body = [
     "Hi Vantic Support,",
     "",
-    "I hit a global app error while using Vantic.",
+    "I hit a critical global error while using Vantic.",
     "",
     `Message: ${error?.message || "Unknown error"}`,
     `Digest: ${error?.digest || "N/A"}`,
@@ -21,7 +21,6 @@ function buildSupportHref(error: Error & { digest?: string }) {
     "",
     "Please investigate.",
   ].join("\n");
-
   return `mailto:support@vantic.xyz?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 
@@ -30,36 +29,80 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
 
   return (
     <html lang="en">
-      <body className="bg-black text-white">
-        <main className="min-h-screen flex items-center justify-center px-6 py-10">
-          <div className="w-full max-w-2xl border border-red-500/30 bg-zinc-950/85 rounded-2xl p-8">
-            <div className="flex items-center gap-3">
-              <Image src="/icon.png" alt="Vantic" width={28} height={28} className="rounded-sm" />
-              <span className="text-lg font-semibold tracking-wide">Vantic</span>
-            </div>
-            <p className="text-red-400 text-sm font-semibold tracking-wide">Critical Error</p>
-            <h1 className="mt-2 text-3xl font-bold tracking-tight">Vantic encountered a critical issue</h1>
-            <p className="mt-4 text-zinc-300 leading-relaxed">
-              A global runtime error occurred. Try reloading the app, or send the report to support.
+      <body style={{ margin: 0, background: "#0a0a0a", color: "white", fontFamily: "system-ui, sans-serif" }}>
+        <main
+          style={{
+            minHeight: "100vh",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "24px",
+          }}
+        >
+          {/* Logo */}
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "64px" }}>
+            <Image src="/icon.png" alt="Vantic" width={20} height={20} style={{ borderRadius: "2px", opacity: 0.6 }} />
+            <span style={{ fontSize: "9px", fontWeight: 900, letterSpacing: "0.35em", textTransform: "uppercase", color: "#4b5563" }}>
+              Vantic
+            </span>
+          </div>
+
+          <div style={{ width: "100%", maxWidth: "360px" }}>
+            <p style={{ fontSize: "9px", fontWeight: 900, letterSpacing: "0.35em", textTransform: "uppercase", color: "rgba(220,38,38,0.8)", marginBottom: "20px", textAlign: "center" }}>
+              Critical Error
             </p>
 
-            <div className="mt-6 rounded-lg border border-white/10 bg-black/40 p-4">
-              <p className="text-xs text-zinc-500 uppercase tracking-wider">Error Message</p>
-              <p className="mt-2 text-sm text-zinc-200 break-all">{error?.message || "Unknown error"}</p>
+            {/* Pulsing indicator */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", marginBottom: "24px" }}>
+              <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#dc2626", display: "inline-block" }} />
+              <span style={{ fontSize: "11px", fontWeight: 900, letterSpacing: "0.2em", textTransform: "uppercase", color: "#f87171" }}>
+                App crash
+              </span>
             </div>
 
-            <div className="mt-6 flex flex-wrap gap-3">
+            <h1 style={{ fontSize: "18px", fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.01em", textAlign: "center", marginBottom: "8px" }}>
+              Vantic is down
+            </h1>
+            <p style={{ fontSize: "12px", color: "#6b7280", lineHeight: 1.6, textAlign: "center", marginBottom: "28px" }}>
+              A critical error crashed the app. Retry to reload, or send the prefilled report to support.
+            </p>
+
+            {/* Error block */}
+            <div style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: "12px", background: "rgba(255,255,255,0.03)", padding: "16px", marginBottom: "20px", fontFamily: "monospace" }}>
+              <p style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "#4b5563", marginBottom: "8px" }}>
+                Error
+              </p>
+              <p style={{ fontSize: "11px", color: "#fca5a5", wordBreak: "break-all", lineHeight: 1.6 }}>
+                {error?.message || "Unknown critical error"}
+              </p>
+              {error?.digest && (
+                <p style={{ fontSize: "9px", color: "#374151", marginTop: "8px" }}>
+                  digest: {error.digest}
+                </p>
+              )}
+            </div>
+
+            <div style={{ display: "flex", gap: "10px" }}>
               <button
                 onClick={reset}
-                className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white font-medium"
+                style={{
+                  flex: 1, padding: "12px", background: "#dc2626", border: "none", borderRadius: "12px",
+                  color: "white", fontSize: "10px", fontWeight: 900, letterSpacing: "0.2em",
+                  textTransform: "uppercase", cursor: "pointer",
+                }}
               >
-                Try Again
+                Retry
               </button>
               <a
                 href={supportHref}
-                className="px-4 py-2 rounded-lg border border-white/20 hover:border-white/40 text-white font-medium"
+                style={{
+                  flex: 1, padding: "12px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)",
+                  borderRadius: "12px", color: "white", fontSize: "10px", fontWeight: 900, letterSpacing: "0.2em",
+                  textTransform: "uppercase", textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center",
+                }}
               >
-                Contact Vantic Support
+                Report
               </a>
             </div>
           </div>

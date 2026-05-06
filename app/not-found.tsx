@@ -1,85 +1,70 @@
-import Link from 'next/link'
-import { Metadata } from 'next'
-import Image from 'next/image'
+import Link from "next/link";
+import { Metadata } from "next";
+import Image from "next/image";
 
 export const metadata: Metadata = {
-  title: 'Page Not Found',
-  description: 'The page you are looking for does not exist.',
-  robots: {
-    index: false,
-    follow: false,
-  },
-}
+  title: "404 — Page Not Found",
+  robots: { index: false, follow: false },
+};
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen bg-black text-white flex items-center justify-center px-4">
-      <div className="text-center max-w-md">
-        <div className="flex items-center justify-center gap-3 mb-6">
-          <Image src="/icon.png" alt="Vantic" width={28} height={28} className="rounded-sm" />
-          <span className="text-lg font-semibold tracking-wide">Vantic</span>
+    <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col items-center justify-center px-6">
+      <div className="flex items-center gap-2.5 mb-16">
+        <Image src="/icon.png" alt="Vantic" width={20} height={20} className="rounded-sm opacity-60" />
+        <span className="text-[10px] font-black tracking-[0.35em] uppercase text-gray-600">Vantic</span>
+      </div>
+
+      <div className="text-center max-w-xs">
+        <p className="text-[9px] font-black tracking-[0.35em] uppercase text-red-500/80 mb-6">
+          Error 404
+        </p>
+
+        <div
+          className="text-[96px] font-black leading-none text-white mb-8 select-none"
+          style={{ textShadow: "0 0 48px rgba(220,38,38,0.35), 0 0 96px rgba(220,38,38,0.1)" }}
+        >
+          404
         </div>
-        {/* Large 404 text */}
-        <h1 className="text-9xl font-bold text-red-600 mb-4">404</h1>
-        
-        {/* Icon */}
-        <div className="mb-8">
-          <svg
-            className="w-24 h-24 mx-auto text-gray-700"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+
+        <h1 className="text-base font-black uppercase tracking-widest text-white mb-3">
+          Page not found
+        </h1>
+        <p className="text-xs text-gray-500 leading-relaxed mb-10">
+          This page was delisted, moved, or never existed. Even our prediction engine couldn't see this one coming.
+        </p>
+
+        <div className="flex gap-3 justify-center">
+          <Link
+            href="/app/general"
+            className="flex-1 py-3 bg-red-600 hover:bg-red-500 active:bg-red-700 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all text-center"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1.5}
-              d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-        </div>
-
-        {/* Message */}
-        <h2 className="text-3xl font-bold text-white mb-4">Page Not Found</h2>
-        <p className="text-gray-400 mb-8 leading-relaxed">
-          The page you're looking for doesn't exist or has been moved.
-        </p>
-        <p className="text-sm text-zinc-500 mb-8">
-          Plot twist: even our prediction market couldn&apos;t predict this URL.
-        </p>
-
-        {/* CTA Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            Markets
+          </Link>
           <Link
             href="/"
-            className="px-8 py-3 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-500 transition-colors"
+            className="flex-1 py-3 bg-white/5 hover:bg-white/10 border border-white/8 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all text-center"
           >
-            Go Home
+            Home
           </Link>
-          <Link
-            href="/app"
-            className="px-8 py-3 bg-gray-800 text-white font-semibold rounded-lg hover:bg-gray-700 transition-colors border border-gray-700"
-          >
-            Go to Dashboard
-          </Link>
-        </div>
-
-        {/* Quick Links */}
-        <div className="mt-12 pt-8 border-t border-gray-800">
-          <p className="text-sm text-gray-500 mb-4">Quick Links</p>
-          <div className="flex flex-wrap gap-4 justify-center text-sm">
-            <Link href="/explorer" className="text-gray-400 hover:text-red-500 transition-colors">
-              Explorer
-            </Link>
-            <Link href="/privacy-policy" className="text-gray-400 hover:text-red-500 transition-colors">
-              Privacy Policy
-            </Link>
-            <Link href="/terms-of-service" className="text-gray-400 hover:text-red-500 transition-colors">
-              Terms of Service
-            </Link>
-          </div>
         </div>
       </div>
+
+      <div className="mt-16 flex gap-6">
+        {[
+          { label: "Explorer", href: "/explorer" },
+          { label: "Privacy", href: "/privacy-policy" },
+          { label: "Terms", href: "/terms-of-service" },
+        ].map(({ label, href }) => (
+          <Link
+            key={href}
+            href={href}
+            className="text-[9px] font-bold uppercase tracking-widest text-gray-700 hover:text-gray-500 transition-colors"
+          >
+            {label}
+          </Link>
+        ))}
+      </div>
     </div>
-  )
+  );
 }
