@@ -3,12 +3,13 @@ import { NextRequest, NextResponse } from "next/server";
 const BACKEND_API_URL = process.env.NEXT_PUBLIC_API_URL;
 const BACKEND_API_KEY = process.env.BACKEND_API_KEY;
 
-export async function GET(req: NextRequest, { params }: { params: { path: string[] } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   try {
     if (!BACKEND_API_URL) {
       return NextResponse.json({ error: "NEXT_PUBLIC_API_URL is not configured" }, { status: 500 });
     }
-    const path = (params.path || []).join("/");
+    const { path: pathSegments } = await params;
+    const path = (pathSegments || []).join("/");
     const upstream = new URL(`${BACKEND_API_URL.replace(/\/$/, "")}/${path}`);
     req.nextUrl.searchParams.forEach((value, key) => upstream.searchParams.append(key, value));
 
