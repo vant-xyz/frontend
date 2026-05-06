@@ -248,15 +248,20 @@ export function connectToPriceFeed(
 }
 
 export async function getLatestPrices(): Promise<PriceData> {
-  const response = await fetch(viaPublicProxy("prices"), {
-    method: "GET",
-  });
-
-  if (!response.ok) {
-    throw new Error("Failed to fetch prices");
+  const proxyResp = await fetch(viaPublicProxy("prices"), { method: "GET" });
+  if (proxyResp.ok) {
+    return proxyResp.json();
   }
 
-  return response.json();
+  // Fallback: direct public API call
+  if (API_BASE_URL) {
+    const directResp = await fetch(`${API_BASE_URL}/prices`, { method: "GET" });
+    if (directResp.ok) {
+      return directResp.json();
+    }
+  }
+
+  throw new Error("Failed to fetch prices");
 }
 
 export async function getVantRate(): Promise<VantRateResponse> {
