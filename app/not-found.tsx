@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Metadata } from 'next'
+import Image from 'next/image'
 
 export const metadata: Metadata = {
   title: 'Page Not Found',
@@ -14,6 +15,10 @@ export default function NotFound() {
   return (
     <div className="min-h-screen bg-black text-white flex items-center justify-center px-4">
       <div className="text-center max-w-md">
+        <div className="flex items-center justify-center gap-3 mb-6">
+          <Image src="/icon.png" alt="Vantic" width={28} height={28} className="rounded-sm" />
+          <span className="text-lg font-semibold tracking-wide">Vantic</span>
+        </div>
         {/* Large 404 text */}
         <h1 className="text-9xl font-bold text-red-600 mb-4">404</h1>
         

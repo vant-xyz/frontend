@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import Image from "next/image";
 
 type ErrorPageProps = {
   error: Error & { digest?: string };
@@ -30,6 +31,10 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
   return (
     <main className="min-h-screen bg-black text-white flex items-center justify-center px-6 py-10">
       <div className="w-full max-w-2xl border border-red-500/30 bg-zinc-950/80 rounded-2xl p-8">
+        <div className="flex items-center gap-3">
+          <Image src="/icon.png" alt="Vantic" width={28} height={28} className="rounded-sm" />
+          <span className="text-lg font-semibold tracking-wide">Vantic</span>
+        </div>
         <p className="text-red-400 text-sm font-semibold tracking-wide">Something went wrong</p>
         <h1 className="mt-2 text-3xl font-bold tracking-tight">We hit an unexpected error</h1>
         <p className="mt-4 text-zinc-300 leading-relaxed">
@@ -59,4 +64,3 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
     </main>
   );
 }
-
