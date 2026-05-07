@@ -74,8 +74,12 @@ export function HistoryClient({ initialTransactions }: HistoryClientProps) {
   const dayPnlMap = useMemo(() => {
     const m = new Map<string, number>();
     for (const p of positions) {
-      const key = format(new Date(p.created_at), "yyyy-MM-dd");
-      m.set(key, (m.get(key) || 0) + Number(p.realized_pnl || 0));
+      if (p.status !== "SETTLED") continue;
+      const cost = p.total_cost > 0 ? p.total_cost : p.shares * (p.avg_entry_price || 0);
+      const pnl = Number(p.payout_amount || 0) - cost;
+      const dateStr = p.settled_at || p.created_at;
+      const key = format(new Date(dateStr), "yyyy-MM-dd");
+      m.set(key, (m.get(key) || 0) + pnl);
     }
     return m;
   }, [positions]);

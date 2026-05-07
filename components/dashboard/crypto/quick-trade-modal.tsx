@@ -32,7 +32,7 @@ export function QuickTradeModal({
   const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
   const [quoteCents, setQuoteCents] = useState<{ yes: number; no: number }>({ yes: 50, no: 50 });
   const [tradingBalance, setTradingBalance] = useState(0);
-  const [cumulativeAssetUsd, setCumulativeAssetUsd] = useState(0);
+  const [assetBalance, setAssetBalance] = useState(0);
 
   const toCents = (v?: number) => {
     const n = Number(v ?? 0);
@@ -67,12 +67,14 @@ export function QuickTradeModal({
       try {
         const res = await getBalance(token);
         const b = isDemoMode ? (res.balance?.demo_naira ?? 0) : (res.balance?.naira ?? 0);
-        const assets = isDemoMode ? (res.balance?.total_demo_usd ?? 0) : (res.balance?.total_usd ?? 0);
+        const assets = isDemoMode
+          ? (res.balance?.total_demo_usd ?? 0) - (res.balance?.demo_naira ?? 0)
+          : (res.balance?.total_usd ?? 0) - (res.balance?.naira ?? 0);
         if (active) setTradingBalance(Number(b) || 0);
-        if (active) setCumulativeAssetUsd(Number(assets) || 0);
+        if (active) setAssetBalance(Number(assets) || 0);
       } catch {
         if (active) setTradingBalance(0);
-        if (active) setCumulativeAssetUsd(0);
+        if (active) setAssetBalance(0);
       }
     };
     loadBalance();
@@ -245,7 +247,7 @@ export function QuickTradeModal({
               </button>
             </div>
             <p className="text-[10px] text-gray-500">
-              Balance ${tradingBalance.toFixed(2)} (${cumulativeAssetUsd.toFixed(2)} assets)
+              Balance ${tradingBalance.toFixed(2)} · Assets ${assetBalance.toFixed(2)}
             </p>
           </div>
 

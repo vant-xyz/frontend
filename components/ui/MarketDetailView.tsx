@@ -219,22 +219,19 @@ export default function MarketDetailView() {
         };
     }, [id, isOrderInputFocused]);
 
-    useEffect(() => {
+    const refreshBalance = useCallback(async () => {
         if (!token) return;
-        const fetchBalance = async () => {
-            try {
-                const res = await getBalance(token)
-                setBalance(res.balance)
-                console.log(token)
-                console.log(balance)
-            } catch (error) {
-                setBalance(null)
-                console.log(balance)
-            }
-        };
+        try {
+            const res = await getBalance(token);
+            setBalance(res.balance);
+        } catch {
+            setBalance(null);
+        }
+    }, [token]);
 
-        fetchBalance()
-    }, [token])
+    useEffect(() => {
+        refreshBalance();
+    }, [refreshBalance]);
 
     useEffect(() => {
         let active = true;
@@ -414,12 +411,12 @@ export default function MarketDetailView() {
         return Number.isFinite(n) && n > 0 ? n : null;
     })();
     const tradingBalance = isDemoMode ? (balance?.demo_naira ?? 0) : (balance?.naira ?? 0);
-    const cumulativeAssetUsd = (() => {
+    const assetBalance = (() => {
         if (!balance) return 0;
         if (isDemoMode) {
             const solPx = tokenUsdMap.SOL ?? 0;
             const usdcPx = tokenUsdMap.USDC ?? 1;
-            return (balance.demo_sol ?? 0) * solPx + (balance.demo_usdc_sol ?? 0) * usdcPx + (balance.demo_naira ?? 0);
+            return (balance.demo_sol ?? 0) * solPx + (balance.demo_usdc_sol ?? 0) * usdcPx;
         }
         const solPx = tokenUsdMap.SOL ?? 0;
         const usdcPx = tokenUsdMap.USDC ?? 1;
@@ -433,7 +430,6 @@ export default function MarketDetailView() {
             (balance.usdt_sol ?? 0) * usdtPx +
             (balance.usdg_sol ?? 0) * usdgPx +
             (balance.eth_base ?? 0) * ethPx +
-            (balance.naira ?? 0) +
             (balance.vusd ?? 0);
     })();
     const effectiveQuantity = inputMode === "shares"
@@ -457,6 +453,7 @@ export default function MarketDetailView() {
                 is_demo: isDemoMode
             });
             toast.success("Order placed!");
+            refreshBalance();
         } catch (err) {
             toast.error(err instanceof Error ? err.message : "Failed to place order");
         } finally {
@@ -634,7 +631,7 @@ export default function MarketDetailView() {
                     <div className="flex items-center justify-between mb-2">
                         <span className="text-[10px] text-gray-500 uppercase tracking-wider">Order Size</span>
                         <span className="text-[10px] text-gray-400">
-                            Balance ${tradingBalance.toFixed(2)} (${cumulativeAssetUsd.toFixed(2)} assets)
+                            Balance ${tradingBalance.toFixed(2)} · Assets ${assetBalance.toFixed(2)}
                         </span>
                     </div>
 

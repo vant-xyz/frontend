@@ -223,6 +223,10 @@ export function PrivateDepositModal({ isOpen, onClose, isDemoMode }: PrivateDepo
                 <p className="text-sm text-gray-400 max-w-xs">
                   Deposit from any external wallet without linking it to your Vantic identity.
                 </p>
+                <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-blue-400 bg-blue-500/10 border border-blue-500/20 rounded-full px-2 py-0.5">
+                  <ShieldCheck size={8} />
+                  Powered by Umbra
+                </span>
               </div>
             </div>
 

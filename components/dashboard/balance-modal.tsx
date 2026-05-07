@@ -36,6 +36,7 @@ interface BalanceModalProps {
   onSync: () => void;
   onFundDemo: (amount: number) => Promise<any>;
   onOpenSell: () => void;
+  onOpenWithdraw: () => void;
   onOpenPrivateDeposit: () => void;
   isSyncing: boolean;
 }
@@ -77,6 +78,7 @@ export function BalanceModal({
   onSync,
   onFundDemo,
   onOpenSell,
+  onOpenWithdraw,
   onOpenPrivateDeposit,
   isSyncing,
 }: BalanceModalProps) {
@@ -257,7 +259,7 @@ export function BalanceModal({
 
         <Button
           className="flex-1 bg-white text-black hover:bg-gray-200 font-black h-10 rounded-xl uppercase text-[10px] tracking-widest shadow-none"
-          onClick={() => { onClose(); onOpenPrivateDeposit(); }}
+          onClick={() => { onClose(); onOpenWithdraw(); }}
         >
           Withdraw
         </Button>
