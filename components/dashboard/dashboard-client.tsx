@@ -10,6 +10,7 @@ import { BalanceModal } from "./balance-modal";
 import { SellCryptoModal } from "./sell-crypto-modal";
 import { PrivateDepositModal } from "./private-deposit-modal";
 import { WithdrawModal } from "./withdraw-modal";
+import { TutorialModal } from "./tutorial-modal";
 import { History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -162,7 +163,9 @@ export function DashboardClient({ children }: DashboardClientProps) {
         onSuccess={sync}
       />
 
-      <SellCryptoModal 
+      <TutorialModal />
+
+      <SellCryptoModal
         isOpen={isSellModalOpen} 
         onClose={() => setIsSellModalOpen(false)}
         balance={balance}
