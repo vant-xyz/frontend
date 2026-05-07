@@ -579,7 +579,11 @@ export async function getTransactions(token: string): Promise<TransactionsRespon
     throw new Error("Failed to fetch transactions");
   }
 
-  return response.json();
+  const data = await response.json();
+  return {
+    ...data,
+    transactions: Array.isArray(data?.transactions) ? data.transactions : [],
+  };
 }
 
 

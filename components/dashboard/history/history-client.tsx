@@ -17,7 +17,7 @@ import { SharePositionModal } from "@/components/ui/sharePositionModal";
 import Link from "next/link";
 
 interface HistoryClientProps {
-  initialTransactions: Transaction[];
+  initialTransactions: Transaction[] | null | undefined;
 }
 
 const fmtPnl = (pnl: number) => {
@@ -29,6 +29,7 @@ const fmtPnl = (pnl: number) => {
 };
 
 export function HistoryClient({ initialTransactions }: HistoryClientProps) {
+  const transactions = Array.isArray(initialTransactions) ? initialTransactions : [];
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
   const [tab, setTab] = useState<"transactions" | "trades">("transactions");
   const [tradeView, setTradeView] = useState<"list" | "calendar">("list");
@@ -292,14 +293,14 @@ export function HistoryClient({ initialTransactions }: HistoryClientProps) {
       </div>
 
       {tab === "transactions" ? (
-        initialTransactions.length === 0 ? (
+        transactions.length === 0 ? (
           <div className="text-center py-24 bg-white/[0.02] border border-white/5 rounded-3xl">
             <Clock className="w-12 h-12 text-gray-700 mx-auto mb-4 opacity-20" />
             <p className="text-sm text-gray-500 font-bold uppercase tracking-widest">No transactions yet</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-2">
-            {initialTransactions.map((tx) => (
+            {transactions.map((tx) => (
               <button
                 key={tx.id}
                 onClick={() => setSelectedTx(tx)}

@@ -334,7 +334,6 @@ function WalletPortfolio() {
         <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 px-2.5 py-1 rounded-full">
           <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Powered by</span>
           <img src="/media/images/attributions/goldrush-logo.png" alt="GoldRush" className="h-3.5 object-contain" />
-          <span className="text-[10px] text-gray-600">· Solana Mainnet</span>
         </div>
       </div>
 
