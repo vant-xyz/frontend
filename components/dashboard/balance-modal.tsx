@@ -23,7 +23,7 @@ import { Loader } from "@/components/ui/loader";
 import { cn } from "@/lib/utils";
 import type { BalanceInfo } from "@/lib/api";
 import { getTokenPrices } from "@/lib/api";
-import { Fuel, Copy, ExternalLink, ArrowDownLeft, Landmark, ShieldCheck } from "lucide-react";
+import { Fuel, Landmark, ShieldCheck, Banknote } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
@@ -293,17 +293,24 @@ export function BalanceModal({
           </div>
         )}
         <div className="px-4 flex items-center justify-between">
-          <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
-            Your Assets
-          </h3>
+          <div className="flex flex-col gap-0.5">
+            <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+              Your Assets
+            </h3>
+            <span className="inline-flex items-center gap-1 text-[8px] font-bold text-gray-600 uppercase tracking-widest">
+              <img src="/media/images/jupiter-icon.jpg" alt="Jupiter" className="w-3 h-3 rounded-full object-cover" />
+              Prices by Jupiter
+            </span>
+          </div>
           <Button
             size="sm"
-            className="h-7 px-3 bg-white/10 hover:bg-white/15 text-white border border-white/10 rounded-lg text-[10px] font-bold uppercase tracking-widest"
+            className="h-7 px-3 bg-white/10 hover:bg-white/15 text-white border border-white/10 rounded-lg text-[10px] font-bold uppercase tracking-widest gap-1.5"
             onClick={() => {
               onClose();
               router.push("/app/account?tab=wallets");
             }}
           >
+            <Banknote size={12} />
             Fund
           </Button>
         </div>

@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Loader } from "@/components/ui/loader";
 import { withdrawBalance, withdrawAsset } from "@/lib/api";
 import { toast } from "sonner";
-import { ArrowUpRight, CheckCircle2, Info, Lock, ArrowRight } from "lucide-react";
+import { ArrowUpRight, CheckCircle2, Info, ArrowRight } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import type { BalanceInfo } from "@/lib/api";
@@ -55,12 +55,12 @@ type AssetKey = typeof REAL_ASSETS[number]["key"] | typeof DEMO_ASSETS[number]["
 
 const PrivacyBadge = ({ isPrivate }: { isPrivate: boolean }) =>
   isPrivate ? (
-    <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-green-400 bg-green-500/10 border border-green-500/20 rounded-full px-2 py-0.5">
-      <Lock size={8} />
+    <span className="inline-flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider text-green-400">
+      <img src="/media/images/magicblock-icon.jpg" alt="MagicBlock" className="w-3.5 h-3.5 rounded-full object-cover" />
       Private · MagicBlock
     </span>
   ) : (
-    <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-zinc-400 bg-white/5 border border-white/10 rounded-full px-2 py-0.5">
+    <span className="text-[9px] font-black uppercase tracking-wider text-zinc-500">
       On-chain transfer
     </span>
   );
@@ -206,10 +206,10 @@ export function WithdrawModal({ isOpen, onClose, balance, isDemoMode, onSuccess 
         )}
       </div>
 
-      <div className="flex items-start gap-2 p-3 rounded-xl bg-green-500/5 border border-green-500/10">
-        <Lock size={13} className="text-green-400 mt-0.5 shrink-0" />
+      <div className="flex items-start gap-2.5 p-3 rounded-xl bg-green-500/5 border border-green-500/10">
+        <img src="/media/images/magicblock-icon.jpg" alt="MagicBlock" className="w-5 h-5 rounded-full object-cover mt-0.5 shrink-0" />
         <div>
-          <p className="text-[11px] text-green-300 font-bold">Private by default</p>
+          <p className="text-[11px] text-green-300 font-bold">Private by default · MagicBlock</p>
           <p className="text-[11px] text-green-400/70">
             Sent as USDC via MagicBlock's private payment network — the link between your Vantic vault and destination is broken on-chain.
           </p>
@@ -247,7 +247,7 @@ export function WithdrawModal({ isOpen, onClose, balance, isDemoMode, onSuccess 
                 <p className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">{a.network}</p>
               </div>
               {a.private
-                ? <Lock size={10} className="text-green-400 shrink-0" />
+                ? <img src="/media/images/magicblock-icon.jpg" alt="MagicBlock" className="w-4 h-4 rounded-full object-cover shrink-0" />
                 : <ArrowRight size={10} className="text-zinc-600 shrink-0" />
               }
             </button>
@@ -291,8 +291,8 @@ export function WithdrawModal({ isOpen, onClose, balance, isDemoMode, onSuccess 
       </div>
 
       {assetConfig.private ? (
-        <div className="flex items-start gap-2 p-3 rounded-xl bg-green-500/5 border border-green-500/10">
-          <Lock size={13} className="text-green-400 mt-0.5 shrink-0" />
+        <div className="flex items-start gap-2.5 p-3 rounded-xl bg-green-500/5 border border-green-500/10">
+          <img src="/media/images/magicblock-icon.jpg" alt="MagicBlock" className="w-5 h-5 rounded-full object-cover mt-0.5 shrink-0" />
           <p className="text-[11px] text-green-400">
             SPL transfers are routed through MagicBlock's private payment network — the source is not visible on-chain.
           </p>
