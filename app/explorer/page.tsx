@@ -331,10 +331,6 @@ function WalletPortfolio() {
       <div className="flex items-center gap-3">
         <Wallet size={18} className="text-red-500" />
         <h2 className="text-lg font-bold text-white">Wallet Explorer</h2>
-        <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 px-2.5 py-1 rounded-full">
-          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Powered by</span>
-          <img src="/media/images/attributions/goldrush-logo.png" alt="GoldRush" className="h-3.5 object-contain" />
-        </div>
       </div>
 
       <div className="flex gap-2">
