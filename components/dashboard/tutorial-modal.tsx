@@ -46,7 +46,7 @@ const slides: Slide[] = [
     ),
     body: (
       <p className="text-gray-300 text-sm leading-relaxed">
-        Vantic is the fastest binary prediction market terminal on Solana. Trade on crypto price predictions and real-world events — demo trading is live now. This quick walkthrough gets you from zero to your first trade.
+        Vantic is the fastest binary prediction market terminal on Solana. Trade on crypto price predictions and real-world events, <b>Demo trading</b> is live now. This quick walkthrough gets you from zero to your first trade.
       </p>
     ),
   },
@@ -74,7 +74,7 @@ const slides: Slide[] = [
     ),
     body: (
       <p className="text-gray-300 text-sm leading-relaxed">
-        The quickest way to start. Hit <span className="text-white font-bold">Refill</span> inside your balance — you'll receive up to <span className="text-white font-bold">$400 USD</span> in demo credits. Your Vantic Solana wallet and trading balance are topped up automatically.
+        The quickest way to start. Hit <span className="text-white font-bold">Refill</span> inside your balance, you'll receive up to <span className="text-white font-bold">$400 USD</span> in demo funds. Your Vantic Solana wallet and trading balance are topped up automatically.
       </p>
     ),
   },
@@ -88,7 +88,7 @@ const slides: Slide[] = [
     ),
     body: (
       <p className="text-gray-300 text-sm leading-relaxed">
-        Get devnet tokens in any Solana wallet — Phantom, Solflare — and send them directly to your Vantic Solana address, found in <span className="text-white font-bold">Account → Wallets</span>. SOL and USDC are both supported.
+        Get devnet tokens in any Solana wallet such as Phantom, Solflare or Backpack and send them directly to your Vantic Solana address, found in <span className="text-white font-bold">Account → Wallets</span>. SOL and USDC are both supported.
       </p>
     ),
   },
@@ -123,7 +123,7 @@ const slides: Slide[] = [
     ),
     body: (
       <p className="text-gray-300 text-sm leading-relaxed">
-        Go to the <span className="text-white font-bold">Crypto tab</span> and pick a market. The order form is on the right on desktop — on mobile, tap the <span className="text-white font-bold">Trade tab</span>. Vote <span className="text-green-400 font-bold">YES</span> if you think the price hits the target, <span className="text-red-400 font-bold">NO</span> if it doesn't.
+        Go to the <span className="text-white font-bold">Crypto tab</span> and pick a market. The order form is on the right on desktop while on mobile, tap the <span className="text-white font-bold">Trade tab</span>. Vote <span className="text-green-400 font-bold">YES</span> if you think the price hits the target, <span className="text-red-400 font-bold">NO</span> if it doesn't.
       </p>
     ),
   },
@@ -137,7 +137,7 @@ const slides: Slide[] = [
     ),
     body: (
       <p className="text-gray-300 text-sm leading-relaxed">
-        The <span className="text-white font-bold">General tab</span> has every non-crypto market — sports, politics, world events. Pick a market, read the question, and place your conviction the same way.
+        The <span className="text-white font-bold">General tab</span> has every non-crypto market from sports, politics, world events. Pick a market, read the question, and place your conviction the same way.
       </p>
     ),
   },
