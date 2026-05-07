@@ -1,4 +1,15 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+const _isServer = typeof window === "undefined";
+
+function apiBase(): string {
+  return _isServer ? (process.env.NEXT_PUBLIC_API_URL || "") : "/api/vcs";
+}
+
+function serverKey(): Record<string, string> {
+  if (!_isServer) return {};
+  const k = process.env.BACKEND_API_KEY;
+  return k ? { "X-API-Key": k } : {};
+}
+
 const PUBLIC_PROXY_BASE = "/api/public";
 
 function viaPublicProxy(path: string): string {
@@ -17,7 +28,7 @@ export interface WaitlistResponse {
 }
 
 export async function joinWaitlist(data: WaitlistRequest): Promise<WaitlistResponse> {
-  const response = await fetch(`${API_BASE_URL}/waitlist`, {
+  const response = await fetch(`${apiBase()}/waitlist`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -76,11 +87,11 @@ export interface AuthUsernameExistsResponse {
 
 // Auth API functions
 export async function checkEmailExists(email: string): Promise<AuthExistsResponse> {
-  const response = await fetch(`${API_BASE_URL}/auth/exists`, {
+  const response = await fetch(`${apiBase()}/auth/exists`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
+      ...serverKey()
     },
     body: JSON.stringify({ email }),
   });
@@ -93,11 +104,11 @@ export async function checkEmailExists(email: string): Promise<AuthExistsRespons
 }
 
 export async function checkUsernameExists(username: string): Promise<AuthUsernameExistsResponse> {
-  const response = await fetch(`${API_BASE_URL}/auth/username/exists`, {
+  const response = await fetch(`${apiBase()}/auth/username/exists`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
+      ...serverKey()
     },
     body: JSON.stringify({ username }),
   });
@@ -110,11 +121,11 @@ export async function checkUsernameExists(username: string): Promise<AuthUsernam
 }
 
 export async function login(email: string, password: string): Promise<AuthResponse> {
-  const response = await fetch(`${API_BASE_URL}/auth`, {
+  const response = await fetch(`${apiBase()}/auth`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
+      ...serverKey()
     },
     body: JSON.stringify({ email, password }),
   });
@@ -128,11 +139,11 @@ export async function login(email: string, password: string): Promise<AuthRespon
 }
 
 export async function signup(email: string, password: string): Promise<AuthResponse> {
-  const response = await fetch(`${API_BASE_URL}/auth`, {
+  const response = await fetch(`${apiBase()}/auth`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
+      ...serverKey()
     },
     body: JSON.stringify({ email, password }),
   });
@@ -146,12 +157,12 @@ export async function signup(email: string, password: string): Promise<AuthRespo
 }
 
 export async function setUsername(username: string, email: string, token: string): Promise<AuthUsernameResponse> {
-  const response = await fetch(`${API_BASE_URL}/auth/username`, {
+  const response = await fetch(`${apiBase()}/auth/username`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
-      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
+      ...serverKey()
     },
     body: JSON.stringify({ username, email }),
   });
@@ -165,7 +176,7 @@ export async function setUsername(username: string, email: string, token: string
 }
 
 export async function logout(token: string): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/auth/logout`, {
+  const response = await fetch(`${apiBase()}/auth/logout`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -382,12 +393,12 @@ export interface TransactionsResponse {
 
 // Dashboard API functions
 export async function getUserProfile(token: string): Promise<UserResponse> {
-  const response = await fetch(`${API_BASE_URL}/user`, {
+  const response = await fetch(`${apiBase()}/user`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
-      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
+      ...serverKey()
     },
   });
 
@@ -402,12 +413,12 @@ export async function updateUserProfile(
   token: string,
   updates: Partial<Omit<UserProfile, 'vant_id' | 'balance_id'>>
 ): Promise<UserResponse> {
-  const response = await fetch(`${API_BASE_URL}/user`, {
+  const response = await fetch(`${apiBase()}/user`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
-      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
+      ...serverKey()
     },
     body: JSON.stringify(updates),
   });
@@ -426,11 +437,11 @@ export async function uploadProfileImage(
   const formData = new FormData();
   formData.append('image', file);
 
-  const response = await fetch(`${API_BASE_URL}/user/profile-image`, {
+  const response = await fetch(`${apiBase()}/user/profile-image`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
-      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
+      ...serverKey()
     },
     body: formData,
   });
@@ -443,12 +454,12 @@ export async function uploadProfileImage(
 }
 
 export async function getBalance(token: string): Promise<BalanceResponse> {
-  const response = await fetch(`${API_BASE_URL}/balance`, {
+  const response = await fetch(`${apiBase()}/balance`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
-      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
+      ...serverKey()
     },
   });
 
@@ -460,12 +471,12 @@ export async function getBalance(token: string): Promise<BalanceResponse> {
 }
 
 export async function syncBalance(token: string): Promise<BalanceResponse> {
-  const response = await fetch(`${API_BASE_URL}/balance/sync`, {
+  const response = await fetch(`${apiBase()}/balance/sync`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
-      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
+      ...serverKey()
     },
   });
 
@@ -476,13 +487,53 @@ export async function syncBalance(token: string): Promise<BalanceResponse> {
   return response.json();
 }
 
-export async function fundDemoAccount(token: string, amount: number = 20000): Promise<DemoFundResponse> {
-  const response = await fetch(`${API_BASE_URL}/demo/fund`, {
+export async function withdrawBalance(
+  token: string,
+  amount: number,
+  destinationAddress: string,
+  isDemo = false
+): Promise<{ success: boolean; message: string; gross_amount: number; fee_amount: number; net_amount: number }> {
+  const response = await fetch(`${apiBase()}/balance/withdraw`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
-      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
+      ...serverKey(),
+    },
+    body: JSON.stringify({ amount, destination_address: destinationAddress, is_demo: isDemo }),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || "Withdrawal failed");
+  return data;
+}
+
+export async function withdrawAsset(
+  token: string,
+  asset: string,
+  amount: number,
+  destinationAddress: string
+): Promise<{ success: boolean; message: string; asset: string; gross_amount: number; fee_amount: number; net_amount: number }> {
+  const response = await fetch(`${apiBase()}/balance/withdraw/asset`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+      ...serverKey(),
+    },
+    body: JSON.stringify({ asset, amount, destination_address: destinationAddress }),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || "Asset withdrawal failed");
+  return data;
+}
+
+export async function fundDemoAccount(token: string, amount: number = 20000): Promise<DemoFundResponse> {
+  const response = await fetch(`${apiBase()}/demo/fund`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+      ...serverKey()
     },
     body: JSON.stringify({ amount }),
   });
@@ -496,12 +547,12 @@ export async function fundDemoAccount(token: string, amount: number = 20000): Pr
 }
 
 export async function sellCrypto(token: string, data: SellCryptoRequest): Promise<SellCryptoResponse> {
-  const response = await fetch(`${API_BASE_URL}/balance/sell`, {
+  const response = await fetch(`${apiBase()}/balance/sell`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
-      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
+      ...serverKey()
     },
     body: JSON.stringify(data),
   });
@@ -515,12 +566,12 @@ export async function sellCrypto(token: string, data: SellCryptoRequest): Promis
 }
 
 export async function getTransactions(token: string): Promise<TransactionsResponse> {
-  const response = await fetch(`${API_BASE_URL}/transactions`, {
+  const response = await fetch(`${apiBase()}/transactions`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
-      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
+      ...serverKey()
     },
   });
 
@@ -533,12 +584,12 @@ export async function getTransactions(token: string): Promise<TransactionsRespon
 
 
 export async function closePosition(marketId: string, token: string, positionId: string, data: SellPositionRequest): Promise<SellPositionResponse> {
-  const response = await fetch(`${API_BASE_URL}/markets/${marketId}/sell`, {
+  const response = await fetch(`${apiBase()}/markets/${marketId}/sell`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
-      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
+      ...serverKey()
     },
   });
 
@@ -877,11 +928,11 @@ export async function getMarket(marketId: string): Promise<MarketResponse> {
 }
 
 export async function getMarketOnchain(marketId: string): Promise<MarketOnchainResponse> {
-  const response = await fetch(`${API_BASE_URL}/markets/${marketId}/onchain`, {
+  const response = await fetch(`${apiBase()}/markets/${marketId}/onchain`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
-      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
+      ...serverKey()
     },
   });
 
@@ -896,11 +947,11 @@ export async function getMarketsOnchain(status?: MarketStatus): Promise<MarketsO
   const params = new URLSearchParams();
   if (status) params.append("status", status);
 
-  const response = await fetch(`${API_BASE_URL}/markets/onchain?${params.toString()}`, {
+  const response = await fetch(`${apiBase()}/markets/onchain?${params.toString()}`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
-      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
+      ...serverKey()
     },
   });
 
@@ -924,12 +975,12 @@ export async function getOrderbook(marketId: string): Promise<OrderbookResponse>
 }
 
 export async function placeOrder(token: string, data: PlaceOrderRequest): Promise<PlaceOrderResponse> {
-  const response = await fetch(`${API_BASE_URL}/orders`, {
+  const response = await fetch(`${apiBase()}/orders`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
-      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
+      ...serverKey()
     },
     body: JSON.stringify(data),
   });
@@ -943,12 +994,12 @@ export async function placeOrder(token: string, data: PlaceOrderRequest): Promis
 }
 
 export async function cancelOrder(token: string, orderId: string): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/orders/${orderId}`, {
+  const response = await fetch(`${apiBase()}/orders/${orderId}`, {
     method: "DELETE",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
-      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
+      ...serverKey()
     },
   });
 
@@ -961,12 +1012,12 @@ export async function getUserOrders(token: string, marketId?: string): Promise<O
   const params = new URLSearchParams();
   if (marketId) params.append("market_id", marketId);
 
-  const response = await fetch(`${API_BASE_URL}/orders?${params.toString()}`, {
+  const response = await fetch(`${apiBase()}/orders?${params.toString()}`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
-      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
+      ...serverKey()
     },
   });
 
@@ -981,12 +1032,12 @@ export async function getUserPositions(token: string, marketId?: string): Promis
   const params = new URLSearchParams();
   if (marketId) params.append("market_id", marketId);
 
-  const response = await fetch(`${API_BASE_URL}/positions?${params.toString()}`, {
+  const response = await fetch(`${apiBase()}/positions?${params.toString()}`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
-      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
+      ...serverKey()
     },
   });
 
@@ -1082,12 +1133,12 @@ export interface Participant{
 }
 
 export async function createVsEvent(token: string, data: vsCreateRequest): Promise<vsCreateResponse> {
-  const response = await fetch(`${API_BASE_URL}/vs/events`, {
+  const response = await fetch(`${apiBase()}/vs/events`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
-      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
+      ...serverKey()
     },
     body: JSON.stringify(data),
   });
@@ -1100,12 +1151,12 @@ export async function createVsEvent(token: string, data: vsCreateRequest): Promi
 }
 
 export async function getVsEvents(token: string): Promise<{ success: boolean; events: vsEvents[] }> {
-  const response = await fetch(`${API_BASE_URL}/vs/events`, {
+  const response = await fetch(`${apiBase()}/vs/events`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
-      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
+      ...serverKey()
     },
   });
 
@@ -1117,12 +1168,12 @@ export async function getVsEvents(token: string): Promise<{ success: boolean; ev
 }
 
 export async function fetchEventById(token: string, eventId: string): Promise<{ success: boolean; event: vsEvents }> {
-  const response = await fetch(`${API_BASE_URL}/vs/events/${eventId}`, {
+  const response = await fetch(`${apiBase()}/vs/events/${eventId}`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
-      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
+      ...serverKey()
     },
   });
 
@@ -1134,12 +1185,12 @@ export async function fetchEventById(token: string, eventId: string): Promise<{ 
 }
 
 export async function joinVsEvent(token: string, eventId: string): Promise<{ success: boolean; participant: Participant }> {
-  const response = await fetch(`${API_BASE_URL}/vs/events/${eventId}/join`, {
+  const response = await fetch(`${apiBase()}/vs/events/${eventId}/join`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
-      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
+      ...serverKey()
     },
   });
 
@@ -1152,12 +1203,12 @@ export async function joinVsEvent(token: string, eventId: string): Promise<{ suc
 
 
 export async function confirmVsEventOutcome(token: string, eventId: string, outcome: "YES" | "NO"): Promise<{ success: boolean; event: vsEvents }> {
-  const response = await fetch(`${API_BASE_URL}/vs/events/${eventId}/confirm`, {
+  const response = await fetch(`${apiBase()}/vs/events/${eventId}/confirm`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
-      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
+      ...serverKey()
     },
     body: JSON.stringify({ outcome }),
   });
@@ -1171,12 +1222,12 @@ export async function confirmVsEventOutcome(token: string, eventId: string, outc
 
 export async function cancelVsEvent(token: string, eventId: string): Promise<{ success: boolean; message: string }> {
 
-  const response = await fetch(`${API_BASE_URL}/vs/events/${eventId}/cancel`, {
+  const response = await fetch(`${apiBase()}/vs/events/${eventId}/cancel`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
-      "X-API-Key": "vantic_QRHD1UK6FaqXPljLUt8aX99W4iET1fp3LscVOl4H2p4"
+      ...serverKey()
     },
   });
   if (!response.ok) {
