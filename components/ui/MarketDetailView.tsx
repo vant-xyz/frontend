@@ -491,7 +491,7 @@ export default function MarketDetailView() {
                         <p className="text-white font-mono text-[11px] break-all">{market.creation_tx_hash}</p>
                         <div className="mt-2 flex gap-2">
                             <a href={ovmExplorerUrl} className="inline-flex items-center gap-1 text-[10px] text-blue-400 hover:text-blue-300 underline">
-                                <img src="/placeholder-logo.png" alt="Vantic" className="w-3.5 h-3.5 rounded-sm object-cover" />
+                                <img src="/icons/icon-512x512.png" alt="Vantic" className="w-3.5 h-3.5 rounded-sm object-cover" />
                                 Open in OVM Explorer
                             </a>
                             {creationSolscanUrl && <a href={creationSolscanUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[10px] text-blue-400 hover:text-blue-300 underline">
@@ -510,7 +510,7 @@ export default function MarketDetailView() {
                                 <p className="text-emerald-300 font-mono text-[11px] break-all mt-2">{market.settlement_tx_hash}</p>
                                 <div className="mt-1 flex gap-2">
                                     <a href={ovmExplorerUrl} className="inline-flex items-center gap-1 text-[10px] text-blue-300 hover:text-blue-200 underline">
-                                        <img src="/placeholder-logo.png" alt="Vantic" className="w-3.5 h-3.5 rounded-sm object-cover" />
+                                        <img src="/icons/icon-512x512.png" alt="Vantic" className="w-3.5 h-3.5 rounded-sm object-cover" />
                                         Open in OVM Explorer
                                     </a>
                                     {settlementSolscanUrl && <a href={settlementSolscanUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[10px] text-blue-300 hover:text-blue-200 underline">
