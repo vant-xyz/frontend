@@ -17,6 +17,32 @@ function viaPublicProxy(path: string): string {
   return `${PUBLIC_PROXY_BASE}/${normalized}`;
 }
 
+export class ApiError extends Error {
+  code?: string;
+  retryable?: boolean;
+
+  constructor(message: string, opts?: { code?: string; retryable?: boolean }) {
+    super(message);
+    this.name = "ApiError";
+    this.code = opts?.code;
+    this.retryable = opts?.retryable;
+  }
+}
+
+async function throwApiError(response: Response, fallbackMessage: string): Promise<never> {
+  let payload: { message?: string; code?: string; retryable?: boolean } | undefined;
+  try {
+    payload = await response.json();
+  } catch {
+    payload = undefined;
+  }
+
+  throw new ApiError(payload?.message || fallbackMessage, {
+    code: payload?.code,
+    retryable: payload?.retryable,
+  });
+}
+
 export interface WaitlistRequest {
   email: string;
   referralCode?: string;
@@ -598,7 +624,7 @@ export async function closePosition(marketId: string, token: string, positionId:
   });
 
   if (!response.ok) {
-    throw new Error("Failed to fetch transactions");
+    return throwApiError(response, "Failed to close position");
   }
 
   return response.json();
@@ -990,8 +1016,7 @@ export async function placeOrder(token: string, data: PlaceOrderRequest): Promis
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || "Failed to place order");
+    return throwApiError(response, "Failed to place order");
   }
 
   return response.json();
@@ -1008,7 +1033,7 @@ export async function cancelOrder(token: string, orderId: string): Promise<void>
   });
 
   if (!response.ok) {
-    throw new Error("Failed to cancel order");
+    return throwApiError(response, "Failed to cancel order");
   }
 }
 
