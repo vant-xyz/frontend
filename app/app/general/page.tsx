@@ -25,6 +25,8 @@ import { toast } from "sonner";
 import { ReelAnimation } from "@/components/landing/reel-animation";
 
 const categories = ["All", "Crypto", "Politics", "Sports", "Finance", "Technology"];
+const GEM_HEADER_TEXTS = ["Vantic GEM Markets", "Vantic General Event Markets"];
+const GEM_SUBTITLE_TEXTS = ["sports", "politics", "technology", "finance", "crypto"];
 
 export default function GeneralPage() {
   const router = useRouter();
@@ -150,9 +152,15 @@ export default function GeneralPage() {
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold text-white">
-            <ReelAnimation texts={["Vantic GEM Markets", "Vantic General Event Markets"]} rotateInterval={2800} />
+            <ReelAnimation texts={GEM_HEADER_TEXTS} rotateInterval={2800} />
           </h1>
-          <p className="text-gray-400 mt-1">Trade event probabilities in real time</p>
+          <p className="text-gray-400 mt-1 flex items-center gap-1">
+            Trade
+            <span className="text-white inline-flex">
+              <ReelAnimation texts={GEM_SUBTITLE_TEXTS} rotateInterval={2200} />
+            </span>
+            probabilities in real time
+          </p>
         </div>
 
         <div className="flex gap-2 overflow-x-auto pb-2">

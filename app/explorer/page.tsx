@@ -544,7 +544,7 @@ function MarketCard({ market, onClick }: MarketCardProps) {
               <Badge variant="outline" className="text-xs border-gray-700 text-gray-400">
                 {marketType}
               </Badge>
-              <Badge variant={isActive ? "default" : "outline"} className="text-xs bg-green-600/20 text-green-400 border-green-600/50">
+              <Badge variant={isActive ? "default" : "outline"} className={isActive ? "text-xs bg-green-600/20 text-green-400 border-green-600/50" : "text-xs bg-purple-600/20 text-purple-300 border-purple-500/50"}>
                 {isActive ? "active" : "resolved"}
               </Badge>
             </div>
@@ -647,7 +647,7 @@ function MarketDetailModal({ market, onClose }: MarketDetailModalProps) {
               <Badge variant="outline" className="border-gray-700 text-gray-400">
                 {marketType}
               </Badge>
-              <Badge variant={isActive ? "default" : "outline"} className="bg-green-600/20 text-green-400 border-green-600/50">
+              <Badge variant={isActive ? "default" : "outline"} className={isActive ? "bg-green-600/20 text-green-400 border-green-600/50" : "bg-purple-600/20 text-purple-300 border-purple-500/50"}>
                 {isActive ? "active" : "resolved"}
               </Badge>
             </div>
@@ -764,7 +764,12 @@ function MarketDetailModal({ market, onClose }: MarketDetailModalProps) {
                 { label: "Validator Address", value: mbValidator },
               ].map(({ label, value }) => (
                 <div key={label}>
-                  <h4 className="text-sm font-medium text-gray-400 mb-2">{label}</h4>
+                  <h4 className="text-sm font-medium text-gray-400 mb-2 inline-flex items-center gap-2">
+                    {(label === "MagicBlock RPC URL" || label === "Validator Address") && (
+                      <img src="/media/images/magicblock-icon.jpg" alt="MagicBlock" className="w-4 h-4 rounded-full object-cover" />
+                    )}
+                    {label}
+                  </h4>
                   <div className="flex items-center gap-2">
                     <code className="flex-1 bg-gray-900 px-3 py-2 rounded text-xs text-gray-300 font-mono break-all">
                       {value}
