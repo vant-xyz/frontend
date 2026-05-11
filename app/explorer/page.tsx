@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -36,13 +36,13 @@ import { useIsMobile } from "@/hooks/use-mobile";
 
 export default function ExplorerPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(true);
   const [markets, setMarkets] = useState<OnchainMarket[]>([]);
   const [selectedMarket, setSelectedMarket] = useState<OnchainMarket | null>(null);
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "resolved">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [pendingMarketId, setPendingMarketId] = useState<string | null>(null);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -64,13 +64,21 @@ export default function ExplorerPage() {
   };
 
   useEffect(() => {
-    const marketId = searchParams.get("market");
-    if (!marketId || markets.length === 0) return;
-    const match = markets.find((m) => m.MarketID === marketId);
+    if (typeof window === "undefined") return;
+    const marketId = new URLSearchParams(window.location.search).get("market");
+    if (marketId) {
+      setPendingMarketId(marketId);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!pendingMarketId || markets.length === 0) return;
+    const match = markets.find((m) => m.MarketID === pendingMarketId);
     if (match) {
       setSelectedMarket(match);
+      setPendingMarketId(null);
     }
-  }, [searchParams, markets]);
+  }, [pendingMarketId, markets]);
 
   const handleMarketClick = (market: OnchainMarket) => {
     setSelectedMarket(market);
