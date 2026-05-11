@@ -80,6 +80,23 @@ export default function ExplorerPage() {
     }
   }, [pendingMarketId, markets]);
 
+  useEffect(() => {
+    if (!pendingMarketId) return;
+    let active = true;
+    getMarketOnchain(pendingMarketId)
+      .then((res) => {
+        if (!active) return;
+        if (res?.onchain) {
+          setSelectedMarket(res.onchain);
+          setPendingMarketId(null);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [pendingMarketId]);
+
   const handleMarketClick = (market: OnchainMarket) => {
     setSelectedMarket(market);
   };
@@ -696,11 +713,29 @@ function MarketDetailModal({ market, onClose }: MarketDetailModalProps) {
   const outcome = market.Outcome !== null ? (market.Outcome === 0 ? "YES" : "NO") : null;
 
   const [fullMarket, setFullMarket] = useState<Market | null>(null);
+  const [proofsLoading, setProofsLoading] = useState(true);
+  const [proofsError, setProofsError] = useState<string | null>(null);
 
   useEffect(() => {
+    let active = true;
+    setProofsLoading(true);
+    setProofsError(null);
     getMarketOnchain(market.MarketID)
-      .then((res) => setFullMarket(res.market))
-      .catch(() => {});
+      .then((res) => {
+        if (!active) return;
+        setFullMarket(res.market);
+      })
+      .catch(() => {
+        if (!active) return;
+        setProofsError("Unable to load transaction proofs for this market.");
+      })
+      .finally(() => {
+        if (!active) return;
+        setProofsLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, [market.MarketID]);
 
   const programId = process.env.NEXT_PUBLIC_VANT_PROGRAM_ID || "VantProgram111111111111111111111111111111";
@@ -853,7 +888,14 @@ function MarketDetailModal({ market, onClose }: MarketDetailModalProps) {
             </div>
 
             {/* GoldRush Transaction Enrichment */}
-            {fullMarket ? (
+            {proofsLoading ? (
+              <div className="flex items-center gap-2 text-[11px] text-gray-600 pt-2">
+                <Loader className="w-3 h-3" />
+                Loading transaction proofs...
+              </div>
+            ) : proofsError ? (
+              <p className="text-[11px] text-gray-500 pt-2">{proofsError}</p>
+            ) : fullMarket ? (
               <div className="space-y-3 pt-2">
                 <div className="flex items-center gap-2">
                   <div className="h-px flex-1 bg-white/5" />
@@ -873,12 +915,7 @@ function MarketDetailModal({ market, onClose }: MarketDetailModalProps) {
                   />
                 )}
               </div>
-            ) : (
-              <div className="flex items-center gap-2 text-[11px] text-gray-600 pt-2">
-                <Loader className="w-3 h-3" />
-                Loading transaction proofs...
-              </div>
-            )}
+            ) : <p className="text-[11px] text-gray-500 pt-2">No transaction proofs available.</p>}
           </div>
         </div>
       </div>
