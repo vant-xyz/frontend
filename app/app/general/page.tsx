@@ -3,6 +3,8 @@
 import { DashboardClient } from "@/components/dashboard/dashboard-client";
 import { Button } from "@/components/ui/button";
 import { Loader } from "@/components/ui/loader";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getMarkets, Market, OrderSide, getOrderbook, getMarketVolume } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -23,8 +25,9 @@ export default function GeneralPage() {
   const [selectedSide, setSelectedSide] = useState<OrderSide>("YES");
   const [isQuickTradeOpen, setIsQuickTradeOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState("All");
-  const [quotesByMarket, setQuotesByMarket] = useState<Record<string, { yes: number; no: number }>>({});
-  const [volumeByMarket, setVolumeByMarket] = useState<Record<string, number>>({});
+  const [quotesByMarket, setQuotesByMarket] = useState<Record<string, { yes: number; no: number } | undefined>>({});
+  const [volumeByMarket, setVolumeByMarket] = useState<Record<string, number | undefined>>({});
+  const [searchQuery, setSearchQuery] = useState("");
 
   const loadMarkets = useCallback(async () => {
     try {
@@ -58,11 +61,12 @@ export default function GeneralPage() {
           const ob = await getOrderbook(m.id);
           const bestYesBid = toCents(ob.orderbook?.yes_bids?.[0]?.price);
           const bestNoAsk = toCents(ob.orderbook?.no_asks?.[0]?.price);
-          const yes = bestYesBid > 0 ? bestYesBid : toCents(ob.orderbook?.last_traded_price) || 50;
-          const no = bestNoAsk > 0 ? bestNoAsk : Math.max(0, 100 - yes);
+          const yes = bestYesBid > 0 ? bestYesBid : toCents(ob.orderbook?.last_traded_price);
+          const no = bestNoAsk > 0 ? bestNoAsk : (yes > 0 ? Math.max(0, 100 - yes) : 0);
+          if (yes <= 0 || no <= 0) return [m.id, undefined] as const;
           return [m.id, { yes, no }] as const;
         } catch {
-          return [m.id, { yes: 50, no: 50 }] as const;
+          return [m.id, undefined] as const;
         }
       }));
       const volumeEntries = await Promise.all(markets.map(async (m) => {
@@ -70,7 +74,7 @@ export default function GeneralPage() {
           const vol = await getMarketVolume(m.id);
           return [m.id, Number(vol.volume?.volume ?? 0)] as const;
         } catch {
-          return [m.id, 0] as const;
+          return [m.id, undefined] as const;
         }
       }));
       if (!active) return;
@@ -86,9 +90,15 @@ export default function GeneralPage() {
   }, [markets]);
 
   const filteredMarkets = useMemo(() => {
-    if (activeCategory === "All") return markets;
-    return markets.filter((m) => m.category?.toLowerCase() === activeCategory.toLowerCase());
-  }, [markets, activeCategory]);
+    const q = searchQuery.trim().toLowerCase();
+    return markets.filter((m) => {
+      if (activeCategory !== "All" && m.category?.toLowerCase() !== activeCategory.toLowerCase()) {
+        return false;
+      }
+      if (!q) return true;
+      return m.title.toLowerCase().includes(q) || m.description.toLowerCase().includes(q);
+    });
+  }, [markets, activeCategory, searchQuery]);
 
   const handleQuickTrade = (market: Market, side: OrderSide) => {
     setSelectedMarket(market);
@@ -136,21 +146,31 @@ export default function GeneralPage() {
             </button>
           ))}
         </div>
-
-        <div className="overflow-x-auto">
-          <div className="flex gap-3">
-            {markets.slice(0, 4).map((m) => (
-              <GemCard
-                key={m.id}
-                market={m}
-                onQuickTrade={handleQuickTrade}
-                compact
-                liveQuote={quotesByMarket[m.id]}
-                liveVolume={volumeByMarket[m.id]}
-              />
-            ))}
-          </div>
+        <div className="max-w-lg">
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search GEM markets..."
+            className="bg-white/5 border-white/10 text-white placeholder:text-gray-500"
+          />
         </div>
+
+        {activeCategory === "All" && !searchQuery.trim() && (
+          <div className="overflow-x-auto">
+            <div className="flex gap-3">
+              {markets.slice(0, 4).map((m) => (
+                <GemCard
+                  key={m.id}
+                  market={m}
+                  onQuickTrade={handleQuickTrade}
+                  compact
+                  liveQuote={quotesByMarket[m.id]}
+                  liveVolume={volumeByMarket[m.id]}
+                />
+              ))}
+            </div>
+          </div>
+        )}
 
         <Accordion type="single" collapsible className="w-full">
           <AccordionItem value="how-it-works" className="border-white/10">
@@ -243,8 +263,8 @@ function GemCard({
     return () => clearInterval(interval);
   }, [market.end_time_utc]);
 
-  const yesCents = liveQuote?.yes ?? (market.current_price ?? 50);
-  const noCents = liveQuote?.no ?? Math.max(0, 100 - yesCents);
+  const yesCents = liveQuote?.yes;
+  const noCents = liveQuote?.no;
   const banner = market.market_image_banner || market.market_image_small || "/media/images/hero_image.png";
   const shareUrl = `${typeof window !== "undefined" ? window.location.origin : "https://vantic.xyz"}/market/${market.id}`;
   const previewImageUrl = `${typeof window !== "undefined" ? window.location.origin : "https://vantic.xyz"}/app/general/${market.id}/opengraph-image`;
@@ -272,7 +292,13 @@ function GemCard({
               <p className="text-xs text-gray-400 mb-1">{compact ? "🔥 Trending" : (market.category || "General")}</p>
               <h3 className="text-sm font-semibold text-white line-clamp-2">{market.title}</h3>
               <p className="mt-2 text-xs text-gray-400 flex items-center gap-1"><Clock size={12} />{timeText}</p>
-              <p className="mt-1 text-xs text-gray-400">Vol ${(liveVolume ?? 0).toFixed(2)}</p>
+              <div className="mt-1 text-xs text-gray-400">
+                {typeof liveVolume === "number" ? (
+                  <p>Vol ${liveVolume.toFixed(2)}</p>
+                ) : (
+                  <Skeleton className="h-3 w-20 bg-white/10" />
+                )}
+              </div>
             </div>
             <Button
               variant="ghost"
@@ -288,8 +314,12 @@ function GemCard({
           </div>
 
           <div className="flex justify-between mt-4" onClick={(e) => e.stopPropagation()}>
-            <Button variant="outline" className="border-green-500/40 text-green-400" onClick={() => onQuickTrade(market, "YES")}>Yes {yesCents.toFixed(1)}¢</Button>
-            <Button variant="outline" className="border-red-500/40 text-red-400" onClick={() => onQuickTrade(market, "NO")}>No {noCents.toFixed(1)}¢</Button>
+            <Button variant="outline" className="border-green-500/40 text-green-400" onClick={() => onQuickTrade(market, "YES")}>
+              {typeof yesCents === "number" ? `Yes ${yesCents.toFixed(1)}¢` : <Skeleton className="h-4 w-16 bg-green-500/15" />}
+            </Button>
+            <Button variant="outline" className="border-red-500/40 text-red-400" onClick={() => onQuickTrade(market, "NO")}>
+              {typeof noCents === "number" ? `No ${noCents.toFixed(1)}¢` : <Skeleton className="h-4 w-16 bg-red-500/15" />}
+            </Button>
           </div>
         </div>
       </div>

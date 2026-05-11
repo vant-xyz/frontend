@@ -193,10 +193,11 @@ export function HistoryClient({ initialTransactions }: HistoryClientProps) {
     const { pos, market } = posDetail;
     const outcome = positionOutcome(pos);
     const stake = pos.total_cost > 0 ? pos.total_cost : pos.shares * (pos.avg_entry_price || 0);
+    const entryShares = (pos.avg_entry_price || 0) > 0 ? stake / (pos.avg_entry_price || 1) : pos.shares;
     const multiplier = stake > 0 ? Number(pos.payout_amount) / stake : null;
     const avgPriceCents = (pos.avg_entry_price || 0) * 100;
     const payoutAmount = Number(pos.payout_amount || 0);
-    const paidOutPct = stake > 0 ? (payoutAmount / stake) * 100 : 0;
+    const paidOutPct = stake > 0 ? ((payoutAmount - stake) / stake) * 100 : 0;
 
     return (
       <div className="space-y-5 py-6 px-1">
@@ -228,7 +229,7 @@ export function HistoryClient({ initialTransactions }: HistoryClientProps) {
           </div>
           <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5">
             <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Shares</p>
-            <p className="text-base font-black text-white font-mono">{pos.shares.toFixed(2)}</p>
+            <p className="text-base font-black text-white font-mono">{entryShares.toFixed(2)}</p>
           </div>
           <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5">
             <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Entry Price</p>
@@ -242,7 +243,7 @@ export function HistoryClient({ initialTransactions }: HistoryClientProps) {
             <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Amount Paid Out</p>
             <p className={cn("text-xl font-black font-mono", payoutAmount > 0 ? "text-green-400" : "text-red-400")}>
               ${payoutAmount.toFixed(2)}
-              <span className="text-sm ml-2 opacity-70">({paidOutPct.toFixed(1)}% of stake)</span>
+              <span className="text-sm ml-2 opacity-70">({paidOutPct >= 0 ? "+" : ""}{paidOutPct.toFixed(1)}% vs stake)</span>
             </p>
           </div>
           {multiplier !== null && pos.status === "SETTLED" && (
@@ -535,11 +536,7 @@ export function HistoryClient({ initialTransactions }: HistoryClientProps) {
             ? (Number(shareTarget.pos.realized_pnl) / shareTarget.pos.total_cost) * 100
             : 0}
           avgPriceCents={(shareTarget.pos.avg_entry_price || 0) * 100}
-          currentPriceCents={
-            shareTarget.pos.status === "SETTLED" && Number(shareTarget.pos.payout_amount) > 0
-              ? (Number(shareTarget.pos.payout_amount) / shareTarget.pos.shares) * 100
-              : (shareTarget.pos.avg_entry_price || 0) * 100
-          }
+          currentPriceCents={shareTarget.pos.status === "SETTLED" ? 100 : (shareTarget.pos.avg_entry_price || 0) * 100}
         />
       )}
     </div>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
+  ApiError,
   getUserProfile,
   getBalance,
   syncBalance,
@@ -19,6 +20,7 @@ export function useDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [authRequired, setAuthRequired] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [balance, setBalance] = useState<BalanceInfo | null>(null);
   const [isDemoMode, setIsDemoMode] = useState(() => {
@@ -62,6 +64,7 @@ export function useDashboard() {
 
   const fetchData = useCallback(async () => {
     if (!token) {
+      setAuthRequired(true);
       setError("No authentication token found");
       setIsLoading(false);
       return;
@@ -71,14 +74,15 @@ export function useDashboard() {
       setIsLoading(true);
       setError(null);
 
-      const [userRes, balanceRes, pricesRes, vantRes] = await Promise.all([
-        getUserProfile(token),
+      const userRes = await getUserProfile(token);
+      setUserProfile(userRes.user);
+
+      const [balanceRes, pricesRes, vantRes] = await Promise.all([
         getBalance(token),
         getLatestPrices(),
         getVantRate(),
       ]);
 
-      setUserProfile(userRes.user);
       setBalance(balanceRes.balance);
 
       const rawPrices = (pricesRes as any).prices || {};
@@ -89,6 +93,10 @@ export function useDashboard() {
       setPrices((prev) => ({ ...prev, ...mappedPrices, vant_rate: vantRes.buy_rate }));
       
     } catch (err) {
+      const isAuthError =
+        (err instanceof ApiError && err.status === 401) ||
+        (err instanceof Error && /expired token|invalid token|authorization|failed to fetch user profile/i.test(err.message));
+      setAuthRequired(isAuthError);
       setError(err instanceof Error ? err.message : "Failed to fetch initial data");
     } finally {
       setIsLoading(false);
@@ -145,6 +153,7 @@ export function useDashboard() {
     isLoading,
     isSyncing,
     error,
+    authRequired,
     userProfile,
     balance,
     prices,

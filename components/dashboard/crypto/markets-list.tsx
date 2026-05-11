@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { QuickTradeModal } from "./quick-trade-modal";
 import { cn } from "@/lib/utils";
 import { Loader } from "@/components/ui/loader";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
@@ -94,8 +95,8 @@ export function MarketCard({ market, onQuickTrade, prices }: MarketCardProps) {
   const router = useRouter();
   const [timeLeft, setTimeLeft] = useState<{ seconds: number; text: string }>({ seconds: 0, text: "" });
   const [shareOpen, setShareOpen] = useState(false);
-  const [yesNoCents, setYesNoCents] = useState<{ yes: number; no: number }>({ yes: 50, no: 50 });
-  const [volumeUsd, setVolumeUsd] = useState(0);
+  const [yesNoCents, setYesNoCents] = useState<{ yes: number; no: number } | null>(null);
+  const [volumeUsd, setVolumeUsd] = useState<number | null>(null);
 
   const toCents = (v?: number) => {
     const n = Number(v ?? 0);
@@ -133,17 +134,20 @@ export function MarketCard({ market, onQuickTrade, prices }: MarketCardProps) {
         const ob = await getOrderbook(market.id);
         const bestYesBid = toCents(ob.orderbook?.yes_bids?.[0]?.price);
         const bestNoAsk = toCents(ob.orderbook?.no_asks?.[0]?.price);
-        const yes = bestYesBid > 0 ? bestYesBid : toCents(ob.orderbook?.last_traded_price) || 50;
-        const no = bestNoAsk > 0 ? bestNoAsk : Math.max(0, 100 - yes);
-        if (active) setYesNoCents({ yes, no });
+        const yes = bestYesBid > 0 ? bestYesBid : toCents(ob.orderbook?.last_traded_price);
+        const no = bestNoAsk > 0 ? bestNoAsk : (yes > 0 ? Math.max(0, 100 - yes) : 0);
+        if (active) {
+          if (yes > 0 && no > 0) setYesNoCents({ yes, no });
+          else setYesNoCents(null);
+        }
       } catch {
-        if (active) setYesNoCents({ yes: 50, no: 50 });
+        if (active) setYesNoCents(null);
       }
       try {
         const vol = await getMarketVolume(market.id);
         if (active) setVolumeUsd(Number(vol.volume?.volume ?? 0));
       } catch {
-        if (active) setVolumeUsd(0);
+        if (active) setVolumeUsd(null);
       }
     };
     load();
@@ -164,8 +168,8 @@ export function MarketCard({ market, onQuickTrade, prices }: MarketCardProps) {
   })();
   const currentPriceDollars = liveSpot ?? (market.current_price ?? 50) / 100;
   const targetPrice = market.target_price ? (market.target_price / 100).toFixed(2) : "0.00";
-  const yesPriceCents = yesNoCents.yes;
-  const noPriceCents = yesNoCents.no;
+  const yesPriceCents = yesNoCents?.yes;
+  const noPriceCents = yesNoCents?.no;
   const isSettling = timeLeft.seconds <= 0;
 
   const avatarSrc = `/media/images/crypto_assets/${(market.asset || "BTC").toLowerCase()}.png`;
@@ -240,7 +244,11 @@ export function MarketCard({ market, onQuickTrade, prices }: MarketCardProps) {
                 </div>
                 <div>
                   <p className="text-gray-500 text-xs mb-1">Volume</p>
-                  <p className="text-lg font-mono text-white">${volumeUsd.toFixed(2)}</p>
+                  {typeof volumeUsd === "number" ? (
+                    <p className="text-lg font-mono text-white">${volumeUsd.toFixed(2)}</p>
+                  ) : (
+                    <Skeleton className="h-6 w-20 bg-white/10" />
+                  )}
                 </div>
               </div>
             </div>
@@ -257,14 +265,14 @@ export function MarketCard({ market, onQuickTrade, prices }: MarketCardProps) {
                   className="h-12 border-green-500/50 text-green-400 hover:bg-green-500/10 hover:text-green-300 font-semibold"
                   onClick={() => onQuickTrade(market, "YES")}
                 >
-                  YES @ {yesPriceCents.toFixed(1)}¢
+                  {typeof yesPriceCents === "number" ? `YES @ ${yesPriceCents.toFixed(1)}¢` : <Skeleton className="h-4 w-20 bg-green-500/15" />}
                 </Button>
                 <Button
                   variant="outline"
                   className="h-12 border-red-500/50 text-red-400 hover:bg-red-500/10 hover:text-red-300 font-semibold"
                   onClick={() => onQuickTrade(market, "NO")}
                 >
-                  NO @ {noPriceCents.toFixed(1)}¢
+                  {typeof noPriceCents === "number" ? `NO @ ${noPriceCents.toFixed(1)}¢` : <Skeleton className="h-4 w-20 bg-red-500/15" />}
                 </Button>
               </div>
             )}

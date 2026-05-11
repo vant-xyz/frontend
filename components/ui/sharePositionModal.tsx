@@ -5,6 +5,9 @@ import { toPng } from 'html-to-image';
 import { X, Download} from 'lucide-react';
 import { Position, Market } from '@/lib/api';
 import { FaXTwitter } from "react-icons/fa6";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface SharePositionModalProps {
   isOpen: boolean;
@@ -27,6 +30,7 @@ export function SharePositionModal({
   avgPriceCents,
   currentPriceCents,
 }: SharePositionModalProps) {
+  const isMobile = useIsMobile();
   const cardRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
 
@@ -87,17 +91,14 @@ export function SharePositionModal({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm">
-      <div className="bg-[#111] border border-white/10 rounded-t-3xl sm:rounded-3xl w-full max-w-sm mx-0 sm:mx-4 p-5 space-y-4">
-
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-semibold text-white">Share your position</p>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/8 text-gray-500 hover:text-white transition-colors">
-            <X size={16} />
-          </button>
-        </div>
+  const content = (
+    <div className="bg-[#111] border border-white/10 rounded-3xl w-full max-w-sm p-5 space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-semibold text-white">Share your position</p>
+        <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/8 text-gray-500 hover:text-white transition-colors">
+          <X size={16} />
+        </button>
+      </div>
 
         {/* Card — this is what gets exported */}
         <div
@@ -229,7 +230,30 @@ export function SharePositionModal({
             {downloading ? 'Saving...' : 'Download'}
           </button>
         </div>
-      </div>
     </div>
+  );
+
+  if (isMobile) {
+    return (
+      <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()}>
+        <DrawerContent className="bg-black border-white/10 text-white px-3 pb-4">
+          <DrawerHeader className="sr-only">
+            <DrawerTitle>Share your position</DrawerTitle>
+          </DrawerHeader>
+          {content}
+        </DrawerContent>
+      </Drawer>
+    );
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="bg-black border-white/10 text-white p-0 max-w-sm">
+        <DialogHeader className="sr-only">
+          <DialogTitle>Share your position</DialogTitle>
+        </DialogHeader>
+        {content}
+      </DialogContent>
+    </Dialog>
   );
 }

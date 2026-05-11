@@ -14,6 +14,7 @@ import { TutorialModal } from "./tutorial-modal";
 import { History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { AuthModal } from "@/components/landing/auth-modal";
 
 interface DashboardClientProps {
   children: React.ReactNode;
@@ -26,6 +27,7 @@ export function DashboardClient({ children }: DashboardClientProps) {
     isLoading, 
     isSyncing, 
     error, 
+    authRequired,
     balance, 
     prices,
     isDemoMode, 
@@ -39,8 +41,16 @@ export function DashboardClient({ children }: DashboardClientProps) {
   const [isPrivateDepositOpen, setIsPrivateDepositOpen] = useState(false);
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("crypto");
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   const totalBalance = isDemoMode ? balance?.total_demo_usd : balance?.total_usd;
+
+  const clearSession = () => {
+    if (typeof window === "undefined") return;
+    localStorage.removeItem("auth_token");
+    localStorage.removeItem("auth_token_temp");
+    document.cookie = "auth_token=; path=/; max-age=0; SameSite=Lax";
+  };
 
   // Sync active tab with pathname
   useEffect(() => {
@@ -70,6 +80,35 @@ export function DashboardClient({ children }: DashboardClientProps) {
   }
 
   if (error) {
+    if (authRequired) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-black px-4">
+          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-white/[0.02] p-8 text-center space-y-4">
+            <h2 className="text-2xl font-black text-white">Session Ended</h2>
+            <p className="text-sm text-gray-400">
+              You are logged out. Authenticate again to continue.
+            </p>
+            <Button
+              className="w-full bg-red-600 hover:bg-red-500 text-white font-bold"
+              onClick={() => {
+                clearSession();
+                setIsAuthModalOpen(true);
+              }}
+            >
+              Login
+            </Button>
+          </div>
+          <AuthModal
+            isOpen={isAuthModalOpen}
+            onClose={() => setIsAuthModalOpen(false)}
+            onSuccess={() => {
+              setIsAuthModalOpen(false);
+              router.push("/app");
+            }}
+          />
+        </div>
+      );
+    }
     return (
       <div className="min-h-screen flex items-center justify-center bg-black">
         <div className="text-center">

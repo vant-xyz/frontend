@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { UserResponse, updateUserProfile, uploadProfileImage, checkUsernameExists } from "@/lib/api";
+import { UserResponse, updateUserProfile, uploadProfileImage, checkUsernameExists, logout } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,10 +22,12 @@ import {
   Instagram,
   Globe,
   Check,
-  X
+  X,
+  LogOut
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 
 interface AccountClientProps {
   initialData: UserResponse;
@@ -33,6 +35,7 @@ interface AccountClientProps {
 }
 
 export function AccountClient({ initialData, token }: AccountClientProps) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const { isDemoMode } = useDashboard();
   const [user, setUser] = useState(initialData.user);
@@ -146,6 +149,21 @@ export function AccountClient({ initialData, token }: AccountClientProps) {
 
   const requestedTab = searchParams.get("tab");
   const initialTab = requestedTab === "wallets" ? "wallets" : "profile";
+
+  const handleLogout = async () => {
+    try {
+      await logout(token);
+    } catch {
+      // Best effort logout.
+    } finally {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("auth_token");
+        localStorage.removeItem("auth_token_temp");
+        document.cookie = "auth_token=; path=/; max-age=0; SameSite=Lax";
+      }
+      router.push("/");
+    }
+  };
 
   return (
     <Tabs defaultValue={initialTab} className="w-full space-y-6">
@@ -380,6 +398,16 @@ export function AccountClient({ initialData, token }: AccountClientProps) {
           </CardContent>
         </Card>
       </TabsContent>
+      <div className="flex justify-center pt-2">
+        <Button
+          variant="outline"
+          onClick={handleLogout}
+          className="border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded-xl"
+        >
+          <LogOut size={14} className="mr-2" />
+          Logout
+        </Button>
+      </div>
     </Tabs>
   );
 }

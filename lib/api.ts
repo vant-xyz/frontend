@@ -20,12 +20,14 @@ function viaPublicProxy(path: string): string {
 export class ApiError extends Error {
   code?: string;
   retryable?: boolean;
+  status?: number;
 
-  constructor(message: string, opts?: { code?: string; retryable?: boolean }) {
+  constructor(message: string, opts?: { code?: string; retryable?: boolean; status?: number }) {
     super(message);
     this.name = "ApiError";
     this.code = opts?.code;
     this.retryable = opts?.retryable;
+    this.status = opts?.status;
   }
 }
 
@@ -40,6 +42,7 @@ async function throwApiError(response: Response, fallbackMessage: string): Promi
   throw new ApiError(payload?.message || fallbackMessage, {
     code: payload?.code,
     retryable: payload?.retryable,
+    status: response.status,
   });
 }
 
@@ -429,7 +432,7 @@ export async function getUserProfile(token: string): Promise<UserResponse> {
   });
 
   if (!response.ok) {
-    throw new Error("Failed to fetch user profile");
+    return throwApiError(response, "Failed to fetch user profile");
   }
 
   return response.json();
@@ -490,7 +493,7 @@ export async function getBalance(token: string): Promise<BalanceResponse> {
   });
 
   if (!response.ok) {
-    throw new Error("Failed to fetch balance");
+    return throwApiError(response, "Failed to fetch balance");
   }
 
   return response.json();
@@ -507,7 +510,7 @@ export async function syncBalance(token: string): Promise<BalanceResponse> {
   });
 
   if (!response.ok) {
-    throw new Error("Failed to sync balance");
+    return throwApiError(response, "Failed to sync balance");
   }
 
   return response.json();
