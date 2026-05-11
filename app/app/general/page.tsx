@@ -40,6 +40,16 @@ export default function GeneralPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const category = new URLSearchParams(window.location.search).get("category");
+    if (!category) return;
+    const matched = categories.find((c) => c.toLowerCase() === category.toLowerCase());
+    if (matched) {
+      setActiveCategory(matched);
+    }
+  }, []);
+
   const loadMarkets = useCallback(async () => {
     try {
       const res = await getMarkets("GEM", "active", undefined, 50);

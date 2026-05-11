@@ -715,6 +715,15 @@ function MarketDetailModal({ market, onClose }: MarketDetailModalProps) {
   const [fullMarket, setFullMarket] = useState<Market | null>(null);
   const [proofsLoading, setProofsLoading] = useState(true);
   const [proofsError, setProofsError] = useState<string | null>(null);
+  const computedDuration = (() => {
+    const seconds = Math.max(0, market.EndTimeUTC - market.StartTimeUTC);
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor((seconds % 86400) / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    if (days > 0) return `${days}d ${hours}h`;
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    return `${minutes}m`;
+  })();
 
   useEffect(() => {
     let active = true;
@@ -793,7 +802,7 @@ function MarketDetailModal({ market, onClose }: MarketDetailModalProps) {
             <div>
               <h3 className="text-sm font-medium text-gray-400 mb-2">Duration</h3>
               <p className="text-white font-mono text-sm">
-                {Math.floor(market.DurationSeconds / 3600)} hours
+                {computedDuration}
               </p>
             </div>
             <div>
@@ -821,12 +830,6 @@ function MarketDetailModal({ market, onClose }: MarketDetailModalProps) {
                   <div>
                     <h4 className="text-sm font-medium text-gray-400 mb-2">Target Price</h4>
                     <p className="text-white font-mono">${(market.TargetPrice! / 100).toFixed(2)}</p>
-                  </div>
-                )}
-                {market.CurrentPrice !== null && (
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-400 mb-2">Current Price</h4>
-                    <p className="text-white font-mono">${(market.CurrentPrice / 100).toFixed(2)}</p>
                   </div>
                 )}
               </div>
@@ -897,11 +900,6 @@ function MarketDetailModal({ market, onClose }: MarketDetailModalProps) {
               <p className="text-[11px] text-gray-500 pt-2">{proofsError}</p>
             ) : fullMarket ? (
               <div className="space-y-3 pt-2">
-                <div className="flex items-center gap-2">
-                  <div className="h-px flex-1 bg-white/5" />
-                  <span className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">GoldRush Enrichment</span>
-                  <div className="h-px flex-1 bg-white/5" />
-                </div>
                 <GoldRushTxPanel
                   txHash={fullMarket.creation_tx_hash}
                   chain="solana-mainnet"

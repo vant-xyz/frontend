@@ -23,7 +23,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Clock, Search, ChevronUp, ChevronDown, ExternalLink, BarChart2, LineChart, DollarSign, BarChart3, CircleHelp, Info, CalendarClock, BadgeCheck, RadioTower, Tags, Hash } from "lucide-react";
+import { ArrowLeft, Clock, Search, ChevronUp, ChevronDown, ExternalLink, BarChart2, LineChart, DollarSign, BarChart3, CircleHelp, Info, CalendarClock, BadgeCheck, RadioTower, Tags, Hash, ArrowUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { QuickTradeModal } from "../../components/dashboard/crypto/quick-trade-modal";
@@ -460,6 +460,9 @@ export default function MarketDetailView() {
         ? `https://solscan.io/tx/${market.settlement_tx_hash}?cluster=${solscanCluster}`
         : null;
     const ovmExplorerUrl = `/explorer?market=${encodeURIComponent(market.id)}`;
+    const relatedMarketsUrl = market.category?.toLowerCase() === "crypto"
+        ? "/app"
+        : `/app/general${market.category ? `?category=${encodeURIComponent(market.category)}` : ""}`;
 
     const marketDescriptionPanel = (
         <div className="rounded-xl border border-white/8 bg-[#0a0a0a] p-4 space-y-3">
@@ -483,7 +486,16 @@ export default function MarketDetailView() {
                 </div>
                 <div className="rounded-lg bg-white/5 p-2">
                     <p className="text-gray-500 uppercase tracking-widest mb-1 inline-flex items-center gap-1"><Tags size={11} /> Category</p>
-                    <p className="text-white">{market.category || "General"}</p>
+                    <div className="flex items-center justify-between gap-2">
+                        <p className="text-white">{market.category || "General"}</p>
+                        <a
+                            href={relatedMarketsUrl}
+                            className="inline-flex items-center gap-1 text-[10px] text-blue-300 hover:text-blue-200 underline shrink-0"
+                        >
+                            Related
+                            <ArrowUpRight size={11} />
+                        </a>
+                    </div>
                 </div>
                 {market.creation_tx_hash && (
                     <div className="rounded-lg bg-white/5 p-2 col-span-2">
