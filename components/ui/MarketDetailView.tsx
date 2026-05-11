@@ -23,7 +23,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Clock, Search, ChevronUp, ChevronDown, ExternalLink, BarChart2, LineChart } from "lucide-react";
+import { ArrowLeft, Clock, Search, ChevronUp, ChevronDown, ExternalLink, BarChart2, LineChart, DollarSign, BarChart3, CircleHelp, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { QuickTradeModal } from "../../components/dashboard/crypto/quick-trade-modal";
@@ -34,6 +34,9 @@ import { useParams, useRouter } from "next/navigation";
 import { useDashboard } from "@/hooks/use-dashboard";
 import { SharePositionModal } from "./sharePositionModal";
 import { usePriceFeed } from "@/hooks/use-price-feed";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export default function MarketDetailView() {
     const { id } = useParams()
@@ -58,7 +61,7 @@ export default function MarketDetailView() {
         return "50";
     });
     const [quantity, setQuantity] = useState("0");
-    const [inputMode, setInputMode] = useState<"shares" | "usd">("shares");
+    const [inputMode, setInputMode] = useState<"shares" | "usd">("usd");
     const [usdAmount, setUsdAmount] = useState<string>("");
     const [isOrderInputFocused, setIsOrderInputFocused] = useState(false);
     const [submitting, setSubmitting] = useState(false);
@@ -68,8 +71,9 @@ export default function MarketDetailView() {
     const [positionToClose, setPositionToClose] = useState<Position | null>(null);
     const [orderToCancel, setOrderToCancel] = useState<string | null>(null);
     const [timeLeft, setTimeLeft] = useState<{ seconds: number; text: string }>({ seconds: 0, text: "" });
-    const [mobileTab, setMobileTab] = useState<"chart" | "book" | "order">("chart");
+    const [mobileTab, setMobileTab] = useState<"chart" | "book" | "order" | "description">("chart");
     const [chartType, setChartType] = useState<"opinion" | "candlestick">("opinion");
+    const [showSummaryHelp, setShowSummaryHelp] = useState(false);
     const [sharePosition, setSharePosition] = useState<{
         pos: Position;
         pnl: number;
@@ -84,6 +88,7 @@ export default function MarketDetailView() {
     const token = localStorage.getItem("auth_token");
     const { isDemoMode } = useDashboard();
     const { prices } = usePriceFeed({ usePolling: true, pollingInterval: 1000 });
+    const isMobile = useIsMobile();
     const router = useRouter();
     const goBack = () => {
         if (typeof window !== "undefined" && window.history.length > 1) {
@@ -407,7 +412,7 @@ export default function MarketDetailView() {
     const liveAssetPrice = (() => {
         const asset = (market.asset || "").toUpperCase() as keyof typeof prices;
         const p = prices[asset];
-        const n = p?.price ? Number(p.price) : NaN;
+        const n = typeof p === "object" && p && "price" in p ? Number(p.price) : NaN;
         return Number.isFinite(n) && n > 0 ? n : null;
     })();
     const tradingBalance = isDemoMode ? (balance?.demo_naira ?? 0) : (balance?.naira ?? 0);
@@ -437,6 +442,41 @@ export default function MarketDetailView() {
         : (parseFloat(usdAmount) || 0) / (pricePerShareDollars > 0 ? pricePerShareDollars : 1);
     const sharesTotal = effectiveQuantity * pricePerShareDollars;
     const youReceive = effectiveQuantity * 1.00;
+    const expiresAt = new Date(market.end_time_utc);
+
+    const marketDescriptionPanel = (
+        <div className="rounded-xl border border-white/8 bg-[#0a0a0a] p-4 space-y-3">
+            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                <Info size={14} className="text-gray-400" />
+                Market Details
+            </h3>
+            <p className="text-sm text-gray-300 leading-relaxed">{market.description || "No market description available."}</p>
+            <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="rounded-lg bg-white/5 p-2">
+                    <p className="text-gray-500 uppercase tracking-widest mb-1">Expiry</p>
+                    <p className="text-white font-mono">{expiresAt.toLocaleString()}</p>
+                </div>
+                <div className="rounded-lg bg-white/5 p-2">
+                    <p className="text-gray-500 uppercase tracking-widest mb-1">Status</p>
+                    <p className="text-white">{displayStatus}</p>
+                </div>
+                <div className="rounded-lg bg-white/5 p-2">
+                    <p className="text-gray-500 uppercase tracking-widest mb-1">Provider</p>
+                    <p className="text-white">{market.data_provider || "N/A"}</p>
+                </div>
+                <div className="rounded-lg bg-white/5 p-2">
+                    <p className="text-gray-500 uppercase tracking-widest mb-1">Category</p>
+                    <p className="text-white">{market.category || "General"}</p>
+                </div>
+                {market.status === "resolved" && (
+                    <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-2 col-span-2">
+                        <p className="text-emerald-400 uppercase tracking-widest mb-1">Resolved</p>
+                        <p className="text-white">Outcome: {market.outcome || "N/A"} {market.outcome_description ? `- ${market.outcome_description}` : ""}</p>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
 
     const handlePlaceOrder = async () => {
         const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
@@ -629,7 +669,10 @@ export default function MarketDetailView() {
                 {/* Shares */}
                 <div className="bg-white/5 rounded-xl p-3">
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-[10px] text-gray-500 uppercase tracking-wider">Order Size</span>
+                        <span className="text-[10px] text-gray-500 uppercase tracking-wider flex items-center gap-1">
+                            <BarChart3 size={12} />
+                            Order Size
+                        </span>
                         <span className="text-[10px] text-gray-400">
                             Balance ${tradingBalance.toFixed(2)} · Assets ${assetBalance.toFixed(2)}
                         </span>
@@ -643,7 +686,10 @@ export default function MarketDetailView() {
                                 inputMode === "shares" ? "bg-white/15 text-white" : "bg-white/5 text-gray-400 hover:text-gray-200"
                             )}
                         >
-                            Shares
+                            <span className="inline-flex items-center gap-1">
+                                <BarChart3 size={12} />
+                                Shares
+                            </span>
                         </button>
                         <button
                             onClick={() => setInputMode("usd")}
@@ -652,7 +698,10 @@ export default function MarketDetailView() {
                                 inputMode === "usd" ? "bg-white/15 text-white" : "bg-white/5 text-gray-400 hover:text-gray-200"
                             )}
                         >
-                            USD
+                            <span className="inline-flex items-center gap-1">
+                                <DollarSign size={12} />
+                                USD
+                            </span>
                         </button>
                     </div>
 
@@ -739,11 +788,31 @@ export default function MarketDetailView() {
                 {/* Summary */}
                 <div className="bg-white/5 rounded-xl p-3 space-y-2">
                     <div className="flex justify-between text-xs">
-                        <span className="text-gray-500">Total Cost</span>
+                        <span className="text-gray-500 inline-flex items-center gap-1">
+                            Total Cost
+                            <button
+                                type="button"
+                                onClick={() => setShowSummaryHelp(true)}
+                                className="text-gray-500 hover:text-gray-300 transition-colors"
+                                aria-label="Explain total cost"
+                            >
+                                <CircleHelp size={13} />
+                            </button>
+                        </span>
                         <span className="text-white font-mono">${sharesTotal.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                        <span className="text-gray-500 text-xs">You'll receive</span>
+                        <span className="text-gray-500 text-xs inline-flex items-center gap-1">
+                            You'll receive
+                            <button
+                                type="button"
+                                onClick={() => setShowSummaryHelp(true)}
+                                className="text-gray-500 hover:text-gray-300 transition-colors"
+                                aria-label="Explain payout"
+                            >
+                                <CircleHelp size={13} />
+                            </button>
+                        </span>
                         <span className="text-teal-400 text-lg font-mono font-semibold">${youReceive.toFixed(2)}</span>
                     </div>
                 </div>
@@ -763,6 +832,56 @@ export default function MarketDetailView() {
                         ? <Loader className="mx-auto" />
                         : `${orderMode === "SELL" ? "Sell" : "Buy"} ${selectedSide} · ${effectiveQuantity.toFixed(3)} shares`}
                 </button>
+
+                <div className="lg:hidden pt-3 border-t border-white/8">
+                    <Tabs defaultValue="positions" className="w-full">
+                        <TabsList className="w-full bg-white/5">
+                            <TabsTrigger value="positions" className="text-xs">Positions</TabsTrigger>
+                            <TabsTrigger value="trades" className="text-xs">Trades</TabsTrigger>
+                            <TabsTrigger value="open" className="text-xs">Open Orders</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="positions" className="pt-3">
+                            {loadingPositions ? <Loader className="w-5 h-5 text-red-600 mx-auto" /> : (
+                                <div className="space-y-2">
+                                    {(positions || []).slice(0, 5).map((pos) => (
+                                        <div key={pos.id} className="rounded-lg bg-white/5 p-2 text-xs flex justify-between">
+                                            <span className={cn("font-semibold", pos.side === "YES" ? "text-green-400" : "text-red-400")}>{pos.side}</span>
+                                            <span className="text-gray-300 font-mono">{pos.shares.toFixed(2)} shares</span>
+                                        </div>
+                                    ))}
+                                    {(!positions || positions.length === 0) && <p className="text-xs text-gray-500 text-center py-2">No positions</p>}
+                                </div>
+                            )}
+                        </TabsContent>
+                        <TabsContent value="trades" className="pt-3">
+                            {loadingMarketTrades ? <Loader className="w-5 h-5 text-red-600 mx-auto" /> : (
+                                <div className="space-y-2">
+                                    {(marketTrades || []).slice(0, 6).map((trade, idx) => (
+                                        <div key={idx} className="rounded-lg bg-white/5 p-2 text-xs grid grid-cols-3">
+                                            <span className={cn(trade.side === "YES" ? "text-green-400" : "text-red-400")}>{trade.side}</span>
+                                            <span className="text-center text-gray-300 font-mono">{trade.quantity.toFixed(2)}</span>
+                                            <span className="text-right text-gray-400 font-mono">{(trade.price * 100).toFixed(1)}¢</span>
+                                        </div>
+                                    ))}
+                                    {(!marketTrades || marketTrades.length === 0) && <p className="text-xs text-gray-500 text-center py-2">No trades yet</p>}
+                                </div>
+                            )}
+                        </TabsContent>
+                        <TabsContent value="open" className="pt-3">
+                            {loadingOrders ? <Loader className="w-5 h-5 text-red-600 mx-auto" /> : (
+                                <div className="space-y-2">
+                                    {(userOrders || []).slice(0, 5).map((order) => (
+                                        <div key={order.id} className="rounded-lg bg-white/5 p-2 text-xs flex justify-between">
+                                            <span className={cn("font-semibold", order.side === "YES" ? "text-green-400" : "text-red-400")}>{order.side}</span>
+                                            <span className="text-gray-300 font-mono">{order.remaining_qty.toFixed(2)} rem</span>
+                                        </div>
+                                    ))}
+                                    {(!userOrders || userOrders.length === 0) && <p className="text-xs text-gray-500 text-center py-2">No open orders</p>}
+                                </div>
+                            )}
+                        </TabsContent>
+                    </Tabs>
+                </div>
             </div>
         </div>
     );
@@ -830,7 +949,7 @@ export default function MarketDetailView() {
 
                 {/* ── Mobile tab switcher ──────────────────────────────────────────── */}
                 <div className="flex lg:hidden border-b border-white/8">
-                    {(["chart", "book", "order"] as const).map(t => (
+                    {(["chart", "book", "order", "description"] as const).map(t => (
                         <button key={t} onClick={() => setMobileTab(t)}
                             className={cn(
                                 "flex-1 py-2.5 text-xs font-semibold capitalize transition-colors border-b-2",
@@ -838,7 +957,7 @@ export default function MarketDetailView() {
                                     ? "border-white text-white"
                                     : "border-transparent text-gray-500 hover:text-gray-300"
                             )}>
-                            {t === "book" ? "Order Book" : t === "order" ? "Trade" : "Chart"}
+                            {t === "book" ? "Order Book" : t === "order" ? "Trade" : t === "description" ? "Description" : "Chart"}
                         </button>
                     ))}
                 </div>
@@ -864,7 +983,7 @@ export default function MarketDetailView() {
                                         <div className="flex items-center gap-1 border border-white/10 rounded-lg p-1 bg-black/40">
                                             <button
                                                 onClick={() => setChartType("opinion")}
-                                                className={cn("p-1 rounded-md transition-colors", chartType === "opinion" ? "bg-white/15 text-white" : "text-gray-400 hover:text-white")}
+                                                className={cn("p-1 rounded-md transition-colors", chartType === "candlestick" ? "text-gray-400 hover:text-white" : "bg-white/15 text-white")}
                                                 title="Trend chart"
                                             >
                                                 <LineChart size={14} />
@@ -887,7 +1006,7 @@ export default function MarketDetailView() {
                                         <div className="flex items-center gap-1 border border-white/10 rounded-lg p-1 bg-black/40">
                                             <button
                                                 onClick={() => setChartType("opinion")}
-                                                className={cn("p-1 rounded-md transition-colors", chartType === "opinion" ? "bg-white/15 text-white" : "text-gray-400 hover:text-white")}
+                                                className="p-1 rounded-md transition-colors text-gray-400 hover:text-white"
                                                 title="Trend chart"
                                             >
                                                 <LineChart size={14} />
@@ -1188,6 +1307,9 @@ export default function MarketDetailView() {
                         mobileTab === "book" ? "flex" : "hidden lg:flex"
                     )}>
                         {orderbookPanel}
+                        <div className="hidden lg:block p-2 border-t border-white/8">
+                            {marketDescriptionPanel}
+                        </div>
                     </div>
 
                     {/* RIGHT — Order form (desktop always visible, mobile only when tab=order) */}
@@ -1196,6 +1318,14 @@ export default function MarketDetailView() {
                         mobileTab === "order" ? "flex" : "hidden lg:flex"
                     )}>
                         {orderForm}
+                    </div>
+
+                    {/* MOBILE — Description */}
+                    <div className={cn(
+                        "w-full rounded-xl shrink-0 bg-[#0a0a0a] border border-white/8 overflow-hidden p-2 lg:hidden",
+                        mobileTab === "description" ? "block" : "hidden"
+                    )}>
+                        {marketDescriptionPanel}
                     </div>
                 </div>
             </div>
@@ -1206,6 +1336,34 @@ export default function MarketDetailView() {
                 market={market}
                 selectedSide={selectedSide}
             />
+
+            {isMobile ? (
+                <Drawer open={showSummaryHelp} onOpenChange={setShowSummaryHelp}>
+                    <DrawerContent className="bg-black border-white/10 text-white px-4 pb-6">
+                        <DrawerHeader>
+                            <DrawerTitle>Cost & Payout Explanation</DrawerTitle>
+                        </DrawerHeader>
+                        <div className="space-y-3 text-sm text-gray-300">
+                            <p><span className="text-white font-semibold">Total Cost</span> is what you pay now: shares × entry price.</p>
+                            <p><span className="text-white font-semibold">You'll receive</span> is the max payout at settlement if your side wins: about $1 per share.</p>
+                            <p className="text-xs text-gray-500">If the market resolves against your side, payout can be $0.</p>
+                        </div>
+                    </DrawerContent>
+                </Drawer>
+            ) : (
+                <Dialog open={showSummaryHelp} onOpenChange={setShowSummaryHelp}>
+                    <DialogContent className="bg-black border-white/10 text-white">
+                        <DialogHeader>
+                            <DialogTitle>Cost & Payout Explanation</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-3 text-sm text-gray-300">
+                            <p><span className="text-white font-semibold">Total Cost</span> is what you pay now: shares × entry price.</p>
+                            <p><span className="text-white font-semibold">You'll receive</span> is the max payout at settlement if your side wins: about $1 per share.</p>
+                            <p className="text-xs text-gray-500">If the market resolves against your side, payout can be $0.</p>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+            )}
 
             {/* Cancel Order Warning Modal */}
             {showCancelModal && orderToCancel && (

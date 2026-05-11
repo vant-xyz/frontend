@@ -665,6 +665,7 @@ export interface Market {
   settlement_tx_hash?: string;
   resolved_at?: string;
   market_image_small?: string;
+  market_image_banner?: string;
   category?: string;
 }
 
