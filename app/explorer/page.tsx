@@ -28,7 +28,6 @@ import { Loader } from "@/components/ui/loader";
 import { History, Clock, ExternalLink, ChevronRight, HelpCircle, Search, Wallet, ArrowUpRight, ArrowDownLeft, RefreshCw } from "lucide-react";
 import { getBalances, getTransactions, type BalancesData, type TransactionsData } from "@/lib/explorer-api";
 import { getMarketsOnchain, getMarketOnchain, OnchainMarket, Market } from "@/lib/api";
-import { getTransaction, type SingleTransactionData } from "@/lib/explorer-api";
 import { formatTimeAgo } from "@/lib/utils";
 import { ReelAnimation } from "@/components/landing/reel-animation";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -594,110 +593,6 @@ function MarketCard({ market, onClick }: MarketCardProps) {
   );
 }
 
-interface GoldRushTxProps {
-  txHash: string;
-  chain: "solana-mainnet" | "base-mainnet";
-  label: string;
-}
-
-function GoldRushTxPanel({ txHash, chain, label }: GoldRushTxProps) {
-  const [data, setData] = useState<SingleTransactionData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    getTransaction(chain, txHash)
-      .then(setData)
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
-  }, [txHash, chain]);
-
-  const tx = data?.items?.[0];
-
-  return (
-    <div className="rounded-xl bg-white/[0.03] border border-white/5 p-4 space-y-3">
-      <div className="flex items-center justify-between">
-        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{label}</span>
-        {tx && (
-          <span className={`text-[10px] font-bold uppercase tracking-widest ${tx.successful ? "text-green-500" : "text-red-500"}`}>
-            {tx.successful ? "✓ Confirmed" : "✗ Failed"}
-          </span>
-        )}
-      </div>
-
-      <div className="flex items-center gap-2">
-        <code className="flex-1 text-[11px] text-gray-300 font-mono truncate bg-black/40 px-2 py-1 rounded">
-          {txHash}
-        </code>
-        <Button
-          size="sm"
-          variant="ghost"
-          className="h-7 w-7 p-0 text-gray-400 hover:text-white"
-          onClick={() => navigator.clipboard.writeText(txHash)}
-        >
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-          </svg>
-        </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          className="h-7 w-7 p-0 text-gray-400 hover:text-white"
-          onClick={() => window.open(`https://explorer.solana.com/tx/${txHash}`, "_blank")}
-        >
-          <ExternalLink size={14} />
-        </Button>
-      </div>
-
-      {loading && (
-        <div className="flex items-center gap-2 text-[11px] text-gray-500">
-          <Loader className="w-3 h-3" />
-          <span>Fetching onchain proof via GoldRush...</span>
-        </div>
-      )}
-
-      {error && (
-        <p className="text-[11px] text-gray-600">Onchain data unavailable on this network</p>
-      )}
-
-      {tx && !loading && (
-        <div className="grid grid-cols-2 gap-x-4 gap-y-2 pt-1">
-          <div>
-            <p className="text-[10px] text-gray-600 uppercase tracking-widest">Block</p>
-            <p className="text-xs text-white font-mono">{tx.block_height.toLocaleString()}</p>
-          </div>
-          <div>
-            <p className="text-[10px] text-gray-600 uppercase tracking-widest">Time</p>
-            <p className="text-xs text-white font-mono">
-              {new Date(tx.block_signed_at).toLocaleString()}
-            </p>
-          </div>
-          {tx.gas_quote != null && (
-            <div>
-              <p className="text-[10px] text-gray-600 uppercase tracking-widest">Fee (USD)</p>
-              <p className="text-xs text-white font-mono">${tx.gas_quote.toFixed(4)}</p>
-            </div>
-          )}
-          {tx.from_address && (
-            <div>
-              <p className="text-[10px] text-gray-600 uppercase tracking-widest">Signer</p>
-              <p className="text-xs text-gray-300 font-mono truncate">{tx.from_address.slice(0, 16)}…</p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {tx && !loading && (
-        <div className="flex items-center gap-1.5 pt-1">
-          <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-          <span className="text-[10px] text-gray-500">Verified via</span>
-          <img src="/media/images/attributions/goldrush-logo.png" alt="GoldRush" className="h-3 object-contain opacity-60" />
-        </div>
-      )}
-    </div>
-  );
-}
-
 interface MarketDetailModalProps {
   market: OnchainMarket;
   onClose: () => void;
@@ -713,8 +608,6 @@ function MarketDetailModal({ market, onClose }: MarketDetailModalProps) {
   const outcome = market.Outcome !== null ? (market.Outcome === 0 ? "YES" : "NO") : null;
 
   const [fullMarket, setFullMarket] = useState<Market | null>(null);
-  const [proofsLoading, setProofsLoading] = useState(true);
-  const [proofsError, setProofsError] = useState<string | null>(null);
   const computedDuration = (() => {
     const seconds = Math.max(0, market.EndTimeUTC - market.StartTimeUTC);
     const days = Math.floor(seconds / 86400);
@@ -727,28 +620,23 @@ function MarketDetailModal({ market, onClose }: MarketDetailModalProps) {
 
   useEffect(() => {
     let active = true;
-    setProofsLoading(true);
-    setProofsError(null);
     getMarketOnchain(market.MarketID)
       .then((res) => {
         if (!active) return;
         setFullMarket(res.market);
       })
-      .catch(() => {
-        if (!active) return;
-        setProofsError("Unable to load transaction proofs for this market.");
-      })
-      .finally(() => {
-        if (!active) return;
-        setProofsLoading(false);
-      });
+      .catch(() => {});
     return () => {
       active = false;
     };
   }, [market.MarketID]);
 
-  const programId = process.env.NEXT_PUBLIC_VANT_PROGRAM_ID || "VantProgram111111111111111111111111111111";
-  const marketPda = market.MarketID;
+  const marketPda = fullMarket?.market_pda || market.MarketID;
+  const creatorAddress = fullMarket?.creator_address || market.Creator;
+  const creationTxHash = fullMarket?.creation_tx_hash;
+  const settlementTxHash = fullMarket?.settlement_tx_hash;
+  const mbValidator = "MEUGGrYPxKk17hCr7wpT6s8dtNokZj5U2L57vjYMS8e";
+  const mbRpc = "devnet-eu.magicblock.app";
 
   const content = (
     <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-black border border-gray-800 rounded-2xl">
@@ -868,8 +756,12 @@ function MarketDetailModal({ market, onClose }: MarketDetailModalProps) {
             <div className="space-y-3">
               {[
                 { label: "Market PDA", value: marketPda },
-                { label: "Creator", value: market.Creator },
+                { label: "Creator", value: creatorAddress },
                 { label: "Approved Settler", value: market.ApprovedSettler },
+                { label: "Creation TX", value: creationTxHash || "N/A", isTx: true },
+                { label: "Settlement TX", value: settlementTxHash || "N/A", isTx: true },
+                { label: "MagicBlock RPC URL", value: mbRpc, isUrl: true },
+                { label: "Validator Address", value: mbValidator },
               ].map(({ label, value }) => (
                 <div key={label}>
                   <h4 className="text-sm font-medium text-gray-400 mb-2">{label}</h4>
@@ -877,43 +769,27 @@ function MarketDetailModal({ market, onClose }: MarketDetailModalProps) {
                     <code className="flex-1 bg-gray-900 px-3 py-2 rounded text-xs text-gray-300 font-mono break-all">
                       {value}
                     </code>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => window.open(`https://explorer.solana.com/address/${value}?cluster=devnet`, "_blank")}
-                      className="shrink-0"
-                    >
-                      <ExternalLink size={14} />
-                    </Button>
+                    {value !== "N/A" && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          const url = label.includes("TX")
+                            ? `https://solscan.io/tx/${value}?cluster=devnet`
+                            : label === "MagicBlock RPC URL"
+                              ? `https://${value}`
+                              : `https://solscan.io/account/${value}?cluster=devnet`;
+                          window.open(url, "_blank");
+                        }}
+                        className="shrink-0"
+                      >
+                        <ExternalLink size={14} />
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))}
             </div>
-
-            {/* GoldRush Transaction Enrichment */}
-            {proofsLoading ? (
-              <div className="flex items-center gap-2 text-[11px] text-gray-600 pt-2">
-                <Loader className="w-3 h-3" />
-                Loading transaction proofs...
-              </div>
-            ) : proofsError ? (
-              <p className="text-[11px] text-gray-500 pt-2">{proofsError}</p>
-            ) : fullMarket ? (
-              <div className="space-y-3 pt-2">
-                <GoldRushTxPanel
-                  txHash={fullMarket.creation_tx_hash}
-                  chain="solana-mainnet"
-                  label="Creation TX"
-                />
-                {fullMarket.settlement_tx_hash && (
-                  <GoldRushTxPanel
-                    txHash={fullMarket.settlement_tx_hash}
-                    chain="solana-mainnet"
-                    label="Settlement TX"
-                  />
-                )}
-              </div>
-            ) : <p className="text-[11px] text-gray-500 pt-2">No transaction proofs available.</p>}
           </div>
         </div>
       </div>
