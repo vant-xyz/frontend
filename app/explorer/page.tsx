@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +22,8 @@ import {
   CommandGroup,
   CommandItem,
 } from "@/components/ui/command";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { Loader } from "@/components/ui/loader";
 import { History, Clock, ExternalLink, ChevronRight, HelpCircle, Search, Wallet, ArrowUpRight, ArrowDownLeft, RefreshCw } from "lucide-react";
 import { getBalances, getTransactions, type BalancesData, type TransactionsData } from "@/lib/explorer-api";
@@ -30,9 +32,11 @@ import { getTransaction, type SingleTransactionData } from "@/lib/explorer-api";
 import { formatTimeAgo } from "@/lib/utils";
 import { ReelAnimation } from "@/components/landing/reel-animation";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export default function ExplorerPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(true);
   const [markets, setMarkets] = useState<OnchainMarket[]>([]);
   const [selectedMarket, setSelectedMarket] = useState<OnchainMarket | null>(null);
@@ -50,13 +54,23 @@ export default function ExplorerPage() {
       setIsLoading(true);
       const statusParam = filterStatus === "all" ? undefined : filterStatus;
       const res = await getMarketsOnchain(statusParam);
-      setMarkets(res.markets);
+      const sorted = [...(res.markets || [])].sort((a, b) => b.StartTimeUTC - a.StartTimeUTC);
+      setMarkets(sorted);
     } catch (err) {
       console.error("Failed to fetch markets:", err);
     } finally {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    const marketId = searchParams.get("market");
+    if (!marketId || markets.length === 0) return;
+    const match = markets.find((m) => m.MarketID === marketId);
+    if (match) {
+      setSelectedMarket(match);
+    }
+  }, [searchParams, markets]);
 
   const handleMarketClick = (market: OnchainMarket) => {
     setSelectedMarket(market);
@@ -665,6 +679,7 @@ interface MarketDetailModalProps {
 }
 
 function MarketDetailModal({ market, onClose }: MarketDetailModalProps) {
+  const isMobile = useIsMobile();
   const isCappm = market.MarketType === 0;
   const isActive = !market.IsResolved;
 
@@ -683,10 +698,8 @@ function MarketDetailModal({ market, onClose }: MarketDetailModalProps) {
   const programId = process.env.NEXT_PUBLIC_VANT_PROGRAM_ID || "VantProgram111111111111111111111111111111";
   const marketPda = market.MarketID;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/90 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-black border border-gray-800 rounded-2xl">
+  const content = (
+    <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-black border border-gray-800 rounded-2xl">
         {/* Header */}
         <div className="sticky top-0 bg-black border-b border-gray-800 p-6 flex items-start justify-between gap-4">
           <div className="flex-1">
@@ -861,6 +874,23 @@ function MarketDetailModal({ market, onClose }: MarketDetailModalProps) {
           </div>
         </div>
       </div>
-    </div>
+  );
+
+  if (isMobile) {
+    return (
+      <Drawer open onOpenChange={(open) => !open && onClose()}>
+        <DrawerContent className="bg-black border-white/10 p-0 max-h-[95vh]">
+          {content}
+        </DrawerContent>
+      </Drawer>
+    );
+  }
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="bg-transparent border-0 p-0 max-w-3xl">
+        {content}
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -24,7 +24,7 @@ export function DemoRealToggle({
           isDemoMode ? "text-red-500" : "text-gray-500"
         )}
       >
-        Demo Mode
+        Demo
       </Label>
       <Switch
         id="mode-toggle"

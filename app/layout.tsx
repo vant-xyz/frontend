@@ -137,15 +137,10 @@ export default function RootLayout({
         <Analytics />
         <Toaster
           position="top-center"
+          theme="dark"
           toastOptions={{
-            className: 'bg-gray-900 border border-gray-800 text-white',
+            className: 'bg-zinc-900 border border-zinc-700 text-white',
             duration: 4000,
-            success: {
-              className: 'bg-gray-900 border border-green-500/50 text-white',
-            },
-            error: {
-              className: 'bg-gray-900 border border-red-500/50 text-white',
-            },
           }}
         />
       </body>

@@ -325,7 +325,9 @@ export function BalanceModal({
   );
 
   const title = isDemoMode ? "Demo Account" : "Real Account";
-  const description = "Overview of your digital assets and balances.";
+  const description = isDemoMode
+    ? "Overview of your digital assets and balances. Demo Mode operates on the Solana Devnet."
+    : "Overview of your digital assets and balances.";
 
   if (isMobile) {
     return (

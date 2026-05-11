@@ -23,7 +23,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Clock, Search, ChevronUp, ChevronDown, ExternalLink, BarChart2, LineChart, DollarSign, BarChart3, CircleHelp, Info } from "lucide-react";
+import { ArrowLeft, Clock, Search, ChevronUp, ChevronDown, ExternalLink, BarChart2, LineChart, DollarSign, BarChart3, CircleHelp, Info, CalendarClock, BadgeCheck, RadioTower, Tags, Hash } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { QuickTradeModal } from "../../components/dashboard/crypto/quick-trade-modal";
@@ -443,6 +443,23 @@ export default function MarketDetailView() {
     const sharesTotal = effectiveQuantity * pricePerShareDollars;
     const youReceive = effectiveQuantity * 1.00;
     const expiresAt = new Date(market.end_time_utc);
+    const formattedExpiry = expiresAt.toLocaleString(undefined, {
+        weekday: "short",
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        timeZoneName: "short",
+    });
+    const solscanCluster = "devnet";
+    const creationSolscanUrl = market.creation_tx_hash
+        ? `https://solscan.io/tx/${market.creation_tx_hash}?cluster=${solscanCluster}`
+        : null;
+    const settlementSolscanUrl = market.settlement_tx_hash
+        ? `https://solscan.io/tx/${market.settlement_tx_hash}?cluster=${solscanCluster}`
+        : null;
+    const ovmExplorerUrl = `/explorer?market=${encodeURIComponent(market.id)}`;
 
     const marketDescriptionPanel = (
         <div className="rounded-xl border border-white/8 bg-[#0a0a0a] p-4 space-y-3">
@@ -453,25 +470,44 @@ export default function MarketDetailView() {
             <p className="text-sm text-gray-300 leading-relaxed">{market.description || "No market description available."}</p>
             <div className="grid grid-cols-2 gap-3 text-xs">
                 <div className="rounded-lg bg-white/5 p-2">
-                    <p className="text-gray-500 uppercase tracking-widest mb-1">Expiry</p>
-                    <p className="text-white font-mono">{expiresAt.toLocaleString()}</p>
+                    <p className="text-gray-500 uppercase tracking-widest mb-1 inline-flex items-center gap-1"><CalendarClock size={11} /> Expiry</p>
+                    <p className="text-white">{formattedExpiry}</p>
                 </div>
                 <div className="rounded-lg bg-white/5 p-2">
-                    <p className="text-gray-500 uppercase tracking-widest mb-1">Status</p>
+                    <p className="text-gray-500 uppercase tracking-widest mb-1 inline-flex items-center gap-1"><BadgeCheck size={11} /> Status</p>
                     <p className="text-white">{displayStatus}</p>
                 </div>
                 <div className="rounded-lg bg-white/5 p-2">
-                    <p className="text-gray-500 uppercase tracking-widest mb-1">Provider</p>
+                    <p className="text-gray-500 uppercase tracking-widest mb-1 inline-flex items-center gap-1"><RadioTower size={11} /> Provider</p>
                     <p className="text-white">{market.data_provider || "N/A"}</p>
                 </div>
                 <div className="rounded-lg bg-white/5 p-2">
-                    <p className="text-gray-500 uppercase tracking-widest mb-1">Category</p>
+                    <p className="text-gray-500 uppercase tracking-widest mb-1 inline-flex items-center gap-1"><Tags size={11} /> Category</p>
                     <p className="text-white">{market.category || "General"}</p>
                 </div>
+                {market.creation_tx_hash && (
+                    <div className="rounded-lg bg-white/5 p-2 col-span-2">
+                        <p className="text-gray-500 uppercase tracking-widest mb-1 inline-flex items-center gap-1"><Hash size={11} /> Creation Tx</p>
+                        <p className="text-white font-mono text-[11px] break-all">{market.creation_tx_hash}</p>
+                        <div className="mt-2 flex gap-2">
+                            <a href={ovmExplorerUrl} className="text-[10px] text-blue-400 hover:text-blue-300 underline">Open in OVM Explorer</a>
+                            {creationSolscanUrl && <a href={creationSolscanUrl} target="_blank" rel="noreferrer" className="text-[10px] text-blue-400 hover:text-blue-300 underline">Open in Solscan</a>}
+                        </div>
+                    </div>
+                )}
                 {market.status === "resolved" && (
                     <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-2 col-span-2">
                         <p className="text-emerald-400 uppercase tracking-widest mb-1">Resolved</p>
                         <p className="text-white">Outcome: {market.outcome || "N/A"} {market.outcome_description ? `- ${market.outcome_description}` : ""}</p>
+                        {market.settlement_tx_hash && (
+                            <>
+                                <p className="text-emerald-300 font-mono text-[11px] break-all mt-2">{market.settlement_tx_hash}</p>
+                                <div className="mt-1 flex gap-2">
+                                    <a href={ovmExplorerUrl} className="text-[10px] text-blue-300 hover:text-blue-200 underline">Open in OVM Explorer</a>
+                                    {settlementSolscanUrl && <a href={settlementSolscanUrl} target="_blank" rel="noreferrer" className="text-[10px] text-blue-300 hover:text-blue-200 underline">Open in Solscan</a>}
+                                </div>
+                            </>
+                        )}
                     </div>
                 )}
             </div>

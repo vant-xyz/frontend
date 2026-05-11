@@ -3,8 +3,16 @@
 import { DashboardClient } from "@/components/dashboard/dashboard-client";
 import { Button } from "@/components/ui/button";
 import { Loader } from "@/components/ui/loader";
-import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Command,
+  CommandDialog,
+  CommandInput,
+  CommandList,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
+} from "@/components/ui/command";
 import { getMarkets, Market, OrderSide, getOrderbook, getMarketVolume } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -14,10 +22,12 @@ import { QuickTradeModal } from "@/components/dashboard/crypto/quick-trade-modal
 import { useRouter } from "next/navigation";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { ReelAnimation } from "@/components/landing/reel-animation";
 
 const categories = ["All", "Crypto", "Politics", "Sports", "Finance", "Technology"];
 
 export default function GeneralPage() {
+  const router = useRouter();
   const [markets, setMarkets] = useState<Market[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,6 +38,7 @@ export default function GeneralPage() {
   const [quotesByMarket, setQuotesByMarket] = useState<Record<string, { yes: number; no: number } | undefined>>({});
   const [volumeByMarket, setVolumeByMarket] = useState<Record<string, number | undefined>>({});
   const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   const loadMarkets = useCallback(async () => {
     try {
@@ -128,7 +139,9 @@ export default function GeneralPage() {
     <DashboardClient>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-white">Vantic GEM Markets</h1>
+          <h1 className="text-3xl font-bold text-white">
+            <ReelAnimation texts={["Vantic GEM Markets", "Vantic General Event Markets"]} rotateInterval={2800} />
+          </h1>
           <p className="text-gray-400 mt-1">Trade event probabilities in real time</p>
         </div>
 
@@ -147,12 +160,14 @@ export default function GeneralPage() {
           ))}
         </div>
         <div className="max-w-lg">
-          <Input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search GEM markets..."
-            className="bg-white/5 border-white/10 text-white placeholder:text-gray-500"
-          />
+          <Button
+            variant="outline"
+            className="w-full h-12 bg-black border-gray-800 text-gray-400 hover:text-white hover:bg-gray-900 justify-start"
+            onClick={() => setIsSearchOpen(true)}
+          >
+            <span className="text-gray-500">Search markets...</span>
+            <kbd className="ml-auto px-2 py-0.5 text-xs bg-gray-800 rounded">⌘K</kbd>
+          </Button>
         </div>
 
         {activeCategory === "All" && !searchQuery.trim() && (
@@ -218,6 +233,34 @@ export default function GeneralPage() {
           selectedSide={selectedSide}
         />
       )}
+
+      <CommandDialog open={isSearchOpen} onOpenChange={setIsSearchOpen} title="Search GEM Markets" description="Find markets by title or description">
+        <CommandInput
+          placeholder="Type to search GEM markets..."
+          value={searchQuery}
+          onValueChange={setSearchQuery}
+        />
+        <CommandList>
+          <CommandEmpty>No markets found.</CommandEmpty>
+          <CommandGroup>
+            {filteredMarkets.map((m) => (
+              <CommandItem
+                key={m.id}
+                onSelect={() => {
+                  router.push(`/market/${m.id}`);
+                  setIsSearchOpen(false);
+                }}
+                className="cursor-pointer"
+              >
+                <div className="flex flex-col gap-1">
+                  <span className="font-medium">{m.title}</span>
+                  <span className="text-xs text-gray-400">{m.category || "General"} • {m.status}</span>
+                </div>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        </CommandList>
+      </CommandDialog>
     </DashboardClient>
   );
 }
