@@ -9,6 +9,7 @@ import { HelpCircle } from "lucide-react";
 import { CryptoPricesDisplay } from "./crypto-prices-display";
 import { usePriceFeed } from "@/hooks/use-price-feed";
 import { ReelAnimation } from "@/components/landing/reel-animation";
+import { LeaderboardBanner } from "@/components/dashboard/leaderboard-banner";
 
 export function CryptoTab() {
   const [selectedMarket, setSelectedMarket] = useState<Market | null>(null);
@@ -62,6 +63,8 @@ export function CryptoTab() {
           .
         </p>
       </div>
+
+      <LeaderboardBanner />
 
       {/* Live Prices */}
       <CryptoPricesDisplay prices={prices} />

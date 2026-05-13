@@ -22,6 +22,7 @@ import { useRouter } from "next/navigation";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { ReelAnimation } from "@/components/landing/reel-animation";
+import { LeaderboardBanner } from "@/components/dashboard/leaderboard-banner";
 
 const categories = ["All", "Crypto", "Politics", "Sports", "Finance", "Technology"];
 const GEM_HEADER_TEXTS = ["Vantic GEM Markets", "Vantic General Event Markets"];
@@ -150,6 +151,8 @@ export default function GeneralPage() {
             probabilities in real time
           </p>
         </div>
+
+        <LeaderboardBanner />
 
         <div className="flex gap-2 overflow-x-auto pb-2">
           {categories.map((cat) => (
