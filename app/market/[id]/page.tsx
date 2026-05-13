@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
+import ClientRedirect from "./client-redirect";
 
 interface MarketMeta {
   title?: string;
@@ -54,5 +54,5 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function MarketCanonicalPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  redirect(`/app/general/${id}`);
+  return <ClientRedirect to={`/app/general/${id}`} />;
 }
