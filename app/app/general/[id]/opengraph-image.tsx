@@ -19,12 +19,16 @@ interface OGOrderbook {
 
 const BASE_URL = "https://vantic.xyz";
 
-async function fetchJSON<T>(url: string, headers: Record<string, string>): Promise<T | null> {
+async function fetchJSON<T>(url: string, headers: Record<string, string>, timeoutMs = 3000): Promise<T | null> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const res = await fetch(url, { headers, cache: "no-store" });
+    const res = await fetch(url, { headers, cache: "no-store", signal: controller.signal });
+    clearTimeout(timer);
     if (!res.ok) return null;
     return await res.json() as T;
   } catch {
+    clearTimeout(timer);
     return null;
   }
 }
