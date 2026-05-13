@@ -1265,4 +1265,33 @@ export async function cancelVsEvent(token: string, eventId: string): Promise<{ s
 }
 
 
-export type Confirmation = 'YES' | 'NO' 
+export type Confirmation = 'YES' | 'NO'
+
+export interface LeaderboardEntry {
+  rank: number;
+  username: string;
+  profile_image_url: string;
+  pnl: number;
+  trades: number;
+  deposits: number;
+  withdrawals: number;
+  ar_score: number;
+}
+
+export async function getLeaderboard(limit = 50): Promise<{ entries: LeaderboardEntry[] }> {
+  const response = await fetch(`${apiBase()}/leaderboard?limit=${limit}`, {
+    headers: { "Content-Type": "application/json" },
+    cache: "no-store",
+  });
+  if (!response.ok) throw new Error("Failed to fetch leaderboard");
+  return response.json();
+}
+
+export async function getMyLeaderboardRank(token: string): Promise<{ entry: LeaderboardEntry }> {
+  const response = await fetch(`${apiBase()}/leaderboard/me`, {
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  if (!response.ok) throw new Error("Failed to fetch own rank");
+  return response.json();
+} 

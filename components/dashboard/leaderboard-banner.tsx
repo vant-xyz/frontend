@@ -1,6 +1,14 @@
 "use client";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { ReelAnimation } from "@/components/landing/reel-animation";
+
+const BANNER_TEXTS = [
+  "Trade and climb the leaderboard",
+  "Every trade moves your rank",
+  "Top traders earn the most glory",
+  "Who is #1 today?",
+];
 
 export function LeaderboardBanner() {
   return (
@@ -22,11 +30,13 @@ export function LeaderboardBanner() {
             backgroundImage: "url('/media/images/banners/banner2.png')",
             backgroundSize: "cover",
             backgroundPosition: "center",
-            opacity: 0.13,
+            opacity: 0.28,
           }}
         />
         <div className="relative">
-          <p className="text-sm font-semibold text-white">Trade and climb the leaderboard</p>
+          <p className="text-sm font-semibold text-white">
+            <ReelAnimation texts={BANNER_TEXTS} rotateInterval={3000} animateOnHover={false} />
+          </p>
           <p className="mt-0.5 text-xs text-gray-400">See how you rank among all Vantic traders</p>
         </div>
         <ArrowRight size={18} className="nudge-right relative ml-4 shrink-0 text-white/60" />
