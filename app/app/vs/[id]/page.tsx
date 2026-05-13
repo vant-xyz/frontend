@@ -7,7 +7,7 @@ import { ChainIndicator, StatusBadge } from '@/components/ui/statusBadge'
 import { cancelVsEvent, Confirmation, confirmVsEventOutcome, fetchEventById, joinVsEvent, Participant, vsEvents } from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { Avatar } from '@radix-ui/react-avatar'
-import { ArrowLeft, Ban, CheckCircle2, Clock, ExternalLink, Share2, UserPlus, XCircle } from 'lucide-react'
+import { ArrowLeft, Ban, CheckCircle2, Clock, Copy, ExternalLink, Share2, UserPlus, XCircle } from 'lucide-react'
 import Link from 'next/link'
 import { use, useEffect, useState } from 'react'
 import { truncateEmail } from '../../utils/truncate_email'
@@ -194,6 +194,24 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                     ? 'Mutual mode: all participants must agree on the same outcome to resolve.'
                     : `Consensus mode: ${event.threshold ?? 'a threshold of'} confirmations needed to resolve.`}
                 </p>
+                <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-xl px-4 py-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Event ID</p>
+                    <p className="font-mono text-sm text-white truncate">{id}</p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0 border-white/10 hover:bg-white/10 text-[10px] font-bold uppercase tracking-widest gap-1.5"
+                    onClick={() => {
+                      navigator.clipboard.writeText(id)
+                      toast.success("Event ID copied!")
+                    }}
+                  >
+                    <Copy size={12} />
+                    Copy
+                  </Button>
+                </div>
               </div>
 
               <div className="glass-card rounded-2xl p-8 border-primary/20 space-y-8 neon-glow-primary">

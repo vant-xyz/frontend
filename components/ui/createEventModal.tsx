@@ -89,7 +89,7 @@ export function CreateEventModal() {
                             <Label htmlFor="question" className="text-xs uppercase font-bold text-muted-foreground">Event Question</Label>
                             <Input
                                 id="question"
-                                placeholder="e.g. Will Solana hit $500 by end of month?"
+                                placeholder="e.g. I'll beat you in our next 1v1"
                                 className="bg-secondary border-white/5 focus:border-primary focus:ring-primary/20 h-12"
                                 required
                                 value={question}
@@ -100,7 +100,7 @@ export function CreateEventModal() {
                             <Label htmlFor="description" className="text-xs uppercase font-bold  text-muted-foreground">Event Description</Label>
                             <Textarea
                                 id="description"
-                                placeholder="Add more details or context about the event (optional)"
+                                placeholder="What are the terms? What counts as winning?"
                                 className="bg-secondary border-white/5 focus:border-primary focus:ring-primary/20 h-12 w-full"
                                 required
                                 value={description}
@@ -113,7 +113,7 @@ export function CreateEventModal() {
                                 <Label htmlFor="stake" className="text-xs uppercase font-bold text-muted-foreground">Event Stake</Label>
                                 <Input
                                     id="stake"
-                                    placeholder="Add more details or context about the event (optional)"
+                                    placeholder="e.g. 10"
                                     className="bg-secondary border-white/5 focus:border-primary focus:ring-primary/20 h-12"
                                     required
                                     value={stake}
@@ -128,7 +128,7 @@ export function CreateEventModal() {
                                 <Label htmlFor="participantTarget" className="text-xs uppercase font-bold text-muted-foreground">Participant Target</Label>
                                 <Input
                                     id="participantTarget"
-                                    placeholder="Add more details or context about the event (optional)"
+                                    placeholder="e.g. 2"
                                     className="bg-secondary border-white/5 focus:border-primary focus:ring-primary/20 h-12"
                                     required
                                     value={participantTarget}
@@ -225,7 +225,7 @@ export function CreateEventModal() {
 
                         <DialogFooter className="pt-2">
                             <Button disabled={isSubmitting} type="submit" className="w-full h-12 font-headline font-bold text-lg bg-primary hover:bg-primary/90 neon-glow-primary" onClick={handleSubmit}>
-                                {isSubmitting ? "Launching..." : "LAUNCH ON-CHAIN"}
+                                {isSubmitting ? "Creating..." : "CREATE"}
                             </Button>
                         </DialogFooter>
                     </form>

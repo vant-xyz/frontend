@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/button"
 import { CreateEventModal } from "@/components/ui/createEventModal"
 import { Input } from "@/components/ui/input"
 import { getMyCreatedVsEvents, getMyJoinedVsEvents, vsEvents } from "@/lib/api"
-import { ArrowRight, Swords } from "lucide-react"
+import { ArrowRight, Plus, Swords } from "lucide-react"
 import React, { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
+import { StatusBadge } from "@/components/ui/statusBadge"
 
 type MyTab = "created" | "joined"
 
@@ -17,15 +18,16 @@ function EventCard({ event, onClick }: { event: vsEvents; onClick: () => void })
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center justify-between p-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-colors text-left"
+      className="w-full flex items-center justify-between p-4 glass-card hover:bg-white/8 border border-white/5 rounded-xl transition-colors text-left group"
     >
-      <div className="min-w-0">
-        <p className="text-sm font-medium text-white truncate">{event.title}</p>
-        <p className="text-xs text-gray-500 mt-0.5 uppercase tracking-wide">
-          {event.status} · {event.mode}
-        </p>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold text-white truncate">{event.title}</p>
+        <div className="flex items-center gap-2 mt-1">
+          <StatusBadge status={event.status} />
+          <span className="text-[10px] text-gray-600 uppercase tracking-wide">{event.mode}</span>
+        </div>
       </div>
-      <ArrowRight size={14} className="text-gray-600 shrink-0 ml-3" />
+      <ArrowRight size={14} className="text-gray-600 group-hover:text-white shrink-0 ml-3 transition-colors" />
     </button>
   )
 }
@@ -86,7 +88,7 @@ export default function VSPage() {
 
   return (
     <DashboardClient>
-      <div className="max-w-lg mx-auto py-12 space-y-8">
+      <div className="space-y-8 pb-20">
 
         <div>
           <h1 className="text-3xl font-bold text-white flex items-center gap-3">
@@ -94,41 +96,41 @@ export default function VSPage() {
             Vantic VS
           </h1>
           <p className="text-gray-400 mt-2 text-sm">
-            Peer-to-peer social wagering. Create an event, share the code, and let the chain resolve it.
+            Peer-to-peer social wagering. Create a challenge, share the code, let the chain resolve it.
           </p>
         </div>
 
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-4">
-          <div>
-            <h2 className="text-sm font-semibold text-white uppercase tracking-widest">Load an Event</h2>
-            <p className="text-xs text-gray-500 mt-1">Enter an event ID or code shared with you.</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="glass-card border border-white/5 rounded-2xl p-6 space-y-4">
+            <div>
+              <h2 className="text-xs font-bold text-white uppercase tracking-widest">Join an Event</h2>
+              <p className="text-xs text-gray-500 mt-1">Enter an event ID shared with you.</p>
+            </div>
+            <div className="flex gap-3">
+              <Input
+                placeholder="Paste event ID..."
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleLoad()}
+                className="bg-black/40 border-white/10 text-white placeholder:text-gray-600"
+              />
+              <Button
+                onClick={handleLoad}
+                disabled={!code.trim()}
+                className="bg-red-600 hover:bg-red-500 shrink-0"
+              >
+                <ArrowRight size={16} />
+              </Button>
+            </div>
           </div>
-          <div className="flex gap-3">
-            <Input
-              placeholder="Event ID or code..."
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleLoad()}
-              className="bg-black border-white/10 text-white placeholder:text-gray-600"
-            />
-            <Button
-              onClick={handleLoad}
-              disabled={!code.trim()}
-              className="bg-red-600 hover:bg-red-500 shrink-0"
-            >
-              <ArrowRight size={16} />
-            </Button>
-          </div>
-        </div>
 
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-4">
-          <div>
-            <h2 className="text-sm font-semibold text-white uppercase tracking-widest">Create a VS Event</h2>
-            <p className="text-xs text-gray-500 mt-1">
-              Set the stakes, mode, and resolution threshold. Share the event ID with your opponent to start.
-            </p>
+          <div className="glass-card border border-white/5 rounded-2xl p-6 space-y-4">
+            <div>
+              <h2 className="text-xs font-bold text-white uppercase tracking-widest">Create a Challenge</h2>
+              <p className="text-xs text-gray-500 mt-1">Set the stakes, mode, and share the ID with your opponent.</p>
+            </div>
+            <CreateEventModal />
           </div>
-          <CreateEventModal />
         </div>
 
         <div className="space-y-4">
@@ -138,7 +140,7 @@ export default function VSPage() {
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 className={cn(
-                  "flex-1 py-2 text-sm font-medium rounded-lg transition-colors capitalize",
+                  "flex-1 py-2 text-sm font-semibold rounded-lg transition-colors capitalize",
                   activeTab === tab
                     ? "bg-white text-black"
                     : "text-gray-400 hover:text-white"
@@ -156,9 +158,15 @@ export default function VSPage() {
               ))}
             </div>
           ) : activeEvents.length === 0 ? (
-            <p className="text-gray-500 text-sm text-center py-8">
-              {activeTab === "created" ? "You haven't created any events yet." : "You haven't joined any events yet."}
-            </p>
+            <div className="glass-card border border-white/5 rounded-2xl p-12 text-center">
+              <Swords size={32} className="text-gray-700 mx-auto mb-4" />
+              <p className="text-gray-500 text-sm">
+                {activeTab === "created" ? "No challenges created yet." : "You haven't joined any challenges yet."}
+              </p>
+              {activeTab === "created" && (
+                <p className="text-gray-600 text-xs mt-1">Create one above and share the ID with your opponent.</p>
+              )}
+            </div>
           ) : (
             <div className="space-y-2">
               {activeEvents.slice(0, 10).map((e) => (
