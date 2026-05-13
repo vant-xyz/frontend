@@ -159,20 +159,20 @@ export function HistoryClient({ initialTransactions }: HistoryClientProps) {
       </div>
       <div className="space-y-3">
         <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-4">
-          <div className="flex justify-between items-center">
-            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Amount</span>
-            <span className="text-sm font-black text-white">{formatAmount(selectedTx.amount, selectedTx.currency)}</span>
+          <div className="flex justify-between items-start gap-4">
+            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest shrink-0">Amount</span>
+            <span className="text-sm font-black text-white text-right break-all">{formatAmount(selectedTx.amount, selectedTx.currency)}</span>
           </div>
-          <div className="flex justify-between items-center">
-            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Status</span>
+          <div className="flex justify-between items-center gap-4">
+            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest shrink-0">Status</span>
             {getStatusBadge(selectedTx.status)}
           </div>
         </div>
         {selectedTx.tx_hash && (
           <div className="p-4 rounded-2xl bg-blue-600/5 border border-blue-600/10 space-y-3">
             <span className="text-[10px] font-bold text-blue-500 uppercase tracking-widest block">Blockchain Hash</span>
-            <div className="flex items-center gap-3">
-              <code className="flex-1 text-[10px] text-blue-400 font-mono break-all truncate">{selectedTx.tx_hash}</code>
+            <div className="flex items-center gap-3 min-w-0">
+              <code className="flex-1 text-[10px] text-blue-400 font-mono break-all min-w-0">{selectedTx.tx_hash}</code>
               <a
                 href={`https://solscan.io/tx/${selectedTx.tx_hash}${(selectedTx as any).nature === "demo" ? "?cluster=devnet" : ""}`}
                 target="_blank"
