@@ -9,9 +9,25 @@ interface OGMarket {
   market_image_banner?: string;
   asset?: string;
   status?: string;
+  category?: string;
+}
+
+interface OGOrderbook {
+  last_traded_price?: number;
+  yes_bids?: { price: number }[];
 }
 
 const BASE_URL = "https://vantic.xyz";
+
+async function fetchJSON<T>(url: string, headers: Record<string, string>): Promise<T | null> {
+  try {
+    const res = await fetch(url, { headers, cache: "no-store" });
+    if (!res.ok) return null;
+    return await res.json() as T;
+  } catch {
+    return null;
+  }
+}
 
 export default async function Image({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -21,27 +37,40 @@ export default async function Image({ params }: { params: Promise<{ id: string }
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (apiKey) headers["X-API-Key"] = apiKey;
 
-  let market: OGMarket = { title: "Vantic Market", current_price: 50, market_type: "GEM" };
+  let market: OGMarket = { title: "Vantic Market", market_type: "GEM", category: "General" };
+  let yesCents = 50;
+  let noCents = 50;
 
-  try {
-    const res = await fetch(`${apiUrl}/markets/${id}`, { headers, cache: "no-store" });
-    if (res.ok) {
-      const data = await res.json();
-      if (data?.market?.title) market = data.market;
-      else if (data?.title) market = data;
-    }
-  } catch {
+  const [marketData, orderbookData] = await Promise.all([
+    fetchJSON<{ market?: OGMarket } | OGMarket>(`${apiUrl}/markets/${id}`, headers),
+    fetchJSON<{ orderbook?: OGOrderbook }>(`${apiUrl}/markets/${id}/orderbook`, headers),
+  ]);
+
+  if (marketData) {
+    const m = (marketData as { market?: OGMarket }).market ?? (marketData as OGMarket);
+    if (m?.title) market = m;
   }
 
-  const yesPrice = (market.current_price ?? 50).toFixed(1);
-  const noPrice = (100 - (market.current_price ?? 50)).toFixed(1);
+  if (orderbookData?.orderbook) {
+    const ob = orderbookData.orderbook;
+    const raw = ob.yes_bids?.[0]?.price ?? ob.last_traded_price;
+    if (raw != null && Number.isFinite(raw)) {
+      const cents = raw <= 1 ? raw * 100 : raw;
+      if (cents > 0 && cents < 100) {
+        yesCents = cents;
+        noCents = 100 - cents;
+      }
+    }
+  }
+
+  const yesPrice = yesCents.toFixed(1);
+  const noPrice = noCents.toFixed(1);
 
   const rawBanner =
     market.market_image_banner ||
     market.market_image_small ||
     `/media/images/crypto_assets/${(market.asset || "btc").toLowerCase()}.png`;
   const bannerSrc = rawBanner.startsWith("http") ? rawBanner : `${BASE_URL}${rawBanner}`;
-
   const logoSrc = `${BASE_URL}/icons/icon-192x192.png`;
 
   const desc =
@@ -49,6 +78,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
       ? market.description.slice(0, 110) + "..."
       : (market.description ?? "");
 
+  const categoryLabel = market.category || (market.market_type === "GEM" ? "General" : "Crypto");
   const isGEM = market.market_type === "GEM";
 
   return new ImageResponse(
@@ -73,23 +103,12 @@ export default async function Image({ params }: { params: Promise<{ id: string }
         >
           <img
             src={bannerSrc}
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-            }}
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
           />
         </div>
 
         {/* Divider */}
-        <div
-          style={{
-            width: "1px",
-            height: "100%",
-            background: "#1f1f1f",
-            display: "flex",
-          }}
-        />
+        <div style={{ width: "1px", height: "100%", background: "#1f1f1f", display: "flex" }} />
 
         {/* Right: content */}
         <div
@@ -107,12 +126,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <img
               src={logoSrc}
-              style={{
-                width: 34,
-                height: 34,
-                borderRadius: "50%",
-                objectFit: "cover",
-              }}
+              style={{ width: 34, height: 34, objectFit: "contain" }}
             />
             <span style={{ color: "#555", fontSize: 17, fontWeight: 500 }}>
               vantic.xyz
@@ -120,18 +134,18 @@ export default async function Image({ params }: { params: Promise<{ id: string }
             <div style={{ flex: 1, display: "flex" }} />
             <span
               style={{
-                color: isGEM ? "#a855f7" : "#3b82f6",
-                fontSize: 13,
-                fontWeight: 700,
-                background: isGEM ? "rgba(168,85,247,0.12)" : "rgba(59,130,246,0.12)",
+                color: "#888",
+                fontSize: 12,
+                fontWeight: 600,
+                background: "#1a1a1a",
                 padding: "4px 12px",
                 borderRadius: 6,
-                border: `1px solid ${isGEM ? "rgba(168,85,247,0.3)" : "rgba(59,130,246,0.3)"}`,
-                letterSpacing: "0.06em",
+                border: "1px solid #2a2a2a",
+                letterSpacing: "0.05em",
                 textTransform: "uppercase",
               }}
             >
-              {isGEM ? "GEM" : "CAPPM"}
+              {categoryLabel}
             </span>
           </div>
 
@@ -139,7 +153,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div
               style={{
-                fontSize: isGEM ? 34 : 36,
+                fontSize: 36,
                 fontWeight: 800,
                 color: "#f5f5f5",
                 lineHeight: 1.18,
@@ -149,13 +163,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
               {market.title}
             </div>
             {desc ? (
-              <div
-                style={{
-                  fontSize: 18,
-                  color: "#666",
-                  lineHeight: 1.55,
-                }}
-              >
+              <div style={{ fontSize: 18, color: "#666", lineHeight: 1.55 }}>
                 {desc}
               </div>
             ) : null}
