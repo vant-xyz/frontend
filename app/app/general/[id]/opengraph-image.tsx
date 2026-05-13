@@ -1,20 +1,20 @@
 import { ImageResponse } from "next/og";
 
-export const runtime = "edge";
-
 interface OGMarket {
   title: string;
+  description?: string;
   current_price?: number;
   market_type?: string;
   market_image_small?: string;
+  market_image_banner?: string;
   asset?: string;
+  status?: string;
 }
 
 export default async function Image({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://vcs-api.vantic.xyz";
   let market: OGMarket;
-  let volume = 0;
 
   try {
     const res = await fetch(`${apiUrl}/markets/${id}`, { next: { revalidate: 60 } });
@@ -25,77 +25,188 @@ export default async function Image({ params }: { params: Promise<{ id: string }
     market = { title: "Vantic Market", current_price: 50, market_type: "GEM" };
   }
 
-  try {
-    const res = await fetch(`${apiUrl}/markets/${id}/trades?limit=200`, { next: { revalidate: 60 } });
-    if (res.ok) {
-      const data = await res.json();
-      volume = (data.trades || []).reduce(
-        (acc: number, t: any) => acc + Number(t.price || 0) * Number(t.quantity || 0),
-        0
-      ) / 100;
-    }
-  } catch {
-    volume = 0;
-  }
-
-  const yesPrice = Number((market.current_price ?? 50).toFixed(1));
-  const noPrice = Number((100 - (market.current_price ?? 50)).toFixed(1));
+  const yesPrice = (market.current_price ?? 50).toFixed(1);
+  const noPrice = (100 - (market.current_price ?? 50)).toFixed(1);
   const BASE_URL = "https://vantic.xyz";
-  const rawImage = market.market_image_small || `/media/images/crypto_assets/${(market.asset || "btc").toLowerCase()}.png`;
-  const rightImage = rawImage.startsWith("http") ? rawImage : `${BASE_URL}${rawImage}`;
+
+  const rawBanner =
+    market.market_image_banner ||
+    market.market_image_small ||
+    `/media/images/crypto_assets/${(market.asset || "btc").toLowerCase()}.png`;
+  const bannerSrc = rawBanner.startsWith("http") ? rawBanner : `${BASE_URL}${rawBanner}`;
+
+  const desc =
+    market.description && market.description.length > 110
+      ? market.description.slice(0, 110) + "..."
+      : (market.description ?? "");
 
   return new ImageResponse(
     (
       <div
         style={{
-          height: "100%",
           width: "100%",
+          height: "100%",
           display: "flex",
-          background: "#000",
-          color: "white",
-          fontFamily: "Inter, sans-serif",
+          background: "#0a0a0a",
+          fontFamily: "Inter, system-ui, sans-serif",
         }}
       >
+        {/* Left: banner image */}
         <div
           style={{
-            width: "50%",
+            width: "44%",
             height: "100%",
-            background: "#000",
-            padding: "48px",
             display: "flex",
-            flexDirection: "column",
-            justifyContent: "space-between",
-          }}
-        >
-          <div style={{ fontSize: 18, color: "#888" }}>Vantic • {market.market_type}</div>
-          <div style={{ fontSize: 48, fontWeight: 800, lineHeight: 1.12 }}>{market.title}</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <div style={{ fontSize: 34, color: "#22c55e", fontWeight: 700 }}>YES {yesPrice.toFixed(1)}¢</div>
-            <div style={{ fontSize: 34, color: "#ef4444", fontWeight: 700 }}>NO {noPrice.toFixed(1)}¢</div>
-            <div style={{ fontSize: 24, color: "#bbb" }}>Volume ${volume.toFixed(2)}</div>
-          </div>
-        </div>
-
-        <div
-          style={{
-            width: "50%",
-            height: "100%",
-            background: "#000",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
             overflow: "hidden",
           }}
         >
           <img
-            src={rightImage}
-            alt="market visual"
+            src={bannerSrc}
             style={{
-              width: market.market_type === "GEM" ? "100%" : "auto",
-              height: market.market_type === "GEM" ? "100%" : "70%",
-              objectFit: market.market_type === "GEM" ? "cover" : "contain",
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
             }}
           />
+        </div>
+
+        {/* Divider */}
+        <div
+          style={{
+            width: "1px",
+            height: "100%",
+            background: "#1f1f1f",
+            display: "flex",
+          }}
+        />
+
+        {/* Right: content */}
+        <div
+          style={{
+            flex: 1,
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+            padding: "44px 50px",
+            background: "#0a0a0a",
+          }}
+        >
+          {/* Branding row */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: "50%",
+                background: "#7c3aed",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "white",
+                fontSize: 17,
+                fontWeight: 800,
+                letterSpacing: "-0.02em",
+              }}
+            >
+              V
+            </div>
+            <span style={{ color: "#555", fontSize: 18, fontWeight: 500 }}>
+              vantic.xyz
+            </span>
+            <div style={{ flex: 1, display: "flex" }} />
+            <span
+              style={{
+                color: "#444",
+                fontSize: 15,
+                fontWeight: 500,
+                background: "#111",
+                padding: "4px 12px",
+                borderRadius: 6,
+                border: "1px solid #222",
+              }}
+            >
+              {market.market_type === "GEM" ? "GEM" : "CAPPM"}
+            </span>
+          </div>
+
+          {/* Title + description */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div
+              style={{
+                fontSize: 38,
+                fontWeight: 800,
+                color: "#f5f5f5",
+                lineHeight: 1.18,
+                letterSpacing: "-0.025em",
+              }}
+            >
+              {market.title}
+            </div>
+            {desc ? (
+              <div
+                style={{
+                  fontSize: 19,
+                  color: "#666",
+                  lineHeight: 1.55,
+                }}
+              >
+                {desc}
+              </div>
+            ) : null}
+          </div>
+
+          {/* YES / NO badges */}
+          <div style={{ display: "flex", gap: 12 }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "10px 22px",
+                borderRadius: 8,
+                background: "rgba(34,197,94,0.1)",
+                border: "1px solid rgba(34,197,94,0.35)",
+              }}
+            >
+              <span
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: "50%",
+                  background: "#22c55e",
+                  display: "flex",
+                }}
+              />
+              <span style={{ color: "#22c55e", fontSize: 22, fontWeight: 700 }}>
+                YES &nbsp;{yesPrice}¢
+              </span>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "10px 22px",
+                borderRadius: 8,
+                background: "rgba(239,68,68,0.1)",
+                border: "1px solid rgba(239,68,68,0.35)",
+              }}
+            >
+              <span
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: "50%",
+                  background: "#ef4444",
+                  display: "flex",
+                }}
+              />
+              <span style={{ color: "#ef4444", fontSize: 22, fontWeight: 700 }}>
+                NO &nbsp;{noPrice}¢
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     ),
