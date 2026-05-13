@@ -242,37 +242,37 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                           : 'Based on your observation, what is the final state of this event?'}
                       </p>
                     </div>
-                    <div className="grid grid-cols-2 gap-6">
+                    <div className="grid grid-cols-2 gap-4">
                       <Button
                         onClick={() => handleConfirm('YES')}
                         disabled={confirming || myConfirmation === 'YES'}
                         className={cn(
-                          "h-24 flex-col gap-2 rounded-xl border-2 transition-all group",
+                          "h-20 flex-col gap-1.5 rounded-xl border-2 transition-all group px-2",
                           myConfirmation === 'YES'
                             ? "bg-success/20 border-success text-success scale-[1.02]"
                             : "bg-secondary/50 border-white/5 hover:border-success/50 hover:bg-success/5"
                         )}
                       >
-                        <CheckCircle2 className={cn("w-8 h-8 transition-transform group-hover:scale-110",
+                        <CheckCircle2 className={cn("w-6 h-6 shrink-0 transition-transform group-hover:scale-110",
                           myConfirmation === 'YES' ? "text-success" : "text-muted-foreground")}
                         />
-                        <span className="font-headline font-black text-xl italic uppercase tracking-tighter">YES, IT HAPPENED</span>
+                        <span className="font-headline font-black text-sm italic uppercase tracking-tight leading-tight text-center">Yes, it happened</span>
                       </Button>
 
                       <Button
                         onClick={() => handleConfirm('NO')}
                         disabled={confirming || myConfirmation === 'NO'}
                         className={cn(
-                          "h-24 flex-col gap-2 rounded-xl border-2 transition-all group",
+                          "h-20 flex-col gap-1.5 rounded-xl border-2 transition-all group px-2",
                           myConfirmation === 'NO'
                             ? "bg-error/20 border-error text-error scale-[1.02]"
                             : "bg-secondary/50 border-white/5 hover:border-error/50 hover:bg-error/5"
                         )}
                       >
-                        <XCircle className={cn("w-8 h-8 transition-transform group-hover:scale-110",
+                        <XCircle className={cn("w-6 h-6 shrink-0 transition-transform group-hover:scale-110",
                           myConfirmation === 'NO' ? "text-error" : "text-muted-foreground")}
                         />
-                        <span className="font-headline font-black text-xl italic uppercase tracking-tighter">NO, IT DIDN'T</span>
+                        <span className="font-headline font-black text-sm italic uppercase tracking-tight leading-tight text-center">No, it didn't</span>
                       </Button>
                     </div>
                   </>
@@ -308,39 +308,61 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                 </div>
               </div>
 
-              <div className="space-y-6">
-                <h3 className="font-headline text-2xl font-black uppercase tracking-tighter italic">
-                  Participants ({event.participants.length}/{event.participant_target})
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {event.participants.map((p: Participant) => (
-                    <div
-                      key={p.id}
-                      className={cn(
-                        "glass-card rounded-xl p-6 flex items-center justify-between border-l-4",
-                        p.user_email === userEmail ? "border-primary/40" : "border-white/5"
-                      )}
-                    >
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-10 w-10">
-                          <AvatarFallback>{p.user_email[0]}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="text-sm font-bold tracking-tight flex items-center gap-2">
-                            {truncateEmail(p.user_email)}
-                            {event.creator_email === p.user_email && (
-                              <span className="text-[6px] px-1.5 py-0.5 bg-accent/20 text-accent rounded-full border border-accent/20 tracking-widest">CREATOR</span>
-                            )}
-                            {p.user_email === userEmail && (
-                              <span className="text-[6px] px-1.5 py-0.5 bg-primary/20 text-primary rounded-full border border-primary/20 tracking-widest">YOU</span>
-                            )}
-                          </p>
-                          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest">Participant</p>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-headline text-2xl font-black uppercase tracking-tighter italic">Participants</h3>
+                  <span className="text-xs text-muted-foreground font-mono">{event.participants.length}/{event.participant_target}</span>
+                </div>
+                <div className="glass-card border border-white/5 rounded-2xl overflow-hidden divide-y divide-white/5">
+                  {event.participants.map((p: Participant) => {
+                    const isMe = p.user_email === userEmail
+                    const isCreator = event.creator_email === p.user_email
+                    const confirmed = p.confirmation === 'YES' || p.confirmation === 'NO'
+                    return (
+                      <div
+                        key={p.id}
+                        className={cn(
+                          "flex items-center gap-4 px-5 py-4",
+                          isMe && "bg-white/[0.03]"
+                        )}
+                      >
+                        <div className={cn(
+                          "w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0",
+                          isMe ? "bg-primary/20 text-primary" : "bg-white/10 text-white"
+                        )}>
+                          {p.user_email[0].toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-white truncate">{truncateEmail(p.user_email)}</p>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            {isCreator && <span className="text-[9px] px-1.5 py-0.5 bg-accent/20 text-accent rounded-full border border-accent/20 tracking-widest font-bold">CREATOR</span>}
+                            {isMe && <span className="text-[9px] px-1.5 py-0.5 bg-primary/20 text-primary rounded-full border border-primary/20 tracking-widest font-bold">YOU</span>}
+                          </div>
+                        </div>
+                        <div className="shrink-0 flex items-center gap-2">
+                          {confirmed ? (
+                            <div className={cn(
+                              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold",
+                              p.confirmation === 'YES' ? "bg-success/15 text-success" : "bg-error/15 text-error"
+                            )}>
+                              {p.confirmation === 'YES'
+                                ? <CheckCircle2 size={12} />
+                                : <XCircle size={12} />}
+                              {p.confirmation}
+                            </div>
+                          ) : (
+                            <span className="text-[10px] text-muted-foreground uppercase tracking-widest">Pending</span>
+                          )}
                         </div>
                       </div>
-                      <div className="text-right pl-5">
-                        <StatusBadge status={p.confirmation || "pending"} className="text-[9px]" />
+                    )
+                  })}
+                  {Array.from({ length: Math.max(0, event.participant_target - event.participants.length) }).map((_, i) => (
+                    <div key={`empty-${i}`} className="flex items-center gap-4 px-5 py-4 opacity-30">
+                      <div className="w-9 h-9 rounded-full border border-dashed border-white/20 flex items-center justify-center shrink-0">
+                        <UserPlus size={14} className="text-muted-foreground" />
                       </div>
+                      <p className="text-sm text-muted-foreground">Waiting for participant...</p>
                     </div>
                   ))}
                 </div>

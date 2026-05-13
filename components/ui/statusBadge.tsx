@@ -45,6 +45,7 @@ const CHAIN_STATE_LABELS: Record<string, string> = {
   CHAIN_CANCELLED: "Cancelled",
   CHAIN_PENDING: "Pending",
   CHAIN_FAILED: "Failed",
+  CHAIN_RESOLVE_FAILED: "Settlement failed",
 };
 
 export function ChainIndicator({ state }: { state: string }) {
