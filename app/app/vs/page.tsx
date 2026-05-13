@@ -1,139 +1,104 @@
 "use client"
 
 import { DashboardClient } from "@/components/dashboard/dashboard-client"
-import { Button } from "@/components/ui/button";
-import { CreateEventModal } from "@/components/ui/createEventModal";
-import { EventCard } from "@/components/ui/EventCard";
-import { Input } from "@/components/ui/input";
-import { Loader } from "@/components/ui/loader";
-import { getVsEvents, vsEvents } from "@/lib/api";
-import { LayoutGrid, ListIcon, Search, SlidersHorizontal } from "lucide-react";
-import React, { useCallback, useEffect, useState } from "react"
+import { Button } from "@/components/ui/button"
+import { CreateEventModal } from "@/components/ui/createEventModal"
+import { Input } from "@/components/ui/input"
+import { getVsEvents, vsEvents } from "@/lib/api"
+import { ArrowRight, Swords } from "lucide-react"
+import React, { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 
-export default function page() {
+export default function VSPage() {
+  const router = useRouter()
+  const [code, setCode] = useState("")
+  const [myEvents, setMyEvents] = useState<vsEvents[]>([])
 
-    const [search, setSearch] = useState("");
-    const [token, setToken] = useState<string | null>(null);
-    const [events, setEvents] = useState<vsEvents[]>([]);
-    const [isInitialLoading, setIsInitialLoading] = useState(true);   // Only for first load
+  useEffect(() => {
+    const token = localStorage.getItem("auth_token")
+    if (!token) return
+    getVsEvents(token)
+      .then((res) => setMyEvents(res.events || []))
+      .catch(() => {})
+  }, [])
 
-    // Get token
-    useEffect(() => {
-        const storedToken = localStorage.getItem("auth_token");
-        setToken(storedToken);
-    }, []);
+  const handleLoad = () => {
+    const trimmed = code.trim()
+    if (!trimmed) return
+    router.push(`/app/vs/${trimmed}`)
+  }
 
-    const fetchEvents = useCallback(async () => {
-        if (!token) return;
+  return (
+    <DashboardClient>
+      <div className="max-w-lg mx-auto py-12 space-y-8">
 
-        try {
-            const res = await getVsEvents(token);
-            setEvents(res.events || []);
-        } catch (error) {
-            console.error("Error fetching events:", error);
-            setEvents([]);
-        }
-    }, [token]);
+        <div>
+          <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+            <Swords size={26} className="text-red-500" />
+            Vantic VS
+          </h1>
+          <p className="text-gray-400 mt-2 text-sm">
+            Peer-to-peer social wagering. Create an event, share the code, and let the chain resolve it.
+          </p>
+        </div>
 
-    // Initial fetch + Polling
-    useEffect(() => {
-        if (!token) return;
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-4">
+          <div>
+            <h2 className="text-sm font-semibold text-white uppercase tracking-widest">Load an Event</h2>
+            <p className="text-xs text-gray-500 mt-1">Enter an event ID or code shared with you.</p>
+          </div>
+          <div className="flex gap-3">
+            <Input
+              placeholder="Event ID or code..."
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleLoad()}
+              className="bg-black border-white/10 text-white placeholder:text-gray-600"
+            />
+            <Button
+              onClick={handleLoad}
+              disabled={!code.trim()}
+              className="bg-red-600 hover:bg-red-500 shrink-0"
+            >
+              <ArrowRight size={16} />
+            </Button>
+          </div>
+        </div>
 
-        // Initial load
-        const loadInitial = async () => {
-            await fetchEvents();
-            setIsInitialLoading(false);
-        };
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-4">
+          <div>
+            <h2 className="text-sm font-semibold text-white uppercase tracking-widest">Create a VS Event</h2>
+            <p className="text-xs text-gray-500 mt-1">
+              Set the stakes, mode, and resolution threshold. Share the event ID with your opponent to start.
+            </p>
+          </div>
+          <CreateEventModal />
+        </div>
 
-        loadInitial();
-
-        // Polling (no loading state)
-        const interval = setInterval(fetchEvents, 3000);
-
-        return () => clearInterval(interval);
-    }, [token, fetchEvents]);
-
-    const filteredEvents = events.filter(e =>
-        e.title.toLowerCase().includes(search.toLowerCase())
-    );
-    return (
-        <DashboardClient>
-            <div className="flex flex-col min-h-screen">
-
-                <main className="flex-1 container mx-auto px-4 py-8">
-                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
-                        <div className="space-y-2">
-                            <h2 className="text-4xl font-headline font-black uppercase tracking-tighter italic">EVENT DASHBOARD</h2>
-                            <p className="text-muted-foreground max-w-lg">Peer-to-peer social wagering on the Solana blockchain. Real stakes, social resolution, lightning fast.</p>
-                        </div>
-                        <CreateEventModal />
-                    </div>
-
-                    <div className="flex flex-col md:flex-row gap-4 mb-8">
-                        <div className="relative flex-1">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                            <Input
-                                placeholder="Search active events..."
-                                className="pl-10 h-11 bg-secondary border-white/5 focus:ring-primary/20"
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                            />
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Button variant="outline" size="icon" className="h-11 w-11 border-white/5 bg-secondary/50">
-                                <SlidersHorizontal className="w-4 h-4" />
-                            </Button>
-                            <div className="flex items-center bg-secondary/50 rounded-md p-1 border border-white/5">
-                                <Button variant="ghost" size="icon" className="h-9 w-9 bg-background shadow-sm border border-white/10 text-primary">
-                                    <LayoutGrid className="w-4 h-4" />
-                                </Button>
-                                <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground">
-                                    <ListIcon className="w-4 h-4" />
-                                </Button>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Loading State */}
-                    {isInitialLoading ? (
-                        <div className="flex items-center justify-center py-20">
-                            <Loader className="w-8 h-8 text-red-600" />
-                        </div>
-                    ) : filteredEvents.length === 0 ? (
-                        /* Empty State - Inside Dashboard */
-                        <div className="col-span-full py-20 flex flex-col items-center justify-center text-center space-y-4">
-                            <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center">
-                                <Search className="w-8 h-8 text-muted-foreground" />
-                            </div>
-                            <div>
-                                <h3 className="font-headline text-xl">No Events Found</h3>
-                                <p className="text-muted-foreground">Check back later for new events or create one yourself.</p>
-                            </div>
-                            <CreateEventModal />
-                        </div>
-                    ) : (
-                        /* Events Grid */
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {filteredEvents.map((event) => (
-                                <EventCard key={event.id} event={event} />
-                            ))}
-                        </div>
-                    )}
-                </main>
-
-                {/* Footer */}
-                <footer className="border-t border-white/5 py-8 mt-auto">
-                    <div className="container mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-muted-foreground font-medium uppercase tracking-widest">
-                        <p>© 2024 Vantic Protocol. All rights reserved.</p>
-                        <div className="flex gap-8">
-                            <a href="#" className="hover:text-primary transition-colors">Privacy</a>
-                            <a href="#" className="hover:text-primary transition-colors">Terms</a>
-                            <a href="#" className="hover:text-primary transition-colors">Discord</a>
-                            <a href="#" className="hover:text-primary transition-colors">Twitter</a>
-                        </div>
-                    </div>
-                </footer>
+        {myEvents.length > 0 && (
+          <div className="space-y-3">
+            <h2 className="text-sm font-semibold text-white uppercase tracking-widest">My Events</h2>
+            <div className="space-y-2">
+              {myEvents.slice(0, 8).map((e) => (
+                <button
+                  key={e.id}
+                  onClick={() => router.push(`/app/vs/${e.id}`)}
+                  className="w-full flex items-center justify-between p-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-colors text-left"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-white truncate">{e.title}</p>
+                    <p className="text-xs text-gray-500 mt-0.5 uppercase tracking-wide">
+                      {e.status} · {e.mode}
+                    </p>
+                  </div>
+                  <ArrowRight size={14} className="text-gray-600 shrink-0 ml-3" />
+                </button>
+              ))}
             </div>
-        </DashboardClient>
-    )
+          </div>
+        )}
+
+      </div>
+    </DashboardClient>
+  )
 }

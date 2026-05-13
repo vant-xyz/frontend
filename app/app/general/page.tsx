@@ -2,7 +2,6 @@
 
 import { DashboardClient } from "@/components/dashboard/dashboard-client";
 import { Button } from "@/components/ui/button";
-import { Loader } from "@/components/ui/loader";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Command,
@@ -17,7 +16,7 @@ import { getMarkets, Market, OrderSide, getOrderbook, getMarketVolume } from "@/
 import { cn } from "@/lib/utils";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { HelpCircle, Share2, Clock } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { QuickTradeModal } from "@/components/dashboard/crypto/quick-trade-modal";
 import { useRouter } from "next/navigation";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -57,21 +56,22 @@ export default function GeneralPage() {
       const res = await getMarkets("GEM", "active", undefined, 50);
       setMarkets(res.markets);
       setError(null);
-      if (loading) setLoading(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load markets");
-      if (loading) setLoading(false);
+    } finally {
+      setLoading(false);
     }
-  }, [loading]);
+  }, []);
 
   useEffect(() => {
     loadMarkets();
-    const interval = setInterval(loadMarkets, 1000);
+    const interval = setInterval(loadMarkets, 5000);
     return () => clearInterval(interval);
   }, [loadMarkets]);
 
+  const filteredMarketsRef = useRef<Market[]>([]);
+
   useEffect(() => {
-    if (!markets.length) return;
     let active = true;
     const toCents = (v?: number) => {
       const n = Number(v ?? 0);
@@ -79,48 +79,54 @@ export default function GeneralPage() {
       return n <= 1 ? n * 100 : n;
     };
     const loadShared = async () => {
-      const quoteEntries = await Promise.all(markets.map(async (m) => {
-        try {
-          const ob = await getOrderbook(m.id);
-          const bestYesBid = toCents(ob.orderbook?.yes_bids?.[0]?.price);
-          const bestNoAsk = toCents(ob.orderbook?.no_asks?.[0]?.price);
-          const yes = bestYesBid > 0 ? bestYesBid : toCents(ob.orderbook?.last_traded_price);
-          const no = bestNoAsk > 0 ? bestNoAsk : (yes > 0 ? Math.max(0, 100 - yes) : 0);
-          if (yes <= 0 || no <= 0) return [m.id, undefined] as const;
-          return [m.id, { yes, no }] as const;
-        } catch {
-          return [m.id, undefined] as const;
-        }
-      }));
-      const volumeEntries = await Promise.all(markets.map(async (m) => {
-        try {
-          const vol = await getMarketVolume(m.id);
-          return [m.id, Number(vol.volume?.volume ?? 0)] as const;
-        } catch {
-          return [m.id, undefined] as const;
-        }
-      }));
+      const visible = filteredMarketsRef.current.slice(0, 20);
+      if (!visible.length) return;
+      const [quoteEntries, volumeEntries] = await Promise.all([
+        Promise.all(visible.map(async (m) => {
+          try {
+            const ob = await getOrderbook(m.id);
+            const bestYesBid = toCents(ob.orderbook?.yes_bids?.[0]?.price);
+            const bestNoAsk = toCents(ob.orderbook?.no_asks?.[0]?.price);
+            const yes = bestYesBid > 0 ? bestYesBid : toCents(ob.orderbook?.last_traded_price);
+            const no = bestNoAsk > 0 ? bestNoAsk : (yes > 0 ? Math.max(0, 100 - yes) : 0);
+            if (yes <= 0 || no <= 0) return [m.id, undefined] as const;
+            return [m.id, { yes, no }] as const;
+          } catch {
+            return [m.id, undefined] as const;
+          }
+        })),
+        Promise.all(visible.map(async (m) => {
+          try {
+            const vol = await getMarketVolume(m.id);
+            return [m.id, Number(vol.volume?.volume ?? 0)] as const;
+          } catch {
+            return [m.id, undefined] as const;
+          }
+        })),
+      ]);
       if (!active) return;
-      setQuotesByMarket(Object.fromEntries(quoteEntries));
-      setVolumeByMarket(Object.fromEntries(volumeEntries));
+      setQuotesByMarket(prev => ({ ...prev, ...Object.fromEntries(quoteEntries) }));
+      setVolumeByMarket(prev => ({ ...prev, ...Object.fromEntries(volumeEntries) }));
     };
     loadShared();
-    const quotesInterval = setInterval(loadShared, 1000);
+    const quotesInterval = setInterval(loadShared, 3000);
     return () => {
       active = false;
       clearInterval(quotesInterval);
     };
-  }, [markets]);
+  }, []);
 
   const filteredMarkets = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    return markets.filter((m) => {
+    const result = markets.filter((m) => {
       if (activeCategory !== "All" && m.category?.toLowerCase() !== activeCategory.toLowerCase()) {
         return false;
       }
       if (!q) return true;
       return m.title.toLowerCase().includes(q) || m.description.toLowerCase().includes(q);
     });
+    filteredMarketsRef.current = result;
+    return result;
   }, [markets, activeCategory, searchQuery]);
 
   const handleQuickTrade = (market: Market, side: OrderSide) => {
@@ -128,24 +134,6 @@ export default function GeneralPage() {
     setSelectedSide(side);
     setIsQuickTradeOpen(true);
   };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader className="w-8 h-8 text-red-600" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-red-500 mb-2">Failed to load markets</p>
-        <p className="text-gray-400 text-sm">{error}</p>
-        <Button variant="outline" onClick={loadMarkets} className="mt-4">Retry</Button>
-      </div>
-    );
-  }
 
   return (
     <DashboardClient>
@@ -228,15 +216,31 @@ export default function GeneralPage() {
         </Accordion>
 
         <div className="space-y-4">
-          {filteredMarkets.map((m) => (
-            <GemCard
-              key={m.id}
-              market={m}
-              onQuickTrade={handleQuickTrade}
-              liveQuote={quotesByMarket[m.id]}
-              liveVolume={volumeByMarket[m.id]}
-            />
-          ))}
+          {error ? (
+            <div className="text-center py-12">
+              <p className="text-red-500 mb-2">Failed to load markets</p>
+              <p className="text-gray-400 text-sm">{error}</p>
+              <Button variant="outline" onClick={loadMarkets} className="mt-4">Retry</Button>
+            </div>
+          ) : loading && markets.length === 0 ? (
+            <>
+              {[...Array(4)].map((_, i) => (
+                <Skeleton key={i} className="h-32 w-full bg-white/5 rounded-xl" />
+              ))}
+            </>
+          ) : filteredMarkets.length === 0 ? (
+            <p className="text-gray-500 text-sm py-8 text-center">No markets found.</p>
+          ) : (
+            filteredMarkets.map((m) => (
+              <GemCard
+                key={m.id}
+                market={m}
+                onQuickTrade={handleQuickTrade}
+                liveQuote={quotesByMarket[m.id]}
+                liveVolume={volumeByMarket[m.id]}
+              />
+            ))
+          )}
         </div>
       </div>
 

@@ -225,13 +225,7 @@ export interface PriceUpdate {
   time: number;
 }
 
-export interface PriceData {
-  BTC: PriceUpdate | null;
-  ETH: PriceUpdate | null;
-  SOL: PriceUpdate | null;
-  USDC?: PriceUpdate | null;
-  USDT?: PriceUpdate | null;
-}
+export type PriceData = Record<string, PriceUpdate | null>;
 
 export interface VantRateResponse {
   success: boolean;
@@ -288,11 +282,11 @@ export function connectToPriceFeed(
 }
 
 export async function getLatestPrices(): Promise<PriceData> {
-  const proxyResp = await fetch(viaPublicProxy("prices"), { method: "GET" });
+  const proxyResp = await fetch(viaPublicProxy("prices"), { method: "GET", cache: "no-store" });
   if (proxyResp.ok) {
-    return proxyResp.json();
+    const data = await proxyResp.json();
+    return (data.prices ?? data) as PriceData;
   }
-
   throw new Error("Failed to fetch prices");
 }
 

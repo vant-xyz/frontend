@@ -37,6 +37,7 @@ import { usePriceFeed } from "@/hooks/use-price-feed";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { ReelAnimation } from "@/components/landing/reel-animation";
 
 export default function MarketDetailView() {
     const { id } = useParams()
@@ -410,8 +411,9 @@ export default function MarketDetailView() {
 
     const pricePerShareDollars = (selectedSide === "YES" ? lastYes : lastNo) / 100;
     const liveAssetPrice = (() => {
-        const asset = (market.asset || "").toUpperCase() as keyof typeof prices;
-        const p = prices[asset];
+        const upper = (market.asset || "").toUpperCase();
+        const key = upper.includes("ETH") ? "ETH-USD" : upper.includes("SOL") ? "SOL-USD" : "BTC-USD";
+        const p = prices[key];
         const n = typeof p === "object" && p && "price" in p ? Number(p.price) : NaN;
         return Number.isFinite(n) && n > 0 ? n : null;
     })();
@@ -848,6 +850,12 @@ export default function MarketDetailView() {
                 {/* Summary */}
                 <div className="bg-white/5 rounded-xl p-3 space-y-2">
                     <div className="flex justify-between text-xs">
+                        <span className="text-gray-500">Quote price</span>
+                        <span className="text-gray-300 font-mono">
+                            {(selectedSide === "YES" ? lastYes : lastNo).toFixed(1)}¢ / share
+                        </span>
+                    </div>
+                    <div className="flex justify-between text-xs">
                         <span className="text-gray-500 inline-flex items-center gap-1">
                             Total Cost
                             <button
@@ -875,6 +883,16 @@ export default function MarketDetailView() {
                         </span>
                         <span className="text-teal-400 text-lg font-mono font-semibold">${youReceive.toFixed(2)}</span>
                     </div>
+                    {effectiveQuantity > 0 && sharesTotal > 0 && (
+                        <div className="border border-cyan-500/40 rounded-lg px-3 py-1.5 flex justify-between items-center">
+                            <span className="text-[10px] text-cyan-400 uppercase tracking-widest font-semibold">
+                                If {selectedSide} wins
+                            </span>
+                            <span className="text-cyan-400 text-xs font-mono font-bold">
+                                +{(((youReceive - sharesTotal) / sharesTotal) * 100).toFixed(1)}% profit
+                            </span>
+                        </div>
+                    )}
                 </div>
 
                 {/* CTA */}
@@ -1002,7 +1020,13 @@ export default function MarketDetailView() {
                     {market.market_type === "CAPPM" && (
                         <div className="ml-2 text-right shrink-0">
                             <p className="text-[10px] text-gray-400 uppercase tracking-widest">Current</p>
-                            <p className="text-lg font-mono text-white">${(liveAssetPrice ?? ((market.current_price ?? 0) / 100)).toFixed(2)}</p>
+                            <span className="text-lg font-mono text-white">
+                                $<ReelAnimation
+                                    text={(liveAssetPrice ?? ((market.current_price ?? 0) / 100)).toFixed(2)}
+                                    animateOnHover={false}
+                                    className="font-mono"
+                                />
+                            </span>
                         </div>
                     )}
                 </div>
@@ -1061,6 +1085,7 @@ export default function MarketDetailView() {
                             ) : (
                                 <CandlestickChart
                                     marketId={market.id}
+                                    asset={market.asset}
                                     title={`${market.asset || "Asset"} Spot Price`}
                                     leftSlot={(
                                         <div className="flex items-center gap-1 border border-white/10 rounded-lg p-1 bg-black/40">
@@ -1121,17 +1146,15 @@ export default function MarketDetailView() {
                                     <div className="space-y-3">
                                         {positions.map((pos, i) => {
                                             const avgPriceCents = (pos.avg_entry_price || 0) * 100;
-
                                             const costBasis = pos.shares * (pos.avg_entry_price || 0);
                                             const isSettled = pos.status === "SETTLED";
                                             const currentPriceCents = isSettled
                                                 ? (pos.payout_amount > 0 ? (pos.payout_amount / pos.shares) * 100 : 0)
                                                 : (() => {
-                                                    const fallback = avgPriceCents;
                                                     if (pos.side === "YES") {
-                                                        return orderbook?.yes_bids?.[0]?.price ?? fallback;
+                                                        return toCents(orderbook?.yes_bids?.[0]?.price) || avgPriceCents;
                                                     } else {
-                                                        return orderbook?.no_asks?.[0]?.price ?? (100 - (orderbook?.yes_bids?.[0]?.price ?? (100 - avgPriceCents)));
+                                                        return toCents(orderbook?.no_asks?.[0]?.price) || Math.max(0, 100 - (toCents(orderbook?.yes_bids?.[0]?.price) || (100 - avgPriceCents)));
                                                     }
                                                 })();
 
@@ -1140,6 +1163,7 @@ export default function MarketDetailView() {
                                                 : (currentPriceCents - avgPriceCents) / 100 * pos.shares;
 
                                             const pnlPct = costBasis > 0 ? (pnl / costBasis) * 100 : 0;
+                                            const multiplier = avgPriceCents > 0 ? (100 / avgPriceCents) : 0;
 
                                             return (
                                                 <div key={pos.id || i} className="flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/8 transition-all">
@@ -1159,15 +1183,15 @@ export default function MarketDetailView() {
 
                                                     <div className="flex-1 min-w-0">
                                                         <p className="text-white font-mono text-base font-semibold">
-                                                            {pos.shares} shares
+                                                            {pos.shares.toFixed(2)} shares
                                                         </p>
                                                         {isSettled ? (
                                                             <p className="text-xs text-gray-500 mt-0.5">
-                                                                Avg {avgPriceCents.toFixed(1)}¢ • <span className="text-emerald-400">Paid out ${pos.payout_amount.toFixed(2)}</span>
+                                                                <span className="text-emerald-400">Paid out ${pos.payout_amount.toFixed(2)}</span>
                                                             </p>
                                                         ) : (
                                                             <p className="text-xs text-gray-500 mt-0.5">
-                                                                Avg {avgPriceCents.toFixed(1)}¢ • Now {currentPriceCents.toFixed(1)}¢
+                                                                {multiplier.toFixed(2)}x · ${costBasis.toFixed(2)} stake
                                                             </p>
                                                         )}
                                                     </div>

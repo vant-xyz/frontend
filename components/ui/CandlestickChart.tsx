@@ -7,12 +7,22 @@ import { getLatestPrices, getMarketCandles } from '@/lib/api';
 
 interface CandlestickChartProps {
   marketId: string;
+  asset?: string;
   title?: string;
   leftSlot?: ReactNode;
   rightSlot?: ReactNode;
 }
 
-export function CandlestickChart({ marketId, title = "BTC Spot Price (5m)", leftSlot, rightSlot }: CandlestickChartProps) {
+function priceSymbol(asset?: string): string {
+  if (!asset) return 'BTC-USD';
+  const upper = asset.toUpperCase();
+  if (upper.includes('ETH')) return 'ETH-USD';
+  if (upper.includes('SOL')) return 'SOL-USD';
+  return 'BTC-USD';
+}
+
+export function CandlestickChart({ marketId, asset, title, leftSlot, rightSlot }: CandlestickChartProps) {
+  const symbol = priceSymbol(asset);
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<any>(null);
@@ -80,7 +90,8 @@ export function CandlestickChart({ marketId, title = "BTC Spot Price (5m)", left
     const poll = async () => {
       try {
         const p = await getLatestPrices();
-        const price = parseFloat(p.BTC?.price || "");
+        const raw = p[symbol]?.price ?? p['BTC-USD']?.price ?? "";
+        const price = parseFloat(raw);
         if (!Number.isFinite(price) || price <= 0) return;
         setLastPrice(price.toFixed(2));
         setIsLive(true);
