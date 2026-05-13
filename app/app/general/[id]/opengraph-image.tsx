@@ -1,12 +1,19 @@
-import { Market } from "@/lib/api";
 import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
 
+interface OGMarket {
+  title: string;
+  current_price?: number;
+  market_type?: string;
+  market_image_small?: string;
+  asset?: string;
+}
+
 export default async function Image({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://vcs-api.vantic.xyz";
-  let market: Market;
+  let market: OGMarket;
   let volume = 0;
 
   try {
@@ -15,7 +22,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
     const data = await res.json();
     market = data.market;
   } catch {
-    market = { title: "Vantic Market", current_price: 50, market_type: "GEM" } as Market;
+    market = { title: "Vantic Market", current_price: 50, market_type: "GEM" };
   }
 
   try {
