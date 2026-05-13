@@ -4,6 +4,7 @@ import { ReactNode, useEffect, useRef, useState } from 'react';
 import { createChart, IChartApi, CandlestickSeries } from 'lightweight-charts';
 import { cn } from '@/lib/utils';
 import { getLatestPrices, getMarketCandles } from '@/lib/api';
+import { ReelAnimation } from '@/components/landing/reel-animation';
 
 interface CandlestickChartProps {
   marketId: string;
@@ -137,12 +138,11 @@ export function CandlestickChart({ marketId, asset, title, leftSlot, rightSlot }
         <div>{leftSlot}</div>
         <div className="flex items-center gap-3">
           {lastPrice !== "--" && (
-            <span className="text-green-400 font-mono text-xl font-medium">${lastPrice}</span>
+            <span className="text-green-400 font-mono text-xl font-medium">
+              $<ReelAnimation text={lastPrice} animateOnHover={false} className="font-mono" />
+            </span>
           )}
           {rightSlot}
-          <span className={cn("text-xs font-medium", isLive ? "text-green-400" : "text-red-400")}>
-            {isLive ? "Live" : "Disconnected"}
-          </span>
         </div>
       </div>
       <div ref={containerRef} className="w-full" />

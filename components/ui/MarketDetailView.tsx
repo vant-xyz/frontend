@@ -73,7 +73,7 @@ export default function MarketDetailView() {
     const [orderToCancel, setOrderToCancel] = useState<string | null>(null);
     const [timeLeft, setTimeLeft] = useState<{ seconds: number; text: string }>({ seconds: 0, text: "" });
     const [mobileTab, setMobileTab] = useState<"chart" | "book" | "order" | "description">("chart");
-    const [chartType, setChartType] = useState<"opinion" | "candlestick">("opinion");
+    const [chartType, setChartType] = useState<"opinion" | "candlestick">("candlestick");
     const [showSummaryHelp, setShowSummaryHelp] = useState(false);
     const [showQuoteHelp, setShowQuoteHelp] = useState(false);
     const [showProfitHelp, setShowProfitHelp] = useState(false);
@@ -1030,7 +1030,9 @@ export default function MarketDetailView() {
                             <span className="flex items-center gap-1 text-gray-500">
                                 <Clock size={10} />
                                 <span className={cn("font-mono", isResolved ? "text-emerald-400" : isSettling ? "text-yellow-400" : "text-gray-300")}>
-                                    {isResolved ? "Resolved" : isSettling ? "Settling" : timeLeft.text}
+                                    {isResolved ? "Resolved" : isSettling ? "Settling" : (
+                                        <ReelAnimation text={timeLeft.text} animateOnHover={false} className="font-mono" />
+                                    )}
                                 </span>
                             </span>
                         </div>
