@@ -11,23 +11,30 @@ interface OGMarket {
   status?: string;
 }
 
+const BASE_URL = "https://vantic.xyz";
+
 export default async function Image({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://vcs-api.vantic.xyz";
-  let market: OGMarket;
+
+  const apiUrl = (process.env.NEXT_PUBLIC_API_URL || "https://vcs-api.vantic.xyz").replace(/\/$/, "");
+  const apiKey = process.env.BACKEND_API_KEY;
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (apiKey) headers["X-API-Key"] = apiKey;
+
+  let market: OGMarket = { title: "Vantic Market", current_price: 50, market_type: "GEM" };
 
   try {
-    const res = await fetch(`${apiUrl}/markets/${id}`, { next: { revalidate: 60 } });
-    if (!res.ok) throw new Error("not ok");
-    const data = await res.json();
-    market = data.market;
+    const res = await fetch(`${apiUrl}/markets/${id}`, { headers, cache: "no-store" });
+    if (res.ok) {
+      const data = await res.json();
+      if (data?.market?.title) market = data.market;
+      else if (data?.title) market = data;
+    }
   } catch {
-    market = { title: "Vantic Market", current_price: 50, market_type: "GEM" };
   }
 
   const yesPrice = (market.current_price ?? 50).toFixed(1);
   const noPrice = (100 - (market.current_price ?? 50)).toFixed(1);
-  const BASE_URL = "https://vantic.xyz";
 
   const rawBanner =
     market.market_image_banner ||
@@ -35,10 +42,14 @@ export default async function Image({ params }: { params: Promise<{ id: string }
     `/media/images/crypto_assets/${(market.asset || "btc").toLowerCase()}.png`;
   const bannerSrc = rawBanner.startsWith("http") ? rawBanner : `${BASE_URL}${rawBanner}`;
 
+  const logoSrc = `${BASE_URL}/icons/icon-192x192.png`;
+
   const desc =
     market.description && market.description.length > 110
       ? market.description.slice(0, 110) + "..."
       : (market.description ?? "");
+
+  const isGEM = market.market_type === "GEM";
 
   return new ImageResponse(
     (
@@ -54,7 +65,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
         {/* Left: banner image */}
         <div
           style={{
-            width: "44%",
+            width: isGEM ? "50%" : "44%",
             height: "100%",
             display: "flex",
             overflow: "hidden",
@@ -88,45 +99,39 @@ export default async function Image({ params }: { params: Promise<{ id: string }
             display: "flex",
             flexDirection: "column",
             justifyContent: "space-between",
-            padding: "44px 50px",
+            padding: "44px 48px",
             background: "#0a0a0a",
           }}
         >
           {/* Branding row */}
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div
+            <img
+              src={logoSrc}
               style={{
                 width: 34,
                 height: 34,
                 borderRadius: "50%",
-                background: "#7c3aed",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "white",
-                fontSize: 17,
-                fontWeight: 800,
-                letterSpacing: "-0.02em",
+                objectFit: "cover",
               }}
-            >
-              V
-            </div>
-            <span style={{ color: "#555", fontSize: 18, fontWeight: 500 }}>
+            />
+            <span style={{ color: "#555", fontSize: 17, fontWeight: 500 }}>
               vantic.xyz
             </span>
             <div style={{ flex: 1, display: "flex" }} />
             <span
               style={{
-                color: "#444",
-                fontSize: 15,
-                fontWeight: 500,
-                background: "#111",
+                color: isGEM ? "#a855f7" : "#3b82f6",
+                fontSize: 13,
+                fontWeight: 700,
+                background: isGEM ? "rgba(168,85,247,0.12)" : "rgba(59,130,246,0.12)",
                 padding: "4px 12px",
                 borderRadius: 6,
-                border: "1px solid #222",
+                border: `1px solid ${isGEM ? "rgba(168,85,247,0.3)" : "rgba(59,130,246,0.3)"}`,
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
               }}
             >
-              {market.market_type === "GEM" ? "GEM" : "CAPPM"}
+              {isGEM ? "GEM" : "CAPPM"}
             </span>
           </div>
 
@@ -134,7 +139,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div
               style={{
-                fontSize: 38,
+                fontSize: isGEM ? 34 : 36,
                 fontWeight: 800,
                 color: "#f5f5f5",
                 lineHeight: 1.18,
@@ -146,7 +151,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
             {desc ? (
               <div
                 style={{
-                  fontSize: 19,
+                  fontSize: 18,
                   color: "#666",
                   lineHeight: 1.55,
                 }}
@@ -157,13 +162,13 @@ export default async function Image({ params }: { params: Promise<{ id: string }
           </div>
 
           {/* YES / NO badges */}
-          <div style={{ display: "flex", gap: 12 }}>
+          <div style={{ display: "flex", gap: 10 }}>
             <div
               style={{
                 display: "flex",
                 alignItems: "center",
                 gap: 8,
-                padding: "10px 22px",
+                padding: "9px 20px",
                 borderRadius: 8,
                 background: "rgba(34,197,94,0.1)",
                 border: "1px solid rgba(34,197,94,0.35)",
@@ -171,14 +176,14 @@ export default async function Image({ params }: { params: Promise<{ id: string }
             >
               <span
                 style={{
-                  width: 8,
-                  height: 8,
+                  width: 7,
+                  height: 7,
                   borderRadius: "50%",
                   background: "#22c55e",
                   display: "flex",
                 }}
               />
-              <span style={{ color: "#22c55e", fontSize: 22, fontWeight: 700 }}>
+              <span style={{ color: "#22c55e", fontSize: 20, fontWeight: 700 }}>
                 YES &nbsp;{yesPrice}¢
               </span>
             </div>
@@ -187,7 +192,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
                 display: "flex",
                 alignItems: "center",
                 gap: 8,
-                padding: "10px 22px",
+                padding: "9px 20px",
                 borderRadius: 8,
                 background: "rgba(239,68,68,0.1)",
                 border: "1px solid rgba(239,68,68,0.35)",
@@ -195,14 +200,14 @@ export default async function Image({ params }: { params: Promise<{ id: string }
             >
               <span
                 style={{
-                  width: 8,
-                  height: 8,
+                  width: 7,
+                  height: 7,
                   borderRadius: "50%",
                   background: "#ef4444",
                   display: "flex",
                 }}
               />
-              <span style={{ color: "#ef4444", fontSize: 22, fontWeight: 700 }}>
+              <span style={{ color: "#ef4444", fontSize: 20, fontWeight: 700 }}>
                 NO &nbsp;{noPrice}¢
               </span>
             </div>
