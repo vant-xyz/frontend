@@ -75,6 +75,8 @@ export default function MarketDetailView() {
     const [mobileTab, setMobileTab] = useState<"chart" | "book" | "order" | "description">("chart");
     const [chartType, setChartType] = useState<"opinion" | "candlestick">("opinion");
     const [showSummaryHelp, setShowSummaryHelp] = useState(false);
+    const [showQuoteHelp, setShowQuoteHelp] = useState(false);
+    const [showProfitHelp, setShowProfitHelp] = useState(false);
     const [sharePosition, setSharePosition] = useState<{
         pos: Position;
         pnl: number;
@@ -412,7 +414,7 @@ export default function MarketDetailView() {
     const pricePerShareDollars = (selectedSide === "YES" ? lastYes : lastNo) / 100;
     const liveAssetPrice = (() => {
         const upper = (market.asset || "").toUpperCase();
-        const key = upper.includes("ETH") ? "ETH-USD" : upper.includes("SOL") ? "SOL-USD" : "BTC-USD";
+        const key = upper.includes("ETH") ? "ETH" : upper.includes("SOL") ? "SOL" : "BTC";
         const p = prices[key];
         const n = typeof p === "object" && p && "price" in p ? Number(p.price) : NaN;
         return Number.isFinite(n) && n > 0 ? n : null;
@@ -849,10 +851,24 @@ export default function MarketDetailView() {
 
                 {/* Summary */}
                 <div className="bg-white/5 rounded-xl p-3 space-y-2">
-                    <div className="flex justify-between text-xs">
-                        <span className="text-gray-500">Quote price</span>
-                        <span className="text-gray-300 font-mono">
-                            {(selectedSide === "YES" ? lastYes : lastNo).toFixed(1)}¢ / share
+                    <div className="flex justify-between items-center text-xs">
+                        <span className="text-gray-500 inline-flex items-center gap-1">
+                            Quote price
+                            <button
+                                type="button"
+                                onClick={() => setShowQuoteHelp(true)}
+                                className="text-gray-500 hover:text-gray-300 transition-colors"
+                                aria-label="Explain quote price"
+                            >
+                                <CircleHelp size={13} />
+                            </button>
+                        </span>
+                        <span className="text-gray-300 font-mono inline-flex items-baseline gap-0.5">
+                            <ReelAnimation
+                                text={(selectedSide === "YES" ? lastYes : lastNo).toFixed(1)}
+                                animateOnHover={false}
+                                className="font-mono"
+                            />¢ / share
                         </span>
                     </div>
                     <div className="flex justify-between text-xs">
@@ -884,12 +900,20 @@ export default function MarketDetailView() {
                         <span className="text-teal-400 text-lg font-mono font-semibold">${youReceive.toFixed(2)}</span>
                     </div>
                     {effectiveQuantity > 0 && sharesTotal > 0 && (
-                        <div className="border border-cyan-500/40 rounded-lg px-3 py-1.5 flex justify-between items-center">
-                            <span className="text-[10px] text-cyan-400 uppercase tracking-widest font-semibold">
+                        <div className="pt-2 border-t border-white/10 flex justify-between items-center">
+                            <span className="text-[10px] text-gray-500 uppercase tracking-widest font-semibold inline-flex items-center gap-1">
                                 If {selectedSide} wins
+                                <button
+                                    type="button"
+                                    onClick={() => setShowProfitHelp(true)}
+                                    className="text-gray-500 hover:text-gray-300 transition-colors"
+                                    aria-label="Explain profit"
+                                >
+                                    <CircleHelp size={13} />
+                                </button>
                             </span>
-                            <span className="text-cyan-400 text-xs font-mono font-bold">
-                                +{(((youReceive - sharesTotal) / sharesTotal) * 100).toFixed(1)}% profit
+                            <span className="text-gray-300 text-xs font-mono font-bold">
+                                +{(((youReceive - sharesTotal) / sharesTotal) * 100).toFixed(1)}%
                             </span>
                         </div>
                     )}
@@ -1542,6 +1566,60 @@ export default function MarketDetailView() {
                     </div>
                 </div>
             )}
+            {isMobile ? (
+                <Drawer open={showQuoteHelp} onOpenChange={setShowQuoteHelp}>
+                    <DrawerContent className="bg-black border-white/10 text-white px-4 pb-6">
+                        <DrawerHeader>
+                            <DrawerTitle>Quote Price</DrawerTitle>
+                        </DrawerHeader>
+                        <div className="space-y-3 text-sm text-gray-300">
+                            <p><span className="text-white font-semibold">Quote price</span> is the current best available price per share for your chosen side.</p>
+                            <p>It updates live as the orderbook changes. The price you actually fill at may differ slightly for large orders.</p>
+                        </div>
+                    </DrawerContent>
+                </Drawer>
+            ) : (
+                <Dialog open={showQuoteHelp} onOpenChange={setShowQuoteHelp}>
+                    <DialogContent className="bg-black border-white/10 text-white">
+                        <DialogHeader>
+                            <DialogTitle>Quote Price</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-3 text-sm text-gray-300">
+                            <p><span className="text-white font-semibold">Quote price</span> is the current best available price per share for your chosen side.</p>
+                            <p>It updates live as the orderbook changes. The price you actually fill at may differ slightly for large orders.</p>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+            )}
+
+            {isMobile ? (
+                <Drawer open={showProfitHelp} onOpenChange={setShowProfitHelp}>
+                    <DrawerContent className="bg-black border-white/10 text-white px-4 pb-6">
+                        <DrawerHeader>
+                            <DrawerTitle>Potential Profit</DrawerTitle>
+                        </DrawerHeader>
+                        <div className="space-y-3 text-sm text-gray-300">
+                            <p>This is the percentage gain on your stake if your chosen side wins and the market resolves in your favour.</p>
+                            <p>Calculated as: <span className="font-mono text-white">(payout - cost) / cost × 100</span>.</p>
+                            <p className="text-xs text-gray-500">If the market resolves against your side, your shares pay out $0.</p>
+                        </div>
+                    </DrawerContent>
+                </Drawer>
+            ) : (
+                <Dialog open={showProfitHelp} onOpenChange={setShowProfitHelp}>
+                    <DialogContent className="bg-black border-white/10 text-white">
+                        <DialogHeader>
+                            <DialogTitle>Potential Profit</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-3 text-sm text-gray-300">
+                            <p>This is the percentage gain on your stake if your chosen side wins and the market resolves in your favour.</p>
+                            <p>Calculated as: <span className="font-mono text-white">(payout - cost) / cost × 100</span>.</p>
+                            <p className="text-xs text-gray-500">If the market resolves against your side, your shares pay out $0.</p>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+            )}
+
             {sharePosition && market && (
                 <SharePositionModal
                     isOpen={true}

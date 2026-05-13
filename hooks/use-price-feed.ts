@@ -25,16 +25,12 @@ export function usePriceFeed({ usePolling = false, pollingInterval = 2000 }: Use
   const fetchPrices = useCallback(async () => {
     try {
       const pricesRes = await getLatestPrices();
-      
-      // The API returns { prices: {...}, success: true }
-      const rawPrices: Record<string, any> = (pricesRes as any).prices || {};
-       
       const mappedPrices: Partial<PriceData> = {
-        BTC: rawPrices["BTC-USD"] || null,
-        ETH: rawPrices["ETH-USD"] || null,
-        SOL: rawPrices["SOL-USD"] || null,
-        USDC: rawPrices["USDC-USD"] || null,
-        USDT: rawPrices["USDT-USD"] || null,
+        BTC: pricesRes["BTC-USD"] || null,
+        ETH: pricesRes["ETH-USD"] || null,
+        SOL: pricesRes["SOL-USD"] || null,
+        USDC: pricesRes["USDC-USD"] || null,
+        USDT: pricesRes["USDT-USD"] || null,
       };
       
       setPrices((prev) => {
