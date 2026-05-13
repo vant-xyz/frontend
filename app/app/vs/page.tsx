@@ -4,29 +4,85 @@ import { DashboardClient } from "@/components/dashboard/dashboard-client"
 import { Button } from "@/components/ui/button"
 import { CreateEventModal } from "@/components/ui/createEventModal"
 import { Input } from "@/components/ui/input"
-import { getVsEvents, vsEvents } from "@/lib/api"
+import { getMyCreatedVsEvents, getMyJoinedVsEvents, vsEvents } from "@/lib/api"
 import { ArrowRight, Swords } from "lucide-react"
-import React, { useEffect, useState } from "react"
+import React, { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { cn } from "@/lib/utils"
+import { Skeleton } from "@/components/ui/skeleton"
+
+type MyTab = "created" | "joined"
+
+function EventCard({ event, onClick }: { event: vsEvents; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full flex items-center justify-between p-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-colors text-left"
+    >
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-white truncate">{event.title}</p>
+        <p className="text-xs text-gray-500 mt-0.5 uppercase tracking-wide">
+          {event.status} · {event.mode}
+        </p>
+      </div>
+      <ArrowRight size={14} className="text-gray-600 shrink-0 ml-3" />
+    </button>
+  )
+}
 
 export default function VSPage() {
   const router = useRouter()
   const [code, setCode] = useState("")
-  const [myEvents, setMyEvents] = useState<vsEvents[]>([])
+  const [activeTab, setActiveTab] = useState<MyTab>("created")
+  const [createdEvents, setCreatedEvents] = useState<vsEvents[]>([])
+  const [joinedEvents, setJoinedEvents] = useState<vsEvents[]>([])
+  const [loadingCreated, setLoadingCreated] = useState(true)
+  const [loadingJoined, setLoadingJoined] = useState(true)
 
-  useEffect(() => {
+  const loadCreated = useCallback(async () => {
     const token = localStorage.getItem("auth_token")
     if (!token) return
-    getVsEvents(token)
-      .then((res) => setMyEvents(res.events || []))
-      .catch(() => {})
+    setLoadingCreated(true)
+    try {
+      const res = await getMyCreatedVsEvents(token)
+      setCreatedEvents(res.events ?? [])
+    } catch {
+      setCreatedEvents([])
+    } finally {
+      setLoadingCreated(false)
+    }
   }, [])
+
+  const loadJoined = useCallback(async () => {
+    const token = localStorage.getItem("auth_token")
+    if (!token) return
+    setLoadingJoined(true)
+    try {
+      const res = await getMyJoinedVsEvents(token)
+      setJoinedEvents(res.events ?? [])
+    } catch {
+      setJoinedEvents([])
+    } finally {
+      setLoadingJoined(false)
+    }
+  }, [])
+
+  useEffect(() => { loadCreated() }, [loadCreated])
+
+  useEffect(() => {
+    if (activeTab === "joined" && loadingJoined && joinedEvents.length === 0) {
+      loadJoined()
+    }
+  }, [activeTab, loadingJoined, joinedEvents.length, loadJoined])
 
   const handleLoad = () => {
     const trimmed = code.trim()
     if (!trimmed) return
     router.push(`/app/vs/${trimmed}`)
   }
+
+  const activeEvents = activeTab === "created" ? createdEvents : joinedEvents
+  const isLoading = activeTab === "created" ? loadingCreated : loadingJoined
 
   return (
     <DashboardClient>
@@ -75,28 +131,42 @@ export default function VSPage() {
           <CreateEventModal />
         </div>
 
-        {myEvents.length > 0 && (
-          <div className="space-y-3">
-            <h2 className="text-sm font-semibold text-white uppercase tracking-widest">My Events</h2>
+        <div className="space-y-4">
+          <div className="flex gap-1 bg-white/5 border border-white/10 rounded-xl p-1">
+            {(["created", "joined"] as MyTab[]).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={cn(
+                  "flex-1 py-2 text-sm font-medium rounded-lg transition-colors capitalize",
+                  activeTab === tab
+                    ? "bg-white text-black"
+                    : "text-gray-400 hover:text-white"
+                )}
+              >
+                {tab === "created" ? "My Events" : "Joined"}
+              </button>
+            ))}
+          </div>
+
+          {isLoading ? (
             <div className="space-y-2">
-              {myEvents.slice(0, 8).map((e) => (
-                <button
-                  key={e.id}
-                  onClick={() => router.push(`/app/vs/${e.id}`)}
-                  className="w-full flex items-center justify-between p-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-colors text-left"
-                >
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-white truncate">{e.title}</p>
-                    <p className="text-xs text-gray-500 mt-0.5 uppercase tracking-wide">
-                      {e.status} · {e.mode}
-                    </p>
-                  </div>
-                  <ArrowRight size={14} className="text-gray-600 shrink-0 ml-3" />
-                </button>
+              {[...Array(3)].map((_, i) => (
+                <Skeleton key={i} className="h-16 w-full bg-white/5 rounded-xl" />
               ))}
             </div>
-          </div>
-        )}
+          ) : activeEvents.length === 0 ? (
+            <p className="text-gray-500 text-sm text-center py-8">
+              {activeTab === "created" ? "You haven't created any events yet." : "You haven't joined any events yet."}
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {activeEvents.slice(0, 10).map((e) => (
+                <EventCard key={e.id} event={e} onClick={() => router.push(`/app/vs/${e.id}`)} />
+              ))}
+            </div>
+          )}
+        </div>
 
       </div>
     </DashboardClient>

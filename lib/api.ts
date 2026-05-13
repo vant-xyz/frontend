@@ -1194,6 +1194,30 @@ export async function getVsEvents(token: string): Promise<{ success: boolean; ev
   return response.json();
 }
 
+export async function getMyCreatedVsEvents(token: string): Promise<{ success: boolean; events: vsEvents[] }> {
+  const response = await fetch(`${apiBase()}/vs/events/mine/created`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  if (!response.ok) throw new Error("Failed to fetch created events");
+  return response.json();
+}
+
+export async function getMyJoinedVsEvents(token: string): Promise<{ success: boolean; events: vsEvents[] }> {
+  const response = await fetch(`${apiBase()}/vs/events/mine/joined`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  if (!response.ok) throw new Error("Failed to fetch joined events");
+  return response.json();
+}
+
 export async function fetchEventById(token: string, eventId: string): Promise<{ success: boolean; event: vsEvents }> {
   const response = await fetch(`${apiBase()}/vs/events/${eventId}`, {
     method: "GET",
