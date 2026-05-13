@@ -12,6 +12,7 @@ import {
     BalanceInfo,
     getBalance,
     getTokenPrices,
+    getLatestPrices,
     Position,
     getUserPositions,
     Order,
@@ -33,7 +34,6 @@ import { CandlestickChart } from "@/components/ui/CandlestickChart";
 import { useParams, useRouter } from "next/navigation";
 import { useDashboard } from "@/hooks/use-dashboard";
 import { SharePositionModal } from "./sharePositionModal";
-import { usePriceFeed } from "@/hooks/use-price-feed";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -77,6 +77,7 @@ export default function MarketDetailView() {
     const [showSummaryHelp, setShowSummaryHelp] = useState(false);
     const [showQuoteHelp, setShowQuoteHelp] = useState(false);
     const [showProfitHelp, setShowProfitHelp] = useState(false);
+    const [liveAssetPrice, setLiveAssetPrice] = useState<number | null>(null);
     const [sharePosition, setSharePosition] = useState<{
         pos: Position;
         pnl: number;
@@ -90,7 +91,6 @@ export default function MarketDetailView() {
     };
     const token = localStorage.getItem("auth_token");
     const { isDemoMode } = useDashboard();
-    const { prices } = usePriceFeed({ usePolling: true, pollingInterval: 1000 });
     const isMobile = useIsMobile();
     const router = useRouter();
     const goBack = () => {
@@ -240,6 +240,24 @@ export default function MarketDetailView() {
     useEffect(() => {
         refreshBalance();
     }, [refreshBalance]);
+
+    useEffect(() => {
+        if (!market?.asset) return;
+        const upper = market.asset.toUpperCase();
+        const key = upper.includes("ETH") ? "ETH-USD" : upper.includes("SOL") ? "SOL-USD" : "BTC-USD";
+        const poll = async () => {
+            try {
+                const p = await getLatestPrices();
+                const entry = p[key];
+                if (!entry) return;
+                const n = parseFloat(entry.price);
+                if (Number.isFinite(n) && n > 0) setLiveAssetPrice(n);
+            } catch {}
+        };
+        poll();
+        const i = setInterval(poll, 1000);
+        return () => clearInterval(i);
+    }, [market?.asset]);
 
     useEffect(() => {
         let active = true;
@@ -412,13 +430,6 @@ export default function MarketDetailView() {
     const displayStatus = isResolved ? "Resolved" : isSettling ? "Settling" : "Active";
 
     const pricePerShareDollars = (selectedSide === "YES" ? lastYes : lastNo) / 100;
-    const liveAssetPrice = (() => {
-        const upper = (market.asset || "").toUpperCase();
-        const key = upper.includes("ETH") ? "ETH" : upper.includes("SOL") ? "SOL" : "BTC";
-        const p = prices[key];
-        const n = typeof p === "object" && p && "price" in p ? Number(p.price) : NaN;
-        return Number.isFinite(n) && n > 0 ? n : null;
-    })();
     const tradingBalance = isDemoMode ? (balance?.demo_naira ?? 0) : (balance?.naira ?? 0);
     const assetBalance = (() => {
         if (!balance) return 0;
