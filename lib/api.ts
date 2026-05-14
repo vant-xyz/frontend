@@ -1293,6 +1293,7 @@ export type Confirmation = 'YES' | 'NO'
 
 export interface LeaderboardEntry {
   rank: number;
+  email: string;
   username: string;
   profile_image_url: string;
   pnl: number;

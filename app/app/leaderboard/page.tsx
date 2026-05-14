@@ -6,7 +6,7 @@ import { getLeaderboard, getMyLeaderboardRank, LeaderboardEntry } from "@/lib/ap
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { ReelAnimation } from "@/components/landing/reel-animation";
-import { HelpCircle, LocateFixed, Share2 } from "lucide-react";
+import { HelpCircle, LocateFixed, Share2, Download } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -33,13 +33,24 @@ function fmt(n: number, decimals = 0): string {
   });
 }
 
-function Avatar({ url, name, size = 36 }: { url?: string; name: string; size?: number }) {
+function Avatar({
+  url,
+  name,
+  size = 36,
+  crossOrigin,
+}: {
+  url?: string;
+  name: string;
+  size?: number;
+  crossOrigin?: "anonymous";
+}) {
   const initials = name?.[0]?.toUpperCase() ?? "?";
   if (url) {
     return (
       <img
         src={url}
         alt={name}
+        crossOrigin={crossOrigin}
         style={{ width: size, height: size }}
         className="rounded-full object-cover shrink-0"
         onError={(e) => {
@@ -72,7 +83,13 @@ function RankRow({
   innerRef?: React.Ref<HTMLDivElement>;
   onShare?: () => void;
 }) {
-  const rankColor = entry.rank <= 3 ? RANK_COLORS[entry.rank - 1] : "text-gray-500";
+  const rankColor = entry.rank > 0 && entry.rank <= 3 ? RANK_COLORS[entry.rank - 1] : "text-gray-500";
+  const rankLabel =
+    entry.rank <= 0
+      ? "?"
+      : entry.rank <= 3
+      ? MEDAL[entry.rank - 1]
+      : `#${fmt(entry.rank)}`;
 
   return (
     <div
@@ -84,8 +101,8 @@ function RankRow({
           : "border-white/5 bg-white/[0.02] hover:bg-white/5"
       )}
     >
-      <span className={cn("w-6 text-center text-sm font-mono shrink-0", rankColor)}>
-        {entry.rank <= 3 ? MEDAL[entry.rank - 1] : entry.rank}
+      <span className={cn("w-8 text-center text-xs font-mono shrink-0", rankColor)}>
+        {rankLabel}
       </span>
       <Avatar url={entry.profile_image_url} name={entry.username} size={32} />
       <span className="flex-1 text-sm font-medium text-white truncate">
@@ -123,63 +140,70 @@ function RankRow({
   );
 }
 
-function ShareCard({ entry }: { entry: LeaderboardEntry }) {
+function ShareCard({ entry, cardRef }: { entry: LeaderboardEntry; cardRef: React.Ref<HTMLDivElement> }) {
   const rankLabel =
-    entry.rank <= 3
-      ? `${MEDAL[entry.rank - 1]} #${entry.rank}`
-      : `#${entry.rank}`;
-
-  const stats = [
-    { label: "VP", value: fmt(entry.vantic_points ?? 0), color: "text-primary" },
-    { label: "AS", value: fmt(entry.activity_score ?? 0, 1), color: "text-accent" },
-    {
-      label: "PnL",
-      value: `${entry.pnl >= 0 ? "+" : "-"}$${fmt(Math.abs(entry.pnl), 2)}`,
-      color: entry.pnl >= 0 ? "text-green-400" : "text-red-400",
-    },
-    { label: "Trades", value: fmt(entry.trades), color: "text-white" },
-  ];
+    entry.rank <= 0 ? "?" : entry.rank <= 3 ? `${MEDAL[entry.rank - 1]} #${entry.rank}` : `#${fmt(entry.rank)}`;
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-white/10">
+    <div ref={cardRef} className="relative overflow-hidden rounded-2xl">
+      <img
+        src="/media/images/banners/banner2.png"
+        alt=""
+        crossOrigin="anonymous"
+        className="absolute inset-0 w-full h-full object-cover"
+        style={{ opacity: 0.35 }}
+      />
       <div
         className="absolute inset-0"
-        style={{
-          backgroundImage: "url('/media/images/banners/banner2.png')",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          opacity: 0.35,
-        }}
+        style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.7) 100%)" }}
       />
-      <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60" />
 
-      <div className="relative p-6 flex flex-col items-center gap-5">
-        <div className="flex items-center gap-2 self-start">
-          <img src="/icon.png" alt="Vantic" className="w-6 h-6" />
-          <span className="text-sm font-bold text-white tracking-wide">VANTIC</span>
+      <div className="relative p-6 flex flex-col gap-5">
+        <div className="flex items-center gap-2">
+          <img src="/icon.png" alt="Vantic" className="w-5 h-5" />
+          <span className="text-xs font-bold text-white tracking-widest uppercase">Vantic</span>
         </div>
 
-        <div className="flex flex-col items-center gap-2">
-          <Avatar url={entry.profile_image_url} name={entry.username} size={72} />
-          <p className="text-lg font-bold text-white">{entry.username}</p>
-          <span className="px-3 py-0.5 rounded-full bg-white/10 border border-white/10 text-sm font-mono font-bold text-yellow-300">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <Avatar
+              url={entry.profile_image_url}
+              name={entry.username}
+              size={52}
+              crossOrigin="anonymous"
+            />
+            <div>
+              <p className="text-base font-bold text-white leading-tight">{entry.username}</p>
+              <p className="text-xs text-gray-400">Vantic trader</p>
+            </div>
+          </div>
+          <span className="text-4xl font-black text-white tabular-nums shrink-0">
             {rankLabel}
           </span>
         </div>
 
-        <div className="w-full grid grid-cols-4 gap-2">
-          {stats.map(({ label, value, color }) => (
-            <div
-              key={label}
-              className="flex flex-col items-center gap-0.5 rounded-xl bg-black/30 border border-white/10 py-3 px-2"
-            >
-              <p className="text-[10px] text-gray-400">{label}</p>
-              <p className={cn("text-xs font-bold", color)}>{value}</p>
-            </div>
-          ))}
+        <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+          <div>
+            <p className="text-xs text-gray-400">PnL</p>
+            <p className={cn("text-xl font-bold", entry.pnl >= 0 ? "text-green-400" : "text-red-400")}>
+              {entry.pnl >= 0 ? "+" : "-"}${fmt(Math.abs(entry.pnl), 2)}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-gray-400">Trades</p>
+            <p className="text-xl font-bold text-white">{fmt(entry.trades)}</p>
+          </div>
+          <div>
+            <p className="text-xs text-gray-400">VP</p>
+            <p className="text-xl font-bold text-primary">{fmt(entry.vantic_points ?? 0)}</p>
+          </div>
+          <div>
+            <p className="text-xs text-gray-400">AS</p>
+            <p className="text-xl font-bold text-accent">{fmt(entry.activity_score ?? 0, 1)}</p>
+          </div>
         </div>
 
-        <p className="text-xs text-gray-500 self-end">vantic.xyz</p>
+        <p className="text-xs text-gray-500 text-right">vantic.xyz</p>
       </div>
     </div>
   );
@@ -193,26 +217,41 @@ function SharePanel({
   onClose: () => void;
 }) {
   const isMobile = useIsMobile();
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [downloading, setDownloading] = useState(false);
 
-  function handleNativeShare() {
-    if (!entry) return;
-    const text = `I'm ranked #${entry.rank} on Vantic with ${fmt(entry.vantic_points ?? 0)} VP! Check out the leaderboard at vantic.xyz`;
-    if (typeof navigator !== "undefined" && navigator.share) {
-      navigator.share({ text, url: "https://vantic.xyz/app/leaderboard" }).catch(() => {});
-    } else {
-      navigator.clipboard?.writeText(text);
+  async function handleDownload() {
+    if (!cardRef.current) return;
+    setDownloading(true);
+    try {
+      const { default: html2canvas } = await import("html2canvas");
+      const canvas = await html2canvas(cardRef.current, {
+        backgroundColor: null,
+        scale: 2,
+        useCORS: true,
+        allowTaint: false,
+      });
+      const link = document.createElement("a");
+      link.download = `vantic-rank-${entry?.rank ?? "me"}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    } catch {
+      // fallback: nothing
+    } finally {
+      setDownloading(false);
     }
   }
 
   const content = entry ? (
     <div className="space-y-4 pt-2">
-      <ShareCard entry={entry} />
+      <ShareCard entry={entry} cardRef={cardRef} />
       <button
-        onClick={handleNativeShare}
-        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-sm font-semibold text-white transition-colors"
+        onClick={handleDownload}
+        disabled={downloading}
+        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-sm font-semibold text-white transition-colors disabled:opacity-50"
       >
-        <Share2 size={14} />
-        Share
+        <Download size={14} />
+        {downloading ? "Generating..." : "Download"}
       </button>
     </div>
   ) : null;
@@ -433,28 +472,31 @@ export default function LeaderboardPage() {
   const [period, setPeriod] = useState<Period>("all");
   const [vpOpen, setVpOpen] = useState(false);
   const [asOpen, setAsOpen] = useState(false);
-  const [shareEntry, setShareEntry] = useState<LeaderboardEntry | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
   const myRowRef = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async (p: Period) => {
     setLoading(true);
     try {
-      const { entries: list } = await getLeaderboard(50, p);
-      setEntries(list ?? []);
+      const token = localStorage.getItem("auth_token");
+      const [listResult, rankResult] = await Promise.allSettled([
+        getLeaderboard(50, p),
+        token ? getMyLeaderboardRank(token) : Promise.reject(),
+      ]);
+
+      const list =
+        listResult.status === "fulfilled" ? listResult.value.entries ?? [] : [];
+      setEntries(list);
+
+      if (rankResult.status === "fulfilled" && rankResult.value.entry) {
+        const rawEntry = rankResult.value.entry;
+        const inList = list.find((e) => e.email === rawEntry.email);
+        setMyEntry(inList ?? rawEntry);
+      }
     } catch {
       // silent
     } finally {
       setLoading(false);
-    }
-
-    const token = localStorage.getItem("auth_token");
-    if (token) {
-      try {
-        const { entry } = await getMyLeaderboardRank(token);
-        setMyEntry(entry ?? null);
-      } catch {
-        // not ranked yet
-      }
     }
   }, []);
 
@@ -462,7 +504,9 @@ export default function LeaderboardPage() {
     load(period);
   }, [load, period]);
 
-  const myRankInList = myEntry ? entries.some((e) => e.rank === myEntry.rank) : false;
+  const myRankInList = myEntry
+    ? entries.some((e) => e.email === myEntry.email)
+    : false;
 
   function scrollToMe() {
     myRowRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -515,7 +559,10 @@ export default function LeaderboardPage() {
         <InfoPanel open={asOpen} onClose={() => setAsOpen(false)} title="Activity Score (AS)">
           <ASContent />
         </InfoPanel>
-        <SharePanel entry={shareEntry} onClose={() => setShareEntry(null)} />
+        <SharePanel
+          entry={shareOpen && myEntry ? myEntry : null}
+          onClose={() => setShareOpen(false)}
+        />
 
         <div className="flex items-center justify-between gap-2">
           <div className="flex gap-1 p-1 rounded-xl bg-white/5 border border-white/5">
@@ -537,13 +584,10 @@ export default function LeaderboardPage() {
           {myEntry && (
             <button
               onClick={scrollToMe}
-              title="Jump to my rank"
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-500 hover:bg-red-600 transition-colors"
             >
-              <LocateFixed size={13} className="text-primary" />
-              <span className="text-xs font-semibold text-gray-300">
-                #{myEntry.rank}
-              </span>
+              <LocateFixed size={13} className="text-white" />
+              <span className="text-xs font-semibold text-white">Find me</span>
             </button>
           )}
         </div>
@@ -561,14 +605,14 @@ export default function LeaderboardPage() {
         ) : (
           <div className="space-y-2">
             {entries.map((e) => {
-              const isMe = myEntry?.rank === e.rank;
+              const isMe = myEntry?.email === e.email;
               return (
                 <RankRow
                   key={e.rank}
                   entry={e}
                   highlight={isMe}
                   innerRef={isMe ? myRowRef : undefined}
-                  onShare={() => setShareEntry(e)}
+                  onShare={isMe ? () => setShareOpen(true) : undefined}
                 />
               );
             })}
@@ -578,7 +622,7 @@ export default function LeaderboardPage() {
                   entry={myEntry}
                   highlight
                   innerRef={myRowRef}
-                  onShare={() => setShareEntry(myEntry)}
+                  onShare={() => setShareOpen(true)}
                 />
               </div>
             )}
