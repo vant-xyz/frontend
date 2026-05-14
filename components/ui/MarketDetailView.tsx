@@ -23,6 +23,8 @@ import {
 } from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Clock, Search, ChevronUp, ChevronDown, ExternalLink, BarChart2, LineChart, DollarSign, BarChart3, CircleHelp, Info, CalendarClock, BadgeCheck, RadioTower, Tags, Hash, ArrowUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -165,6 +167,12 @@ export default function MarketDetailView() {
             hasAutoTabSwitched.current = true;
         }
     }, [positions]);
+
+    useEffect(() => {
+        if (market?.status === "resolved") {
+            setDesktopBookTab("details");
+        }
+    }, [market?.status]);
 
     useEffect(() => {
         if (!id) return
@@ -1105,7 +1113,7 @@ export default function MarketDetailView() {
                         mobileTab === "chart" ? "flex" : "hidden lg:flex"
                     )}>
                         {/* Chart — 60% of column height */}
-                        <div className="shrink-0" style={{ height: "60%" }}>
+                        <div className="flex-[3] min-h-0 overflow-hidden">
                             {market.market_type === "GEM" || chartType === "opinion" ? (
                                 <OpinionTrendChart
                                     marketId={market.id}
@@ -1159,7 +1167,7 @@ export default function MarketDetailView() {
                         </div>
 
                         {/* Bottom tabs */}
-                        <Tabs defaultValue="positions" className="flex-1 border-[1px] rounded-2xl flex flex-col min-h-0 overflow-hidden mt-2">
+                        <Tabs defaultValue="positions" className="flex-[2] border-[1px] rounded-2xl flex flex-col min-h-0 overflow-hidden mt-2">
                             <div className="px-4 bg-white/[0.02] shrink-0 flex items-center justify-between">
                                 <TabsList className="bg-transparent gap-1 rounded-none h-auto p-0">
                                     <TabsTrigger value="positions" className={cn(
@@ -1190,19 +1198,23 @@ export default function MarketDetailView() {
                                         )}
                                     </TabsTrigger>
                                 </TabsList>
-                                <button
-                                    onClick={() => setLiveMode(v => !v)}
-                                    className={cn(
-                                        "flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-colors shrink-0",
-                                        liveMode ? "bg-red-500/15 text-red-400" : "bg-white/5 text-gray-500 hover:text-gray-300"
-                                    )}
-                                >
-                                    <span className={cn(
-                                        "w-1.5 h-1.5 rounded-full transition-colors",
-                                        liveMode ? "bg-red-400 animate-pulse" : "bg-gray-600"
-                                    )} />
-                                    Live
-                                </button>
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                    <Label
+                                        htmlFor="live-mode-toggle"
+                                        className={cn(
+                                            "text-[10px] font-bold uppercase tracking-widest transition-colors cursor-pointer",
+                                            liveMode ? "text-red-400" : "text-gray-500"
+                                        )}
+                                    >
+                                        Live
+                                    </Label>
+                                    <Switch
+                                        id="live-mode-toggle"
+                                        checked={liveMode}
+                                        onCheckedChange={setLiveMode}
+                                        className="data-[state=checked]:bg-red-600 scale-75 origin-right"
+                                    />
+                                </div>
                             </div>
 
                             {/* Positions Tab */}
