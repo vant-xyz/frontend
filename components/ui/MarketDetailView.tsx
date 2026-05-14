@@ -78,7 +78,7 @@ export default function MarketDetailView() {
     const [positionToClose, setPositionToClose] = useState<Position | null>(null);
     const [orderToCancel, setOrderToCancel] = useState<string | null>(null);
     const [timeLeft, setTimeLeft] = useState<{ seconds: number; text: string }>({ seconds: 0, text: "" });
-    const [mobileTab, setMobileTab] = useState<"chart" | "book" | "order" | "description">("chart");
+    const [mobileTab, setMobileTab] = useState<"chart" | "book" | "order" | "description">("order");
     const [chartType, setChartType] = useState<"opinion" | "candlestick">("candlestick");
     const [showSummaryHelp, setShowSummaryHelp] = useState(false);
     const [showQuoteHelp, setShowQuoteHelp] = useState(false);
@@ -97,6 +97,7 @@ export default function MarketDetailView() {
     const [showVolatilityHelp, setShowVolatilityHelp] = useState(false);
     const [showTotalCostHelp, setShowTotalCostHelp] = useState(false);
     const [showReceiveHelp, setShowReceiveHelp] = useState(false);
+    const [isActivityCollapsed, setIsActivityCollapsed] = useState(true);
     const [liveAssetPrice, setLiveAssetPrice] = useState<number | null>(null);
     const [sharePosition, setSharePosition] = useState<{
         pos: Position;
@@ -727,8 +728,7 @@ export default function MarketDetailView() {
                                 return (
                                 <div key={i} className={cn(
                                     "relative grid grid-cols-3 px-4 py-[2px] hover:bg-white/3 cursor-pointer transition-colors duration-300",
-                                    flash === "fill" && "bg-yellow-500/20",
-                                    flash === "new" && "bg-green-500/10",
+                                    flash && "bg-red-500/40",
                                 )}>
                                     <div className="absolute right-0 top-0 h-full bg-red-500/12" style={{ width: `${(a.cum / maxD) * 100}%` }} />
                                     <span className="text-red-400 text-[11px] font-mono z-10">{a.price.toFixed(1)}¢</span>
@@ -750,8 +750,7 @@ export default function MarketDetailView() {
                                 return (
                                 <div key={i} className={cn(
                                     "relative grid grid-cols-3 px-4 py-[2px] hover:bg-white/3 cursor-pointer transition-colors duration-300",
-                                    flash === "fill" && "bg-yellow-500/20",
-                                    flash === "new" && "bg-green-500/10",
+                                    flash && "bg-green-500/40",
                                 )}>
                                     <div className="absolute right-0 top-0 h-full bg-green-500/12" style={{ width: `${(b.cum / maxD) * 100}%` }} />
                                     <span className="text-green-400 text-[11px] font-mono z-10">{b.price.toFixed(1)}¢</span>
@@ -1119,74 +1118,85 @@ export default function MarketDetailView() {
                         : `${orderMode === "SELL" ? "Sell" : "Buy"} ${selectedSide[0] + selectedSide.slice(1).toLowerCase()} · ${effectiveQuantity.toFixed(3)} shares`}
                 </button>
 
-                <div className="lg:hidden pt-3 border-t border-white/8">
-                    <div className="flex items-center justify-between mb-2">
+                <div className="lg:hidden border-t border-white/8">
+                    <button
+                        type="button"
+                        onClick={() => setIsActivityCollapsed(v => !v)}
+                        className="w-full flex items-center justify-between px-0 py-3"
+                    >
                         <span className="text-[10px] text-gray-500 uppercase tracking-widest">Activity</span>
-                        <div className="flex items-center gap-1.5">
-                            <Label
-                                htmlFor="live-mode-toggle-mobile"
-                                className={cn(
-                                    "text-[10px] font-bold uppercase tracking-widest transition-colors cursor-pointer",
-                                    liveMode ? "text-red-400" : "text-gray-500"
-                                )}
-                            >
-                                Live
-                            </Label>
-                            <Switch
-                                id="live-mode-toggle-mobile"
-                                checked={liveMode}
-                                onCheckedChange={setLiveMode}
-                                className="data-[state=checked]:bg-red-600 scale-75 origin-right"
-                            />
+                        <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
+                                <Label
+                                    htmlFor="live-mode-toggle-mobile"
+                                    className={cn(
+                                        "text-[10px] font-bold uppercase tracking-widest transition-colors cursor-pointer",
+                                        liveMode ? "text-red-400" : "text-gray-500"
+                                    )}
+                                >
+                                    Live
+                                </Label>
+                                <Switch
+                                    id="live-mode-toggle-mobile"
+                                    checked={liveMode}
+                                    onCheckedChange={setLiveMode}
+                                    className="data-[state=checked]:bg-red-600 scale-75 origin-right"
+                                />
+                            </div>
+                            {isActivityCollapsed
+                                ? <ChevronUp size={14} className="text-gray-500" />
+                                : <ChevronDown size={14} className="text-gray-500" />}
                         </div>
-                    </div>
-                    <Tabs defaultValue="positions" className="w-full">
-                        <TabsList className="w-full bg-white/5">
-                            <TabsTrigger value="positions" className="text-xs">Positions</TabsTrigger>
-                            <TabsTrigger value="trades" className="text-xs">Trades</TabsTrigger>
-                            <TabsTrigger value="open" className="text-xs">Open Orders</TabsTrigger>
-                        </TabsList>
-                        <TabsContent value="positions" className="pt-3">
-                            {positions === null ? <Loader className="w-5 h-5 text-red-600 mx-auto" /> : (
-                                <div className="space-y-2">
-                                    {(positions || []).slice(0, 5).map((pos) => (
-                                        <div key={pos.id} className="rounded-lg bg-white/5 p-2 text-xs flex justify-between">
-                                            <span className={cn("font-semibold", pos.side === "YES" ? "text-green-400" : "text-red-400")}>{pos.side}</span>
-                                            <span className="text-gray-300 font-mono">{pos.shares.toFixed(2)} shares</span>
-                                        </div>
-                                    ))}
-                                    {(!positions || positions.length === 0) && <p className="text-xs text-gray-500 text-center py-2">No positions</p>}
-                                </div>
-                            )}
-                        </TabsContent>
-                        <TabsContent value="trades" className="pt-3">
-                            {loadingMarketTrades ? <Loader className="w-5 h-5 text-red-600 mx-auto" /> : (
-                                <div className="space-y-2">
-                                    {(marketTrades || []).slice(0, 6).map((trade, idx) => (
-                                        <div key={idx} className="rounded-lg bg-white/5 p-2 text-xs grid grid-cols-3">
-                                            <span className={cn(trade.side === "YES" ? "text-green-400" : "text-red-400")}>{trade.side}</span>
-                                            <span className="text-center text-gray-300 font-mono">{trade.quantity.toFixed(2)}</span>
-                                            <span className="text-right text-gray-400 font-mono">{(trade.price * 100).toFixed(1)}¢</span>
-                                        </div>
-                                    ))}
-                                    {(!marketTrades || marketTrades.length === 0) && <p className="text-xs text-gray-500 text-center py-2">No trades yet</p>}
-                                </div>
-                            )}
-                        </TabsContent>
-                        <TabsContent value="open" className="pt-3">
-                            {userOrders === null ? <Loader className="w-5 h-5 text-red-600 mx-auto" /> : (
-                                <div className="space-y-2">
-                                    {(userOrders || []).slice(0, 5).map((order) => (
-                                        <div key={order.id} className="rounded-lg bg-white/5 p-2 text-xs flex justify-between">
-                                            <span className={cn("font-semibold", order.side === "YES" ? "text-green-400" : "text-red-400")}>{order.side}</span>
-                                            <span className="text-gray-300 font-mono">{order.remaining_qty.toFixed(2)} rem</span>
-                                        </div>
-                                    ))}
-                                    {(!userOrders || userOrders.length === 0) && <p className="text-xs text-gray-500 text-center py-2">No open orders</p>}
-                                </div>
-                            )}
-                        </TabsContent>
-                    </Tabs>
+                    </button>
+                    {!isActivityCollapsed && (
+                        <Tabs defaultValue="positions" className="w-full">
+                            <TabsList className="w-full bg-white/5">
+                                <TabsTrigger value="positions" className="text-xs">Positions</TabsTrigger>
+                                <TabsTrigger value="trades" className="text-xs">Trades</TabsTrigger>
+                                <TabsTrigger value="open" className="text-xs">Open Orders</TabsTrigger>
+                            </TabsList>
+                            <TabsContent value="positions" className="pt-3">
+                                {positions === null ? <Loader className="w-5 h-5 text-red-600 mx-auto" /> : (
+                                    <div className="space-y-2">
+                                        {(positions || []).slice(0, 5).map((pos) => (
+                                            <div key={pos.id} className="rounded-lg bg-white/5 p-2 text-xs flex justify-between">
+                                                <span className={cn("font-semibold", pos.side === "YES" ? "text-green-400" : "text-red-400")}>{pos.side}</span>
+                                                <span className="text-gray-300 font-mono">{pos.shares.toFixed(2)} shares</span>
+                                            </div>
+                                        ))}
+                                        {(!positions || positions.length === 0) && <p className="text-xs text-gray-500 text-center py-2">No positions</p>}
+                                    </div>
+                                )}
+                            </TabsContent>
+                            <TabsContent value="trades" className="pt-3">
+                                {marketTrades === null ? <Loader className="w-5 h-5 text-red-600 mx-auto" /> : (
+                                    <div className="space-y-2">
+                                        {(marketTrades || []).slice(0, 6).map((trade, idx) => (
+                                            <div key={idx} className="rounded-lg bg-white/5 p-2 text-xs grid grid-cols-3">
+                                                <span className={cn(trade.side === "YES" ? "text-green-400" : "text-red-400")}>{trade.side}</span>
+                                                <span className="text-center text-gray-300 font-mono">{trade.quantity.toFixed(2)}</span>
+                                                <span className="text-right text-gray-400 font-mono">{(trade.price * 100).toFixed(1)}¢</span>
+                                            </div>
+                                        ))}
+                                        {(!marketTrades || marketTrades.length === 0) && <p className="text-xs text-gray-500 text-center py-2">No trades yet</p>}
+                                    </div>
+                                )}
+                            </TabsContent>
+                            <TabsContent value="open" className="pt-3">
+                                {userOrders === null ? <Loader className="w-5 h-5 text-red-600 mx-auto" /> : (
+                                    <div className="space-y-2">
+                                        {(userOrders || []).slice(0, 5).map((order) => (
+                                            <div key={order.id} className="rounded-lg bg-white/5 p-2 text-xs flex justify-between">
+                                                <span className={cn("font-semibold", order.side === "YES" ? "text-green-400" : "text-red-400")}>{order.side}</span>
+                                                <span className="text-gray-300 font-mono">{order.remaining_qty.toFixed(2)} rem</span>
+                                            </div>
+                                        ))}
+                                        {(!userOrders || userOrders.length === 0) && <p className="text-xs text-gray-500 text-center py-2">No open orders</p>}
+                                    </div>
+                                )}
+                            </TabsContent>
+                        </Tabs>
+                    )}
                 </div>
             </div>
         </div>
@@ -1278,7 +1288,7 @@ export default function MarketDetailView() {
                         </Badge>
                     </div>
                     {market.market_type === "CAPPM" && (
-                        <div className="ml-2 text-right shrink-0">
+                        <div className="hidden lg:block ml-2 text-right shrink-0">
                             <p className="text-[10px] text-gray-400 uppercase tracking-widest">Current</p>
                             <span className="text-lg font-mono text-white">
                                 $<ReelAnimation
@@ -1373,7 +1383,7 @@ export default function MarketDetailView() {
 
                         {/* Bottom tabs — 30% */}
                         <Tabs defaultValue="positions" className="flex-[3] border-[1px] rounded-2xl flex flex-col min-h-0 overflow-hidden mt-2">
-                            <div className="px-4 bg-white/[0.02] shrink-0 flex items-center justify-between">
+                            <div className="px-4 bg-white/[0.02] shrink-0">
                                 <TabsList className="bg-transparent gap-1 rounded-none h-auto p-0">
                                     <TabsTrigger value="positions" className={cn(
                                         "text-xs px-3 py-3 rounded-none border-b-2 border-transparent capitalize",
@@ -1403,23 +1413,23 @@ export default function MarketDetailView() {
                                         )}
                                     </TabsTrigger>
                                 </TabsList>
-                                <div className="flex items-center gap-1.5 shrink-0">
-                                    <Label
-                                        htmlFor="live-mode-toggle"
-                                        className={cn(
-                                            "text-[10px] font-bold uppercase tracking-widest transition-colors cursor-pointer",
-                                            liveMode ? "text-red-400" : "text-gray-500"
-                                        )}
-                                    >
-                                        Live
-                                    </Label>
-                                    <Switch
-                                        id="live-mode-toggle"
-                                        checked={liveMode}
-                                        onCheckedChange={setLiveMode}
-                                        className="data-[state=checked]:bg-red-600 scale-75 origin-right"
-                                    />
-                                </div>
+                            </div>
+                            <div className="px-4 py-1.5 border-b border-white/5 flex items-center justify-end gap-1.5 shrink-0">
+                                <Label
+                                    htmlFor="live-mode-toggle"
+                                    className={cn(
+                                        "text-[10px] font-bold uppercase tracking-widest transition-colors cursor-pointer",
+                                        liveMode ? "text-red-400" : "text-gray-500"
+                                    )}
+                                >
+                                    Live
+                                </Label>
+                                <Switch
+                                    id="live-mode-toggle"
+                                    checked={liveMode}
+                                    onCheckedChange={setLiveMode}
+                                    className="data-[state=checked]:bg-red-600 scale-75 origin-right"
+                                />
                             </div>
 
                             {/* Positions Tab */}
@@ -1538,7 +1548,7 @@ export default function MarketDetailView() {
 
                             {/* Trades Tab */}
                             <TabsContent value="trades" className="flex-1 overflow-y-auto p-4 scrollbar-hide min-h-0">
-                                {loadingMarketTrades ? (
+                                {marketTrades === null ? (
                                     <div className="flex h-full items-center justify-center py-12">
                                         <Loader className="w-6 h-6 text-red-600" />
                                     </div>
