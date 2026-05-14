@@ -1303,8 +1303,8 @@ export interface LeaderboardEntry {
   activity_score: number;
 }
 
-export async function getLeaderboard(limit = 50): Promise<{ entries: LeaderboardEntry[] }> {
-  const response = await fetch(`${apiBase()}/leaderboard?limit=${limit}`, {
+export async function getLeaderboard(limit = 50, period: "today" | "7d" | "all" = "all"): Promise<{ entries: LeaderboardEntry[] }> {
+  const response = await fetch(`${apiBase()}/leaderboard?limit=${limit}&period=${period}`, {
     headers: { "Content-Type": "application/json", ...serverKey() },
     cache: "no-store",
   });
