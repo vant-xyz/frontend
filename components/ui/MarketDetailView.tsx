@@ -966,7 +966,7 @@ export default function MarketDetailView() {
                             <TabsTrigger value="open" className="text-xs">Open Orders</TabsTrigger>
                         </TabsList>
                         <TabsContent value="positions" className="pt-3">
-                            {loadingPositions ? <Loader className="w-5 h-5 text-red-600 mx-auto" /> : (
+                            {positions === null ? <Loader className="w-5 h-5 text-red-600 mx-auto" /> : (
                                 <div className="space-y-2">
                                     {(positions || []).slice(0, 5).map((pos) => (
                                         <div key={pos.id} className="rounded-lg bg-white/5 p-2 text-xs flex justify-between">
@@ -993,7 +993,7 @@ export default function MarketDetailView() {
                             )}
                         </TabsContent>
                         <TabsContent value="open" className="pt-3">
-                            {loadingOrders ? <Loader className="w-5 h-5 text-red-600 mx-auto" /> : (
+                            {userOrders === null ? <Loader className="w-5 h-5 text-red-600 mx-auto" /> : (
                                 <div className="space-y-2">
                                     {(userOrders || []).slice(0, 5).map((order) => (
                                         <div key={order.id} className="rounded-lg bg-white/5 p-2 text-xs flex justify-between">
@@ -1371,11 +1371,11 @@ export default function MarketDetailView() {
 
                             {/* Orders Tab */}
                             <TabsContent value="open" className="flex-1 overflow-y-auto p-4 scrollbar-hide min-h-0">
-                                {loadingOrders ? (  // ← Add this state
+                                {userOrders === null ? (
                                     <div className="flex h-full items-center justify-center py-12">
                                         <Loader className="w-6 h-6 text-red-600" />
                                     </div>
-                                ) : !userOrders || userOrders.length === 0 ? (
+                                ) : userOrders.length === 0 ? (
                                     <div className="flex h-full flex-col items-center justify-center py-16 text-center">
                                         <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mb-6">
                                             <Search size={28} className="text-gray-600" />
