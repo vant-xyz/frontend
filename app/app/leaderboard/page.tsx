@@ -5,6 +5,15 @@ import { DashboardClient } from "@/components/dashboard/dashboard-client";
 import { getLeaderboard, getMyLeaderboardRank, LeaderboardEntry } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { ReelAnimation } from "@/components/landing/reel-animation";
+import { Trophy } from "lucide-react";
+
+const BANNER_TEXTS = [
+  "Trade and climb the leaderboard",
+  "Every trade moves your rank",
+  "Top traders earn the most glory",
+  "Who is #1 today?",
+];
 
 function Avatar({ url, name, size = 36 }: { url?: string; name: string; size?: number }) {
   const initials = name?.[0]?.toUpperCase() ?? "?";
@@ -126,14 +135,30 @@ export default function LeaderboardPage() {
   return (
     <DashboardClient>
       <div className="space-y-6 pb-20">
-        <div>
-          <h1 className="text-3xl font-bold text-white">Leaderboard</h1>
-          <p className="text-gray-400 mt-1 text-sm">Ranked by Vantic Points + Activity Score</p>
-        </div>
 
-        <div className="flex gap-4 text-xs text-gray-500">
-          <span><span className="text-primary font-semibold">VP</span> — Vantic Points earned from trading and events</span>
-          <span><span className="text-accent font-semibold">AS</span> — Activity Score (0–100) from relative activity</span>
+        <div className="relative flex items-center justify-between overflow-hidden rounded-2xl border border-white/10 px-6 py-8">
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{
+              backgroundImage: "url('/media/images/banners/banner2.png')",
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              opacity: 0.28,
+            }}
+          />
+          <div className="relative">
+            <div className="flex items-center gap-3 mb-1">
+              <Trophy size={22} className="text-yellow-400" />
+              <h1 className="text-2xl font-bold text-white">Leaderboard</h1>
+            </div>
+            <p className="text-sm font-medium text-white">
+              <ReelAnimation texts={BANNER_TEXTS} rotateInterval={3000} animateOnHover={false} />
+            </p>
+            <div className="flex gap-4 mt-2 text-xs text-gray-400">
+              <span><span className="text-primary font-semibold">VP</span> Vantic Points from trading and events</span>
+              <span><span className="text-accent font-semibold">AS</span> Activity Score (0 to 100)</span>
+            </div>
+          </div>
         </div>
 
         {loading ? (
