@@ -618,6 +618,7 @@ export async function closePosition(marketId: string, token: string, positionId:
       Authorization: `Bearer ${token}`,
       ...serverKey()
     },
+    body: JSON.stringify(data),
   });
 
   if (!response.ok) {

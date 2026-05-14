@@ -223,16 +223,14 @@ function SharePanel({
     if (!cardRef.current) return;
     setDownloading(true);
     try {
-      const { default: html2canvas } = await import("html2canvas");
-      const canvas = await html2canvas(cardRef.current, {
-        backgroundColor: null,
-        scale: 2,
-        useCORS: true,
-        allowTaint: false,
+      const { toPng } = await import("html-to-image");
+      const dataUrl = await toPng(cardRef.current, {
+        cacheBust: true,
+        pixelRatio: 2,
       });
       const link = document.createElement("a");
       link.download = `vantic-rank-${entry?.rank ?? "me"}.png`;
-      link.href = canvas.toDataURL("image/png");
+      link.href = dataUrl;
       link.click();
     } catch {
       // fallback: nothing

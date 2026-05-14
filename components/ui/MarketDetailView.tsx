@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
     Market, getOrderbook, OrderbookSnapshot,
     placeOrder, OrderSide, OrderType,
@@ -77,6 +77,9 @@ export default function MarketDetailView() {
     const [showSummaryHelp, setShowSummaryHelp] = useState(false);
     const [showQuoteHelp, setShowQuoteHelp] = useState(false);
     const [showProfitHelp, setShowProfitHelp] = useState(false);
+    const [desktopBookTab, setDesktopBookTab] = useState<"book" | "details">("book");
+    const [liveMode, setLiveMode] = useState(false);
+    const hasAutoTabSwitched = useRef(false);
     const [liveAssetPrice, setLiveAssetPrice] = useState<number | null>(null);
     const [sharePosition, setSharePosition] = useState<{
         pos: Position;
@@ -151,12 +154,17 @@ export default function MarketDetailView() {
             if (isOrderInputFocused) return;
             fetchUserPositions();
             fetchOpenOrders();
-        }, 1000);
+        }, liveMode ? 1000 : 5000);
 
         return () => clearInterval(interval);
-    }, [id, token, fetchUserPositions, fetchOpenOrders, isOrderInputFocused]);
+    }, [id, token, fetchUserPositions, fetchOpenOrders, isOrderInputFocused, liveMode]);
 
-    console.log("positions", positions)
+    useEffect(() => {
+        if (!hasAutoTabSwitched.current && positions !== null && positions.length === 0) {
+            setMobileTab("order");
+            hasAutoTabSwitched.current = true;
+        }
+    }, [positions]);
 
     useEffect(() => {
         if (!id) return
@@ -177,9 +185,9 @@ export default function MarketDetailView() {
         const interval = setInterval(() => {
             if (isOrderInputFocused) return;
             fetchMarketTrades();
-        }, 2000);
+        }, liveMode ? 1000 : 5000);
         return () => clearInterval(interval);
-    }, [id, isOrderInputFocused])
+    }, [id, isOrderInputFocused, liveMode])
 
     useEffect(() => {
         if (!id) return;
@@ -429,7 +437,11 @@ export default function MarketDetailView() {
 
     const displayStatus = isResolved ? "Resolved" : isSettling ? "Settling" : "Active";
 
-    const pricePerShareDollars = (selectedSide === "YES" ? lastYes : lastNo) / 100;
+    const marketPriceCents = selectedSide === "YES" ? lastYes : lastNo;
+    const effectivePriceCents = orderType === "LIMIT"
+        ? (parseFloat(limitPrice) || marketPriceCents)
+        : marketPriceCents;
+    const pricePerShareDollars = effectivePriceCents / 100;
     const tradingBalance = isDemoMode ? (balance?.demo_naira ?? 0) : (balance?.naira ?? 0);
     const assetBalance = (() => {
         if (!balance) return 0;
@@ -834,7 +846,7 @@ export default function MarketDetailView() {
                             <button
                                 key={label}
                                 onClick={() => {
-                                    const pricePerShare = selectedSide === "YES" ? lastYes / 100 : lastNo / 100;
+                                    const pricePerShare = effectivePriceCents / 100;
                                     if (pricePerShare <= 0) return;
 
                                     const userBalance = tradingBalance;
@@ -876,7 +888,7 @@ export default function MarketDetailView() {
                         </span>
                         <span className="text-gray-300 font-mono inline-flex items-baseline gap-0.5">
                             <ReelAnimation
-                                text={(selectedSide === "YES" ? lastYes : lastNo).toFixed(1)}
+                                text={effectivePriceCents.toFixed(1)}
                                 animateOnHover={false}
                                 className="font-mono"
                             />¢ / share
@@ -1092,8 +1104,8 @@ export default function MarketDetailView() {
                         "lg:flex",
                         mobileTab === "chart" ? "flex" : "hidden lg:flex"
                     )}>
-                        {/* Chart */}
-                        <div className="">
+                        {/* Chart — 60% of column height */}
+                        <div className="shrink-0" style={{ height: "60%" }}>
                             {market.market_type === "GEM" || chartType === "opinion" ? (
                                 <OpinionTrendChart
                                     marketId={market.id}
@@ -1148,28 +1160,58 @@ export default function MarketDetailView() {
 
                         {/* Bottom tabs */}
                         <Tabs defaultValue="positions" className="flex-1 border-[1px] rounded-2xl flex flex-col min-h-0 overflow-hidden mt-2">
-                            <div className=" px-4 bg-white/[0.02]">
+                            <div className="px-4 bg-white/[0.02] shrink-0 flex items-center justify-between">
                                 <TabsList className="bg-transparent gap-1 rounded-none h-auto p-0">
-                                    {["positions", "trades", "open"].map(tab => (
-                                        <TabsTrigger key={tab} value={tab}
-                                            className={cn(
-                                                "text-xs px-3 py-3 rounded-none border-b-2 border-transparent capitalize",
-                                                "data-[state=active]:border-b-white data-[state=active]:text-white data-[state=active]:bg-transparent",
-                                                "text-gray-500 hover:text-gray-300 transition-colors"
-                                            )}>
-                                            {tab === "open" ? "Open Orders" : tab}
-                                        </TabsTrigger>
-                                    ))}
+                                    <TabsTrigger value="positions" className={cn(
+                                        "text-xs px-3 py-3 rounded-none border-b-2 border-transparent capitalize",
+                                        "data-[state=active]:border-b-white data-[state=active]:text-white data-[state=active]:bg-transparent",
+                                        "text-gray-500 hover:text-gray-300 transition-colors"
+                                    )}>
+                                        Positions
+                                        {positions && positions.length > 0 && (
+                                            <span className="ml-1.5 px-1.5 py-0.5 text-[10px] font-bold bg-white/15 rounded-full leading-none">{positions.length}</span>
+                                        )}
+                                    </TabsTrigger>
+                                    <TabsTrigger value="trades" className={cn(
+                                        "text-xs px-3 py-3 rounded-none border-b-2 border-transparent capitalize",
+                                        "data-[state=active]:border-b-white data-[state=active]:text-white data-[state=active]:bg-transparent",
+                                        "text-gray-500 hover:text-gray-300 transition-colors"
+                                    )}>
+                                        Trades
+                                    </TabsTrigger>
+                                    <TabsTrigger value="open" className={cn(
+                                        "text-xs px-3 py-3 rounded-none border-b-2 border-transparent capitalize",
+                                        "data-[state=active]:border-b-white data-[state=active]:text-white data-[state=active]:bg-transparent",
+                                        "text-gray-500 hover:text-gray-300 transition-colors"
+                                    )}>
+                                        Open Orders
+                                        {userOrders && userOrders.length > 0 && (
+                                            <span className="ml-1.5 px-1.5 py-0.5 text-[10px] font-bold bg-white/15 rounded-full leading-none">{userOrders.length}</span>
+                                        )}
+                                    </TabsTrigger>
                                 </TabsList>
+                                <button
+                                    onClick={() => setLiveMode(v => !v)}
+                                    className={cn(
+                                        "flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-colors shrink-0",
+                                        liveMode ? "bg-red-500/15 text-red-400" : "bg-white/5 text-gray-500 hover:text-gray-300"
+                                    )}
+                                >
+                                    <span className={cn(
+                                        "w-1.5 h-1.5 rounded-full transition-colors",
+                                        liveMode ? "bg-red-400 animate-pulse" : "bg-gray-600"
+                                    )} />
+                                    Live
+                                </button>
                             </div>
 
                             {/* Positions Tab */}
                             <TabsContent value="positions" className="flex-1 overflow-y-auto p-4 scrollbar-hide min-h-0">
-                                {loadingPositions ? (
+                                {positions === null ? (
                                     <div className="flex h-full items-center justify-center py-12">
                                         <Loader className="w-6 h-6 text-red-600" />
                                     </div>
-                                ) : !positions || positions.length === 0 ? (
+                                ) : positions.length === 0 ? (
                                     <div className="flex h-full flex-col items-center justify-center py-16 text-center">
                                         <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mb-6">
                                             <span className="text-4xl">📭</span>
@@ -1422,14 +1464,38 @@ export default function MarketDetailView() {
                         </Tabs>
                     </div>
 
-                    {/* MIDDLE — Orderbook (desktop always visible, mobile only when tab=book) */}
+                    {/* MIDDLE — Orderbook / Details (desktop always visible, mobile only when tab=book) */}
                     <div className={cn(
                         "w-full lg:w-[280px] xl:w-[320px] flex flex-col border border-white/8 rounded-xl shrink-0 bg-[#0a0a0a] overflow-hidden",
                         mobileTab === "book" ? "flex" : "hidden lg:flex"
                     )}>
-                        {orderbookPanel}
-                        <div className="hidden lg:block p-2 border-t border-white/8">
-                            {marketDescriptionPanel}
+                        {/* Desktop tab switcher */}
+                        <div className="hidden lg:flex border-b border-white/8 shrink-0">
+                            {(["book", "details"] as const).map(t => (
+                                <button
+                                    key={t}
+                                    onClick={() => setDesktopBookTab(t)}
+                                    className={cn(
+                                        "flex-1 py-2.5 text-xs font-semibold transition-colors border-b-2",
+                                        desktopBookTab === t
+                                            ? "border-white text-white"
+                                            : "border-transparent text-gray-500 hover:text-gray-300"
+                                    )}
+                                >
+                                    {t === "book" ? "Order Book" : "Details"}
+                                </button>
+                            ))}
+                        </div>
+                        {/* Mobile always shows orderbook; desktop shows selected tab */}
+                        <div className="flex-1 overflow-hidden flex flex-col lg:hidden">
+                            {orderbookPanel}
+                        </div>
+                        <div className="hidden lg:flex flex-1 overflow-hidden flex-col">
+                            {desktopBookTab === "book" ? orderbookPanel : (
+                                <div className="overflow-y-auto flex-1 p-2">
+                                    {marketDescriptionPanel}
+                                </div>
+                            )}
                         </div>
                     </div>
 
