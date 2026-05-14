@@ -6,8 +6,10 @@ import { getLeaderboard, getMyLeaderboardRank, LeaderboardEntry } from "@/lib/ap
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { ReelAnimation } from "@/components/landing/reel-animation";
-import { HelpCircle, X } from "lucide-react";
+import { HelpCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const BANNER_TEXTS = [
   "Trade and climb the leaderboard",
@@ -101,108 +103,133 @@ function RankRow({ entry, highlight }: { entry: LeaderboardEntry; highlight?: bo
   );
 }
 
-function VPModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+function VPContent() {
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[480px] bg-background border-white/10 w-[calc(100%-32px)]">
-        <DialogHeader>
-          <DialogTitle className="text-lg font-bold text-white">Vantic Points (VP)</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 text-sm text-gray-300 leading-relaxed">
-          <p>
-            Vantic Points are the core reputation currency on Vantic. You earn them by taking real actions on the platform. They never reset and accumulate permanently over your lifetime on the platform.
-          </p>
-          <p>
-            Unlike leaderboard scores that can fluctuate, VP is an absolute number that only ever grows (or decreases slightly from losing trades). It reflects your history of participation, risk-taking, and engagement.
-          </p>
-
-          <div className="space-y-2">
-            <p className="text-xs font-bold text-white uppercase tracking-wider">How you earn VP</p>
-            <div className="divide-y divide-white/5 rounded-xl border border-white/5 overflow-hidden">
-              {[
-                ["Execute a trade", "+5"],
-                ["Win a prediction market trade", "+20"],
-                ["Lose a prediction market trade", "-20"],
-                ["Create a VS event", "+150"],
-                ["Join a VS event", "+125"],
-                ["Win a VS event", "+200"],
-                ["Lose a VS event", "+100"],
-                ["Deposit funds", "Scales with amount"],
-                ["Withdraw funds", "Scales with amount"],
-                ["Sell an asset", "Scales with amount"],
-              ].map(([action, pts]) => (
-                <div key={action} className="flex items-center justify-between px-3 py-2 bg-white/[0.02]">
-                  <span className="text-xs text-gray-300">{action}</span>
-                  <span className={cn("text-xs font-semibold", pts.startsWith("+") ? "text-primary" : pts.startsWith("-") ? "text-red-400" : "text-accent")}>{pts}</span>
-                </div>
-              ))}
+    <div className="space-y-4 text-sm text-gray-300 leading-relaxed">
+      <p>
+        Vantic Points are the core reputation currency on Vantic. You earn them by taking real actions on the platform. They never reset and accumulate permanently over your lifetime on the platform.
+      </p>
+      <p>
+        Unlike leaderboard scores that can fluctuate, VP is an absolute number that only ever grows (or decreases slightly from losing trades). It reflects your history of participation, risk-taking, and engagement.
+      </p>
+      <div className="space-y-2">
+        <p className="text-xs font-bold text-white uppercase tracking-wider">How you earn VP</p>
+        <div className="divide-y divide-white/5 rounded-xl border border-white/5 overflow-hidden">
+          {[
+            ["Execute a trade", "+5"],
+            ["Win a prediction market trade", "+20"],
+            ["Lose a prediction market trade", "-20"],
+            ["Create a VS event", "+150"],
+            ["Join a VS event", "+125"],
+            ["Win a VS event", "+200"],
+            ["Lose a VS event", "+100"],
+            ["Deposit funds", "Scales with amount"],
+            ["Withdraw funds", "Scales with amount"],
+            ["Sell an asset", "Scales with amount"],
+          ].map(([action, pts]) => (
+            <div key={action} className="flex items-center justify-between px-3 py-2 bg-white/[0.02]">
+              <span className="text-xs text-gray-300">{action}</span>
+              <span className={cn(
+                "text-xs font-semibold",
+                pts.startsWith("+") ? "text-primary" : pts.startsWith("-") ? "text-red-400" : "text-accent"
+              )}>{pts}</span>
             </div>
-          </div>
-
-          <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3 space-y-1">
-            <p className="text-xs font-bold text-white">Amount-based scaling</p>
-            <p className="text-xs text-gray-400">
-              Deposits, withdrawals, and asset sales use exponential formulas that reward larger amounts. A $10 deposit earns more than ten $1 deposits. The multiplier grows faster for asset sales than withdrawals, and faster for withdrawals than deposits.
-            </p>
-          </div>
-
-          <p className="text-xs text-gray-500">
-            Your final leaderboard rank is VP + Activity Score. So even a user with modest VP can outrank someone with high VP if their Activity Score is significantly higher.
-          </p>
+          ))}
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+      <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3 space-y-1">
+        <p className="text-xs font-bold text-white">Amount-based scaling</p>
+        <p className="text-xs text-gray-400">
+          Deposits, withdrawals, and asset sales use exponential formulas that reward larger amounts. A $10 deposit earns more than ten $1 deposits. Asset sales grow the fastest per dollar, then withdrawals, then deposits.
+        </p>
+      </div>
+      <p className="text-xs text-gray-500">
+        Your final leaderboard rank is VP + Activity Score. Even a user with modest VP can outrank someone with high VP if their Activity Score is significantly higher.
+      </p>
+    </div>
   );
 }
 
-function ASModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+function ASContent() {
+  return (
+    <div className="space-y-4 text-sm text-gray-300 leading-relaxed">
+      <p>
+        Activity Score measures how active you are relative to every other trader on Vantic. It is a percentile-based composite that is recomputed daily and sits on a 0 to 100 scale.
+      </p>
+      <p>
+        A score of 80 means you are more active than 80% of all ranked users across the four dimensions below. A score of 100 is only achievable by the single most active user across all four dimensions simultaneously.
+      </p>
+      <div className="space-y-2">
+        <p className="text-xs font-bold text-white uppercase tracking-wider">The four dimensions</p>
+        <div className="divide-y divide-white/5 rounded-xl border border-white/5 overflow-hidden">
+          {[
+            ["Profit and Loss", "25%", "Your total realized PnL from settled prediction markets. Higher PnL pushes your percentile up."],
+            ["Trade count", "25%", "Total number of prediction market positions you have opened. More trades means a higher rank on this dimension."],
+            ["Total deposits", "25%", "Cumulative USD deposited into Vantic across all time. Larger and more frequent deposits improve this score."],
+            ["Total withdrawals", "25%", "Cumulative USD withdrawn from Vantic. This rewards users who actively move funds rather than sitting idle."],
+          ].map(([dim, weight, desc]) => (
+            <div key={dim} className="px-3 py-2.5 bg-white/[0.02] space-y-0.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-white">{dim}</span>
+                <span className="text-xs font-bold text-accent">{weight}</span>
+              </div>
+              <p className="text-[11px] text-gray-500">{desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3 space-y-1">
+        <p className="text-xs font-bold text-white">How it is calculated</p>
+        <p className="text-xs text-gray-400">
+          Each dimension is ranked using PERCENT_RANK across all users with a username. The four percentiles are averaged with equal weight and multiplied by 100. So if your PnL is in the 60th percentile, your trade count in the 80th, deposits in the 50th, and withdrawals in the 70th, your AS is (0.60 + 0.80 + 0.50 + 0.70) / 4 * 100 = 65.
+        </p>
+      </div>
+      <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3 space-y-1">
+        <p className="text-xs font-bold text-white">AS vs VP</p>
+        <p className="text-xs text-gray-400">
+          AS resets relative to the rest of the community every day. If other users become more active, your AS can drop even without doing anything. VP never resets. Together they reward both consistent platform engagement (AS) and raw lifetime participation (VP).
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function InfoPanel({
+  open,
+  onClose,
+  title,
+  children,
+}: {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  children: React.ReactNode;
+}) {
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return (
+      <Drawer open={open} onOpenChange={onClose}>
+        <DrawerContent className="bg-background border-white/10 max-h-[85vh]">
+          <DrawerHeader className="border-b border-white/5 pb-3">
+            <DrawerTitle className="text-base font-bold text-white text-left">{title}</DrawerTitle>
+          </DrawerHeader>
+          <div className="overflow-y-auto px-4 py-4 pb-8">
+            {children}
+          </div>
+        </DrawerContent>
+      </Drawer>
+    );
+  }
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[480px] bg-background border-white/10 w-[calc(100%-32px)]">
-        <DialogHeader>
-          <DialogTitle className="text-lg font-bold text-white">Activity Score (AS)</DialogTitle>
+      <DialogContent className="sm:max-w-[480px] bg-background border-white/10 w-[calc(100%-32px)] flex flex-col max-h-[80vh]">
+        <DialogHeader className="shrink-0">
+          <DialogTitle className="text-lg font-bold text-white">{title}</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 text-sm text-gray-300 leading-relaxed">
-          <p>
-            Activity Score measures how active you are relative to every other trader on Vantic. It is a percentile-based composite that is recomputed daily and sits on a 0 to 100 scale.
-          </p>
-          <p>
-            A score of 80 means you are more active than 80% of all ranked users across the four dimensions below. A score of 100 is only achievable by the single most active user across all four dimensions simultaneously.
-          </p>
-
-          <div className="space-y-2">
-            <p className="text-xs font-bold text-white uppercase tracking-wider">The four dimensions</p>
-            <div className="divide-y divide-white/5 rounded-xl border border-white/5 overflow-hidden">
-              {[
-                ["Profit and Loss", "25%", "Your total realized PnL from settled prediction markets. Higher PnL pushes your percentile up."],
-                ["Trade count", "25%", "Total number of prediction market positions you have opened. More trades means a higher rank on this dimension."],
-                ["Total deposits", "25%", "Cumulative USD deposited into Vantic across all time. Larger and more frequent deposits improve this score."],
-                ["Total withdrawals", "25%", "Cumulative USD withdrawn from Vantic. This rewards users who actively move funds rather than sitting idle."],
-              ].map(([dim, weight, desc]) => (
-                <div key={dim} className="px-3 py-2.5 bg-white/[0.02] space-y-0.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-white">{dim}</span>
-                    <span className="text-xs font-bold text-accent">{weight}</span>
-                  </div>
-                  <p className="text-[11px] text-gray-500">{desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3 space-y-1">
-            <p className="text-xs font-bold text-white">How it is calculated</p>
-            <p className="text-xs text-gray-400">
-              Each dimension is ranked using PERCENT_RANK across all users with a username. The four percentiles are averaged with equal weight and multiplied by 100. So if your PnL is in the 60th percentile, your trade count in the 80th, deposits in the 50th, and withdrawals in the 70th, your AS is (0.60 + 0.80 + 0.50 + 0.70) / 4 * 100 = 65.
-            </p>
-          </div>
-
-          <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3 space-y-1">
-            <p className="text-xs font-bold text-white">AS vs VP</p>
-            <p className="text-xs text-gray-400">
-              AS resets relative to the rest of the community every day. If other users become more active, your AS can drop even without doing anything. VP never resets. Together they reward both consistent platform engagement (AS) and raw lifetime participation (VP).
-            </p>
-          </div>
+        <div className="overflow-y-auto pr-1">
+          {children}
         </div>
       </DialogContent>
     </Dialog>
@@ -281,8 +308,12 @@ export default function LeaderboardPage() {
           </div>
         </div>
 
-        <VPModal open={vpOpen} onClose={() => setVpOpen(false)} />
-        <ASModal open={asOpen} onClose={() => setAsOpen(false)} />
+        <InfoPanel open={vpOpen} onClose={() => setVpOpen(false)} title="Vantic Points (VP)">
+          <VPContent />
+        </InfoPanel>
+        <InfoPanel open={asOpen} onClose={() => setAsOpen(false)} title="Activity Score (AS)">
+          <ASContent />
+        </InfoPanel>
 
         {loading ? (
           <div className="space-y-3">
