@@ -6,12 +6,14 @@ import { getLeaderboard, getMyLeaderboardRank, LeaderboardEntry } from "@/lib/ap
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { ReelAnimation } from "@/components/landing/reel-animation";
-import { HelpCircle, LocateFixed, Share2, Download } from "lucide-react";
+import { HelpCircle, LocateFixed, Share2, Download, ChevronLeft, ChevronRight } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 type Period = "today" | "7d" | "all";
+
+const PAGE_SIZE = 10;
 
 const BANNER_TEXTS = [
   "Trade and climb the leaderboard",
@@ -33,16 +35,25 @@ function fmt(n: number, decimals = 0): string {
   });
 }
 
+async function toDataUrl(url: string): Promise<string> {
+  const res = await fetch(url, { cache: "force-cache" });
+  const blob = await res.blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
 function Avatar({
   url,
   name,
   size = 36,
-  crossOrigin,
 }: {
-  url?: string;
+  url?: string | null;
   name: string;
   size?: number;
-  crossOrigin?: "anonymous";
 }) {
   const initials = name?.[0]?.toUpperCase() ?? "?";
   if (url) {
@@ -50,7 +61,6 @@ function Avatar({
       <img
         src={url}
         alt={name}
-        crossOrigin={crossOrigin}
         style={{ width: size, height: size }}
         className="rounded-full object-cover shrink-0"
         onError={(e) => {
@@ -140,16 +150,29 @@ function RankRow({
   );
 }
 
-function ShareCard({ entry, cardRef }: { entry: LeaderboardEntry; cardRef: React.Ref<HTMLDivElement> }) {
+interface CardImages {
+  banner: string;
+  logo: string;
+  avatar: string | null;
+}
+
+function ShareCard({
+  entry,
+  cardRef,
+  images,
+}: {
+  entry: LeaderboardEntry;
+  cardRef: React.Ref<HTMLDivElement>;
+  images: CardImages | null;
+}) {
   const rankLabel =
     entry.rank <= 0 ? "?" : entry.rank <= 3 ? `${MEDAL[entry.rank - 1]} #${entry.rank}` : `#${fmt(entry.rank)}`;
 
   return (
     <div ref={cardRef} className="relative overflow-hidden rounded-2xl">
       <img
-        src="/media/images/banners/banner2.png"
+        src={images?.banner ?? "/media/images/banners/banner2.png"}
         alt=""
-        crossOrigin="anonymous"
         className="absolute inset-0 w-full h-full object-cover"
         style={{ opacity: 0.35 }}
       />
@@ -160,17 +183,16 @@ function ShareCard({ entry, cardRef }: { entry: LeaderboardEntry; cardRef: React
 
       <div className="relative p-6 flex flex-col gap-5">
         <div className="flex items-center gap-2">
-          <img src="/icon.png" alt="Vantic" className="w-5 h-5" />
+          <img src={images?.logo ?? "/icon.png"} alt="Vantic" className="w-5 h-5" />
           <span className="text-xs font-bold text-white tracking-widest uppercase">Vantic</span>
         </div>
 
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <Avatar
-              url={entry.profile_image_url}
+              url={images?.avatar ?? entry.profile_image_url}
               name={entry.username}
               size={52}
-              crossOrigin="anonymous"
             />
             <div>
               <p className="text-base font-bold text-white leading-tight">{entry.username}</p>
@@ -218,22 +240,40 @@ function SharePanel({
   const isMobile = useIsMobile();
   const cardRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
+  const [images, setImages] = useState<CardImages | null>(null);
+
+  useEffect(() => {
+    if (!entry) return;
+    setImages(null);
+    Promise.all([
+      toDataUrl("/media/images/banners/banner2.png"),
+      toDataUrl("/icon.png"),
+      entry.profile_image_url
+        ? toDataUrl(entry.profile_image_url).catch(() => null)
+        : Promise.resolve(null),
+    ]).then(([banner, logo, avatar]) => {
+      setImages({ banner, logo, avatar });
+    }).catch(() => {
+      setImages({ banner: "/media/images/banners/banner2.png", logo: "/icon.png", avatar: null });
+    });
+  }, [entry?.profile_image_url]);
 
   async function handleDownload() {
-    if (!cardRef.current) return;
+    if (!cardRef.current || !images) return;
     setDownloading(true);
     try {
       const { toPng } = await import("html-to-image");
       const dataUrl = await toPng(cardRef.current, {
-        cacheBust: true,
+        cacheBust: false,
         pixelRatio: 2,
+        skipFonts: false,
       });
       const link = document.createElement("a");
       link.download = `vantic-rank-${entry?.rank ?? "me"}.png`;
       link.href = dataUrl;
       link.click();
     } catch {
-      // fallback: nothing
+      // silent
     } finally {
       setDownloading(false);
     }
@@ -241,14 +281,14 @@ function SharePanel({
 
   const content = entry ? (
     <div className="space-y-4 pt-2">
-      <ShareCard entry={entry} cardRef={cardRef} />
+      <ShareCard entry={entry} cardRef={cardRef} images={images} />
       <button
         onClick={handleDownload}
-        disabled={downloading}
+        disabled={downloading || !images}
         className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-sm font-semibold text-white transition-colors disabled:opacity-50"
       >
         <Download size={14} />
-        {downloading ? "Generating..." : "Download"}
+        {downloading ? "Generating..." : !images ? "Loading..." : "Download"}
       </button>
     </div>
   ) : null;
@@ -467,6 +507,8 @@ export default function LeaderboardPage() {
   const [myEntry, setMyEntry] = useState<LeaderboardEntry | null>(null);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<Period>("all");
+  const [page, setPage] = useState(1);
+  const [pendingScrollToMe, setPendingScrollToMe] = useState(false);
   const [vpOpen, setVpOpen] = useState(false);
   const [asOpen, setAsOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -498,15 +540,39 @@ export default function LeaderboardPage() {
   }, []);
 
   useEffect(() => {
+    setPage(1);
     load(period);
   }, [load, period]);
 
-  const myRankInList = myEntry
-    ? entries.some((e) => e.email === myEntry.email)
-    : false;
+  useEffect(() => {
+    if (pendingScrollToMe) {
+      setPendingScrollToMe(false);
+      requestAnimationFrame(() => {
+        myRowRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+    }
+  }, [page, pendingScrollToMe]);
 
-  function scrollToMe() {
-    myRowRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  const totalPages = Math.max(1, Math.ceil(entries.length / PAGE_SIZE));
+  const pageEntries = entries.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  const myIndexInList = myEntry
+    ? entries.findIndex((e) => e.email === myEntry.email)
+    : -1;
+  const myPageInList = myIndexInList >= 0
+    ? Math.floor(myIndexInList / PAGE_SIZE) + 1
+    : null;
+  const myIsOnCurrentPage = myPageInList === page;
+  const myIsPinned = myEntry !== null && myIndexInList < 0;
+
+  function findMe() {
+    if (!myEntry) return;
+    if (myPageInList !== null && !myIsOnCurrentPage) {
+      setPage(myPageInList);
+      setPendingScrollToMe(true);
+    } else {
+      myRowRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
   }
 
   return (
@@ -580,7 +646,7 @@ export default function LeaderboardPage() {
           </div>
           {myEntry && (
             <button
-              onClick={scrollToMe}
+              onClick={findMe}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-500 hover:bg-red-600 transition-colors"
             >
               <LocateFixed size={13} className="text-white" />
@@ -591,7 +657,7 @@ export default function LeaderboardPage() {
 
         {loading ? (
           <div className="space-y-3">
-            {[...Array(8)].map((_, i) => (
+            {[...Array(10)].map((_, i) => (
               <Skeleton key={i} className="h-14 w-full bg-white/5 rounded-xl" />
             ))}
           </div>
@@ -600,30 +666,58 @@ export default function LeaderboardPage() {
             No rankings yet. Start trading to appear here.
           </p>
         ) : (
-          <div className="space-y-2">
-            {entries.map((e) => {
-              const isMe = myEntry?.email === e.email;
-              return (
-                <RankRow
-                  key={e.rank}
-                  entry={e}
-                  highlight={isMe}
-                  innerRef={isMe ? myRowRef : undefined}
-                  onShare={isMe ? () => setShareOpen(true) : undefined}
-                />
-              );
-            })}
-            {myEntry && !myRankInList && (
+          <>
+            <div className="space-y-2">
+              {pageEntries.map((e) => {
+                const isMe = myEntry?.email === e.email;
+                return (
+                  <RankRow
+                    key={e.rank}
+                    entry={e}
+                    highlight={isMe}
+                    innerRef={isMe ? myRowRef : undefined}
+                    onShare={isMe ? () => setShareOpen(true) : undefined}
+                  />
+                );
+              })}
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-3 pt-2">
+                <button
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="p-1.5 rounded-lg border border-white/10 text-gray-400 hover:text-white hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronLeft size={14} />
+                </button>
+                <span className="text-xs text-gray-500 tabular-nums">
+                  {page} / {totalPages}
+                </span>
+                <button
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className="p-1.5 rounded-lg border border-white/10 text-gray-400 hover:text-white hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronRight size={14} />
+                </button>
+              </div>
+            )}
+
+            {/* Pinned: user not in top 50 */}
+            {myIsPinned && (
               <div className="pt-2 border-t border-white/10">
+                <p className="text-[10px] text-gray-600 uppercase tracking-widest mb-2 px-1">Your rank</p>
                 <RankRow
-                  entry={myEntry}
+                  entry={myEntry!}
                   highlight
                   innerRef={myRowRef}
                   onShare={() => setShareOpen(true)}
                 />
               </div>
             )}
-          </div>
+          </>
         )}
       </div>
     </DashboardClient>

@@ -162,8 +162,11 @@ export default function MarketDetailView() {
     }, [id, token, fetchUserPositions, fetchOpenOrders, isOrderInputFocused, liveMode]);
 
     useEffect(() => {
-        if (!hasAutoTabSwitched.current && positions !== null && positions.length === 0) {
-            setMobileTab("order");
+        if (!hasAutoTabSwitched.current && positions !== null) {
+            const activePositions = positions.filter(p => p.status !== "SETTLED");
+            if (activePositions.length === 0) {
+                setMobileTab("order");
+            }
             hasAutoTabSwitched.current = true;
         }
     }, [positions]);
@@ -1112,8 +1115,8 @@ export default function MarketDetailView() {
                         "lg:flex",
                         mobileTab === "chart" ? "flex" : "hidden lg:flex"
                     )}>
-                        {/* Chart — 60% of column height */}
-                        <div className="flex-[3] min-h-0 overflow-hidden">
+                        {/* Chart */}
+                        <div className="flex-[7] min-h-0 overflow-hidden">
                             {market.market_type === "GEM" || chartType === "opinion" ? (
                                 <OpinionTrendChart
                                     marketId={market.id}
@@ -1166,8 +1169,8 @@ export default function MarketDetailView() {
                             )}
                         </div>
 
-                        {/* Bottom tabs */}
-                        <Tabs defaultValue="positions" className="flex-[2] border-[1px] rounded-2xl flex flex-col min-h-0 overflow-hidden mt-2">
+                        {/* Bottom tabs — 30% */}
+                        <Tabs defaultValue="positions" className="flex-[3] border-[1px] rounded-2xl flex flex-col min-h-0 overflow-hidden mt-2">
                             <div className="px-4 bg-white/[0.02] shrink-0 flex items-center justify-between">
                                 <TabsList className="bg-transparent gap-1 rounded-none h-auto p-0">
                                     <TabsTrigger value="positions" className={cn(
