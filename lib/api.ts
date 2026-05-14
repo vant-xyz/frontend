@@ -889,6 +889,31 @@ export async function getTrades(
   return response.json();
 }
 
+export interface MarketStats {
+  open_interest: number;
+  volatility: number;
+  volume_3m?: number;
+  volume_24h?: number;
+}
+
+export interface MarketHistoryEntry {
+  id: string;
+  outcome: "YES" | "NO" | string;
+  end_time_utc: string;
+}
+
+export async function getMarketStats(id: string): Promise<{ stats: MarketStats }> {
+  const response = await fetch(viaPublicProxy(`markets/${id}/stats`), { method: "GET" });
+  if (!response.ok) throw new Error("Failed to fetch market stats");
+  return response.json();
+}
+
+export async function getMarketHistory(id: string): Promise<{ history: MarketHistoryEntry[] }> {
+  const response = await fetch(viaPublicProxy(`markets/${id}/history`), { method: "GET" });
+  if (!response.ok) throw new Error("Failed to fetch market history");
+  return response.json();
+}
+
 export async function getMarketVolume(id: string): Promise<MarketVolumeResponse> {
   const response = await fetch(viaPublicProxy(`markets/${id}/volume`), {
     method: "GET",

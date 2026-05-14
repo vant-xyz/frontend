@@ -20,13 +20,17 @@ import {
     cancelOrder,
     closePosition,
     SellPositionRequest,
+    MarketStats,
+    getMarketStats,
+    MarketHistoryEntry,
+    getMarketHistory,
 } from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Clock, Search, ChevronUp, ChevronDown, ExternalLink, BarChart2, LineChart, DollarSign, BarChart3, CircleHelp, Info, CalendarClock, BadgeCheck, RadioTower, Tags, Hash, ArrowUpRight } from "lucide-react";
+import { ArrowLeft, Clock, Search, ChevronUp, ChevronDown, ExternalLink, BarChart2, LineChart, DollarSign, BarChart3, CircleHelp, Info, CalendarClock, BadgeCheck, RadioTower, Tags, Hash, ArrowUpRight, TrendingUp, TrendingDown, MoreHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { QuickTradeModal } from "../../components/dashboard/crypto/quick-trade-modal";
@@ -80,8 +84,19 @@ export default function MarketDetailView() {
     const [showQuoteHelp, setShowQuoteHelp] = useState(false);
     const [showProfitHelp, setShowProfitHelp] = useState(false);
     const [desktopBookTab, setDesktopBookTab] = useState<"book" | "details">("book");
-    const [liveMode, setLiveMode] = useState(false);
+    const [liveMode, setLiveMode] = useState(true);
     const hasAutoTabSwitched = useRef(false);
+    const [marketStats, setMarketStats] = useState<MarketStats | null>(null);
+    const [marketHistory, setMarketHistory] = useState<MarketHistoryEntry[]>([]);
+    const [showMoreStats, setShowMoreStats] = useState(false);
+    const [showHistoryDropdown, setShowHistoryDropdown] = useState(false);
+    const prevOrderbookRef = useRef<OrderbookSnapshot | null>(null);
+    const [flashedRows, setFlashedRows] = useState<Record<string, "fill" | "new">>({});
+    const [showOIHelp, setShowOIHelp] = useState(false);
+    const [showVolHelp, setShowVolHelp] = useState(false);
+    const [showVolatilityHelp, setShowVolatilityHelp] = useState(false);
+    const [showTotalCostHelp, setShowTotalCostHelp] = useState(false);
+    const [showReceiveHelp, setShowReceiveHelp] = useState(false);
     const [liveAssetPrice, setLiveAssetPrice] = useState<number | null>(null);
     const [sharePosition, setSharePosition] = useState<{
         pos: Position;
@@ -246,6 +261,33 @@ export default function MarketDetailView() {
         };
     }, [id, isOrderInputFocused]);
 
+    useEffect(() => {
+        if (!id) return;
+        let active = true;
+        const fetchStats = async () => {
+            try {
+                const res = await getMarketStats(id as string);
+                if (active) setMarketStats(res.stats);
+            } catch {}
+        };
+        fetchStats();
+        const i = setInterval(fetchStats, 10000);
+        return () => { active = false; clearInterval(i); };
+    }, [id]);
+
+    useEffect(() => {
+        if (!id) return;
+        let active = true;
+        const fetchHistory = async () => {
+            try {
+                const res = await getMarketHistory(id as string);
+                if (active) setMarketHistory(res.history ?? []);
+            } catch {}
+        };
+        fetchHistory();
+        return () => { active = false; };
+    }, [id]);
+
     const refreshBalance = useCallback(async () => {
         if (!token) return;
         try {
@@ -301,7 +343,31 @@ export default function MarketDetailView() {
         if (!market?.id) return;
         try {
             const res = await getOrderbook(market.id);
-            setOrderbook(res.orderbook);
+            const newBook = res.orderbook;
+            const prev = prevOrderbookRef.current;
+            if (prev && newBook) {
+                const flashes: Record<string, "fill" | "new"> = {};
+                const prevBidMap = Object.fromEntries((prev.yes_bids ?? []).map(l => [l.price.toFixed(2), l.quantity]));
+                const prevAskMap = Object.fromEntries((prev.yes_asks ?? []).map(l => [l.price.toFixed(2), l.quantity]));
+                for (const l of newBook.yes_bids ?? []) {
+                    const key = `bid-${l.price.toFixed(2)}`;
+                    const prevQty = prevBidMap[l.price.toFixed(2)];
+                    if (prevQty === undefined) flashes[key] = "new";
+                    else if (l.quantity < prevQty) flashes[key] = "fill";
+                }
+                for (const l of newBook.yes_asks ?? []) {
+                    const key = `ask-${l.price.toFixed(2)}`;
+                    const prevQty = prevAskMap[l.price.toFixed(2)];
+                    if (prevQty === undefined) flashes[key] = "new";
+                    else if (l.quantity < prevQty) flashes[key] = "fill";
+                }
+                if (Object.keys(flashes).length > 0) {
+                    setFlashedRows(flashes);
+                    setTimeout(() => setFlashedRows({}), 600);
+                }
+            }
+            prevOrderbookRef.current = newBook;
+            setOrderbook(newBook);
         } catch (err) {
             console.error("Failed to load orderbook:", err);
         } finally {
@@ -614,6 +680,12 @@ export default function MarketDetailView() {
             ? ((sortedBids[0].price + sortedAsks[0].price) / 2).toFixed(1)
             : "--";
 
+        const totalBidQty = bidsD.reduce((s, b) => s + b.quantity, 0);
+        const totalAskQty = asksD.reduce((s, a) => s + a.quantity, 0);
+        const totalQty = totalBidQty + totalAskQty || 1;
+        const bidPct = Math.round((totalBidQty / totalQty) * 100);
+        const askPct = 100 - bidPct;
+
         return (
             <div className="flex flex-col h-full">
                 {/* Header */}
@@ -623,6 +695,18 @@ export default function MarketDetailView() {
                         <span className="text-green-400">YES {lastYes.toFixed(1)}¢</span>
                         <span className="text-gray-600">·</span>
                         <span className="text-red-400">NO {lastNo.toFixed(1)}¢</span>
+                    </div>
+                </div>
+
+                {/* Buyers / sellers split bar */}
+                <div className="px-4 py-2 border-b border-white/5">
+                    <div className="flex h-1.5 rounded-full overflow-hidden gap-px">
+                        <div className="bg-green-500/70 transition-all duration-300" style={{ width: `${bidPct}%` }} />
+                        <div className="bg-red-500/70 transition-all duration-300 flex-1" />
+                    </div>
+                    <div className="flex justify-between mt-1 text-[9px] font-mono">
+                        <span className="text-green-500">{bidPct}% Buy</span>
+                        <span className="text-red-500">{askPct}% Sell</span>
                     </div>
                 </div>
 
@@ -637,14 +721,22 @@ export default function MarketDetailView() {
                         <div className="flex items-center justify-center py-8"><Loader className="w-4 h-4 text-red-500" /></div>
                     ) : (
                         <>
-                            {asksD.slice().reverse().map((a, i) => (
-                                <div key={i} className="relative grid grid-cols-3 px-4 py-[2px] hover:bg-white/3 cursor-pointer">
+                            {asksD.slice().reverse().map((a, i) => {
+                                const flashKey = `ask-${a.price.toFixed(2)}`;
+                                const flash = flashedRows[flashKey];
+                                return (
+                                <div key={i} className={cn(
+                                    "relative grid grid-cols-3 px-4 py-[2px] hover:bg-white/3 cursor-pointer transition-colors duration-300",
+                                    flash === "fill" && "bg-yellow-500/20",
+                                    flash === "new" && "bg-green-500/10",
+                                )}>
                                     <div className="absolute right-0 top-0 h-full bg-red-500/12" style={{ width: `${(a.cum / maxD) * 100}%` }} />
                                     <span className="text-red-400 text-[11px] font-mono z-10">{a.price.toFixed(1)}¢</span>
                                     <span className="text-center text-gray-300 text-[11px] font-mono z-10">{a.quantity.toLocaleString()}</span>
                                     <span className="text-right text-gray-500 text-[11px] font-mono z-10">{a.cum.toLocaleString()}</span>
                                 </div>
-                            ))}
+                                );
+                            })}
 
                             {/* Mid spread */}
                             <div className="grid grid-cols-3 px-4 py-2 border-y border-white/10 bg-white/3">
@@ -652,14 +744,22 @@ export default function MarketDetailView() {
                                 <span className="text-right text-gray-600 text-[10px]">spread</span>
                             </div>
 
-                            {bidsD.map((b, i) => (
-                                <div key={i} className="relative grid grid-cols-3 px-4 py-[2px] hover:bg-white/3 cursor-pointer">
+                            {bidsD.map((b, i) => {
+                                const flashKey = `bid-${b.price.toFixed(2)}`;
+                                const flash = flashedRows[flashKey];
+                                return (
+                                <div key={i} className={cn(
+                                    "relative grid grid-cols-3 px-4 py-[2px] hover:bg-white/3 cursor-pointer transition-colors duration-300",
+                                    flash === "fill" && "bg-yellow-500/20",
+                                    flash === "new" && "bg-green-500/10",
+                                )}>
                                     <div className="absolute right-0 top-0 h-full bg-green-500/12" style={{ width: `${(b.cum / maxD) * 100}%` }} />
                                     <span className="text-green-400 text-[11px] font-mono z-10">{b.price.toFixed(1)}¢</span>
                                     <span className="text-center text-gray-300 text-[11px] font-mono z-10">{b.quantity.toLocaleString()}</span>
                                     <span className="text-right text-gray-500 text-[11px] font-mono z-10">{b.cum.toLocaleString()}</span>
                                 </div>
-                            ))}
+                                );
+                            })}
                         </>
                     )}
                 </div>
@@ -690,6 +790,56 @@ export default function MarketDetailView() {
             </div>
         );
     })();
+
+    const historyBar = market.market_type === "CAPPM" && marketHistory.length > 0 ? (() => {
+        const visible = marketHistory.slice(0, 5);
+        const overflow = marketHistory.slice(5);
+        return (
+            <div className="relative flex items-center gap-1">
+                {visible.map((h) => {
+                    const isYes = h.outcome === "YES";
+                    const t = new Date(h.end_time_utc);
+                    const timeStr = `${String(t.getHours()).padStart(2, "0")}:${String(t.getMinutes()).padStart(2, "0")}`;
+                    return (
+                        <div key={h.id} className="flex flex-col items-center gap-0.5 shrink-0">
+                            {isYes
+                                ? <TrendingUp size={13} className="text-green-400" />
+                                : <TrendingDown size={13} className="text-red-400" />}
+                            <span className="text-[8px] font-mono text-gray-500">{timeStr}</span>
+                        </div>
+                    );
+                })}
+                {overflow.length > 0 && (
+                    <div className="relative">
+                        <button
+                            onClick={() => setShowHistoryDropdown(v => !v)}
+                            className="flex flex-col items-center gap-0.5 px-1 py-0.5 rounded hover:bg-white/8 transition-colors"
+                        >
+                            <MoreHorizontal size={13} className="text-gray-500" />
+                            <span className="text-[8px] font-mono text-gray-500">+{overflow.length}</span>
+                        </button>
+                        {showHistoryDropdown && (
+                            <div className="absolute right-0 top-full mt-1 w-28 max-h-48 overflow-y-auto bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl z-50 py-1">
+                                {overflow.map((h) => {
+                                    const isYes = h.outcome === "YES";
+                                    const t = new Date(h.end_time_utc);
+                                    const timeStr = `${String(t.getHours()).padStart(2, "0")}:${String(t.getMinutes()).padStart(2, "0")}`;
+                                    return (
+                                        <div key={h.id} className="flex items-center justify-between px-3 py-1.5">
+                                            {isYes
+                                                ? <TrendingUp size={11} className="text-green-400" />
+                                                : <TrendingDown size={11} className="text-red-400" />}
+                                            <span className="text-[10px] font-mono text-gray-400">{timeStr}</span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+        );
+    })() : null;
 
     const orderForm = (
         <div className="flex flex-col h-full">
@@ -910,7 +1060,7 @@ export default function MarketDetailView() {
                             Total Cost
                             <button
                                 type="button"
-                                onClick={() => setShowSummaryHelp(true)}
+                                onClick={() => setShowTotalCostHelp(true)}
                                 className="text-gray-500 hover:text-gray-300 transition-colors"
                                 aria-label="Explain total cost"
                             >
@@ -924,7 +1074,7 @@ export default function MarketDetailView() {
                             You'll receive
                             <button
                                 type="button"
-                                onClick={() => setShowSummaryHelp(true)}
+                                onClick={() => setShowReceiveHelp(true)}
                                 className="text-gray-500 hover:text-gray-300 transition-colors"
                                 aria-label="Explain payout"
                             >
@@ -956,7 +1106,7 @@ export default function MarketDetailView() {
                 {/* CTA */}
                 <button onClick={handlePlaceOrder} disabled={submitting || effectiveQuantity <= 0}
                     className={cn(
-                        "w-full py-3 rounded-xl text-sm font-black uppercase tracking-widest transition-all",
+                        "w-full py-3 rounded-xl text-xs font-bold tracking-wide transition-all",
                         "disabled:opacity-40 disabled:cursor-not-allowed",
                         orderMode === "SELL"
                             ? "bg-white text-black hover:bg-gray-100"
@@ -966,10 +1116,30 @@ export default function MarketDetailView() {
                     )}>
                     {submitting
                         ? <Loader className="mx-auto" />
-                        : `${orderMode === "SELL" ? "Sell" : "Buy"} ${selectedSide} · ${effectiveQuantity.toFixed(3)} shares`}
+                        : `${orderMode === "SELL" ? "Sell" : "Buy"} ${selectedSide[0] + selectedSide.slice(1).toLowerCase()} · ${effectiveQuantity.toFixed(3)} shares`}
                 </button>
 
                 <div className="lg:hidden pt-3 border-t border-white/8">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-[10px] text-gray-500 uppercase tracking-widest">Activity</span>
+                        <div className="flex items-center gap-1.5">
+                            <Label
+                                htmlFor="live-mode-toggle-mobile"
+                                className={cn(
+                                    "text-[10px] font-bold uppercase tracking-widest transition-colors cursor-pointer",
+                                    liveMode ? "text-red-400" : "text-gray-500"
+                                )}
+                            >
+                                Live
+                            </Label>
+                            <Switch
+                                id="live-mode-toggle-mobile"
+                                checked={liveMode}
+                                onCheckedChange={setLiveMode}
+                                className="data-[state=checked]:bg-red-600 scale-75 origin-right"
+                            />
+                        </div>
+                    </div>
                     <Tabs defaultValue="positions" className="w-full">
                         <TabsList className="w-full bg-white/5">
                             <TabsTrigger value="positions" className="text-xs">Positions</TabsTrigger>
@@ -1050,6 +1220,31 @@ export default function MarketDetailView() {
                             <span className="text-gray-500">
                                 Vol <span className="text-gray-300">${(marketVolume?.volume ?? 0).toFixed(2)}</span>
                             </span>
+                            {/* Desktop-only extra stats */}
+                            {marketStats && (
+                                <>
+                                    <span className="hidden lg:inline text-gray-500">
+                                        OI <span className="text-gray-300">{marketStats.open_interest.toFixed(0)}</span>
+                                        <button onClick={() => setShowOIHelp(true)} className="ml-0.5 text-gray-600 hover:text-gray-400"><CircleHelp size={10} /></button>
+                                    </span>
+                                    <span className="hidden lg:inline text-gray-500">
+                                        Vol% <span className="text-gray-300">{marketStats.volatility.toFixed(2)}%</span>
+                                        <button onClick={() => setShowVolatilityHelp(true)} className="ml-0.5 text-gray-600 hover:text-gray-400"><CircleHelp size={10} /></button>
+                                    </span>
+                                    {market.market_type === "CAPPM" && marketStats.volume_3m !== undefined && (
+                                        <span className="hidden lg:inline text-gray-500">
+                                            3m Vol <span className="text-gray-300">${marketStats.volume_3m.toFixed(2)}</span>
+                                            <button onClick={() => setShowVolHelp(true)} className="ml-0.5 text-gray-600 hover:text-gray-400"><CircleHelp size={10} /></button>
+                                        </span>
+                                    )}
+                                    {market.market_type === "GEM" && marketStats.volume_24h !== undefined && (
+                                        <span className="hidden lg:inline text-gray-500">
+                                            24h Vol <span className="text-gray-300">${marketStats.volume_24h.toFixed(2)}</span>
+                                            <button onClick={() => setShowVolHelp(true)} className="ml-0.5 text-gray-600 hover:text-gray-400"><CircleHelp size={10} /></button>
+                                        </span>
+                                    )}
+                                </>
+                            )}
                             <span className="flex items-center gap-1 text-gray-500">
                                 <Clock size={10} />
                                 <span className={cn("font-mono", isResolved ? "text-emerald-400" : isSettling ? "text-yellow-400" : "text-gray-300")}>
@@ -1058,25 +1253,30 @@ export default function MarketDetailView() {
                                     )}
                                 </span>
                             </span>
+                            {/* Mobile: More stats button */}
+                            <button
+                                onClick={() => setShowMoreStats(true)}
+                                className="lg:hidden flex items-center gap-1 text-gray-500 hover:text-gray-300 transition-colors"
+                            >
+                                <MoreHorizontal size={12} />
+                                <span className="text-[10px]">More</span>
+                            </button>
                         </div>
                     </div>
 
-                    {/* Top bar badge */}
-                    <Badge className={cn(
-                        "text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full border-0 shrink-0",
-                        market.status === "resolved"
-                            ? "bg-emerald-500/15 text-emerald-400"
-                            : isSettling
-                                ? "bg-yellow-500/15 text-yellow-400"
-                                : "bg-green-500/15 text-green-400"
-                    )}>
-                        {market.status === "resolved"
-                            ? "Resolved"
-                            : isSettling
-                                ? "Settling"
-                                : "Active"
-                        }
-                    </Badge>
+                    {/* Status indicator: pulsing dot on mobile, badge on desktop */}
+                    <div className="shrink-0 flex items-center">
+                        <span className={cn(
+                            "lg:hidden w-2 h-2 rounded-full",
+                            isResolved ? "bg-emerald-400" : isSettling ? "bg-yellow-400 animate-pulse" : "bg-green-400 animate-pulse"
+                        )} />
+                        <Badge className={cn(
+                            "hidden lg:flex text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full border-0",
+                            isResolved ? "bg-emerald-500/15 text-emerald-400" : isSettling ? "bg-yellow-500/15 text-yellow-400" : "bg-green-500/15 text-green-400"
+                        )}>
+                            {isResolved ? "Resolved" : isSettling ? "Settling" : "Active"}
+                        </Badge>
+                    </div>
                     {market.market_type === "CAPPM" && (
                         <div className="ml-2 text-right shrink-0">
                             <p className="text-[10px] text-gray-400 uppercase tracking-widest">Current</p>
@@ -1141,6 +1341,7 @@ export default function MarketDetailView() {
                                             </button>
                                         </div>
                                     ) : null}
+                                    rightSlot={historyBar}
                                 />
                             ) : (
                                 <CandlestickChart
@@ -1165,6 +1366,7 @@ export default function MarketDetailView() {
                                             </button>
                                         </div>
                                     )}
+                                    rightSlot={historyBar}
                                 />
                             )}
                         </div>
@@ -1726,6 +1928,136 @@ export default function MarketDetailView() {
                     currentPriceCents={sharePosition.currentPriceCents}
                 />
             )}
+
+            {/* Total Cost explainer */}
+            {isMobile ? (
+                <Drawer open={showTotalCostHelp} onOpenChange={setShowTotalCostHelp}>
+                    <DrawerContent className="bg-black border-white/10 text-white px-4 pb-6">
+                        <DrawerHeader><DrawerTitle>Total Cost</DrawerTitle></DrawerHeader>
+                        <p className="text-sm text-gray-300">This is the amount you pay now. It equals the number of shares you're buying multiplied by the price per share.</p>
+                    </DrawerContent>
+                </Drawer>
+            ) : (
+                <Dialog open={showTotalCostHelp} onOpenChange={setShowTotalCostHelp}>
+                    <DialogContent className="bg-black border-white/10 text-white">
+                        <DialogHeader><DialogTitle>Total Cost</DialogTitle></DialogHeader>
+                        <p className="text-sm text-gray-300">This is the amount you pay now. It equals the number of shares you're buying multiplied by the price per share.</p>
+                    </DialogContent>
+                </Dialog>
+            )}
+
+            {/* You'll receive explainer */}
+            {isMobile ? (
+                <Drawer open={showReceiveHelp} onOpenChange={setShowReceiveHelp}>
+                    <DrawerContent className="bg-black border-white/10 text-white px-4 pb-6">
+                        <DrawerHeader><DrawerTitle>You'll receive</DrawerTitle></DrawerHeader>
+                        <div className="space-y-2 text-sm text-gray-300">
+                            <p>This is your maximum payout if the market resolves in your favour. Each share pays out exactly $1.00 at settlement.</p>
+                            <p className="text-xs text-gray-500">If the market resolves against your side, payout is $0.</p>
+                        </div>
+                    </DrawerContent>
+                </Drawer>
+            ) : (
+                <Dialog open={showReceiveHelp} onOpenChange={setShowReceiveHelp}>
+                    <DialogContent className="bg-black border-white/10 text-white">
+                        <DialogHeader><DialogTitle>You'll receive</DialogTitle></DialogHeader>
+                        <div className="space-y-2 text-sm text-gray-300">
+                            <p>This is your maximum payout if the market resolves in your favour. Each share pays out exactly $1.00 at settlement.</p>
+                            <p className="text-xs text-gray-500">If the market resolves against your side, payout is $0.</p>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+            )}
+
+            {/* Open Interest explainer */}
+            {isMobile ? (
+                <Drawer open={showOIHelp} onOpenChange={setShowOIHelp}>
+                    <DrawerContent className="bg-black border-white/10 text-white px-4 pb-6">
+                        <DrawerHeader><DrawerTitle>Open Interest</DrawerTitle></DrawerHeader>
+                        <p className="text-sm text-gray-300">Total number of active (unsettled) shares across all traders in this market. Higher OI means more capital is committed to this outcome.</p>
+                    </DrawerContent>
+                </Drawer>
+            ) : (
+                <Dialog open={showOIHelp} onOpenChange={setShowOIHelp}>
+                    <DialogContent className="bg-black border-white/10 text-white">
+                        <DialogHeader><DialogTitle>Open Interest</DialogTitle></DialogHeader>
+                        <p className="text-sm text-gray-300">Total number of active (unsettled) shares across all traders in this market. Higher OI means more capital is committed to this outcome.</p>
+                    </DialogContent>
+                </Dialog>
+            )}
+
+            {/* Volatility explainer */}
+            {isMobile ? (
+                <Drawer open={showVolatilityHelp} onOpenChange={setShowVolatilityHelp}>
+                    <DrawerContent className="bg-black border-white/10 text-white px-4 pb-6">
+                        <DrawerHeader><DrawerTitle>Volatility</DrawerTitle></DrawerHeader>
+                        <p className="text-sm text-gray-300">Standard deviation of log price returns from recent trades, shown as a percentage. A higher value means prices have been moving more erratically. A lower value means the market has been stable.</p>
+                    </DrawerContent>
+                </Drawer>
+            ) : (
+                <Dialog open={showVolatilityHelp} onOpenChange={setShowVolatilityHelp}>
+                    <DialogContent className="bg-black border-white/10 text-white">
+                        <DialogHeader><DialogTitle>Volatility</DialogTitle></DialogHeader>
+                        <p className="text-sm text-gray-300">Standard deviation of log price returns from recent trades, shown as a percentage. A higher value means prices have been moving more erratically. A lower value means the market has been stable.</p>
+                    </DialogContent>
+                </Dialog>
+            )}
+
+            {/* 3m / 24h Volume explainer */}
+            {isMobile ? (
+                <Drawer open={showVolHelp} onOpenChange={setShowVolHelp}>
+                    <DrawerContent className="bg-black border-white/10 text-white px-4 pb-6">
+                        <DrawerHeader><DrawerTitle>{market.market_type === "CAPPM" ? "3-Minute Volume" : "24-Hour Volume"}</DrawerTitle></DrawerHeader>
+                        <p className="text-sm text-gray-300">{market.market_type === "CAPPM" ? "Total dollar value of trades filled in the last 3 minutes. Useful for gauging short-term activity on fast-expiry markets." : "Total dollar value of trades filled in the last 24 hours."}</p>
+                    </DrawerContent>
+                </Drawer>
+            ) : (
+                <Dialog open={showVolHelp} onOpenChange={setShowVolHelp}>
+                    <DialogContent className="bg-black border-white/10 text-white">
+                        <DialogHeader><DialogTitle>{market.market_type === "CAPPM" ? "3-Minute Volume" : "24-Hour Volume"}</DialogTitle></DialogHeader>
+                        <p className="text-sm text-gray-300">{market.market_type === "CAPPM" ? "Total dollar value of trades filled in the last 3 minutes. Useful for gauging short-term activity on fast-expiry markets." : "Total dollar value of trades filled in the last 24 hours."}</p>
+                    </DialogContent>
+                </Dialog>
+            )}
+
+            {/* Mobile: More Market Info drawer */}
+            <Drawer open={showMoreStats} onOpenChange={setShowMoreStats}>
+                <DrawerContent className="bg-[#0a0a0a] border-white/10 text-white px-4 pb-8">
+                    <DrawerHeader className="pb-2">
+                        <DrawerTitle className="text-left">Market Info</DrawerTitle>
+                    </DrawerHeader>
+                    <div className="space-y-3">
+                        <div className="flex justify-between items-center py-2 border-b border-white/5">
+                            <span className="text-xs text-gray-500 flex items-center gap-1">Volume <button onClick={() => { setShowMoreStats(false); }}><CircleHelp size={11} /></button></span>
+                            <span className="text-xs font-mono text-white">${(marketVolume?.volume ?? 0).toFixed(2)}</span>
+                        </div>
+                        {marketStats && (
+                            <>
+                                <div className="flex justify-between items-center py-2 border-b border-white/5">
+                                    <span className="text-xs text-gray-500 flex items-center gap-1">Open Interest <button onClick={() => { setShowMoreStats(false); setShowOIHelp(true); }}><CircleHelp size={11} /></button></span>
+                                    <span className="text-xs font-mono text-white">{marketStats.open_interest.toFixed(0)} shares</span>
+                                </div>
+                                <div className="flex justify-between items-center py-2 border-b border-white/5">
+                                    <span className="text-xs text-gray-500 flex items-center gap-1">Volatility <button onClick={() => { setShowMoreStats(false); setShowVolatilityHelp(true); }}><CircleHelp size={11} /></button></span>
+                                    <span className="text-xs font-mono text-white">{marketStats.volatility.toFixed(2)}%</span>
+                                </div>
+                                {market.market_type === "CAPPM" && marketStats.volume_3m !== undefined && (
+                                    <div className="flex justify-between items-center py-2 border-b border-white/5">
+                                        <span className="text-xs text-gray-500 flex items-center gap-1">3m Volume <button onClick={() => { setShowMoreStats(false); setShowVolHelp(true); }}><CircleHelp size={11} /></button></span>
+                                        <span className="text-xs font-mono text-white">${marketStats.volume_3m.toFixed(2)}</span>
+                                    </div>
+                                )}
+                                {market.market_type === "GEM" && marketStats.volume_24h !== undefined && (
+                                    <div className="flex justify-between items-center py-2 border-b border-white/5">
+                                        <span className="text-xs text-gray-500 flex items-center gap-1">24h Volume <button onClick={() => { setShowMoreStats(false); setShowVolHelp(true); }}><CircleHelp size={11} /></button></span>
+                                        <span className="text-xs font-mono text-white">${marketStats.volume_24h.toFixed(2)}</span>
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </div>
+                </DrawerContent>
+            </Drawer>
         </>
     );
 }
