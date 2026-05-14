@@ -138,7 +138,7 @@ export function CandlestickChart({ marketId, asset, title, leftSlot, rightSlot }
         <div>{leftSlot}</div>
         <div className="flex items-center gap-3">
           {lastPrice !== "--" && (
-            <span className="text-green-400 font-mono text-xl font-medium">
+            <span className="hidden lg:inline text-green-400 font-mono text-xl font-medium">
               $<ReelAnimation text={lastPrice} animateOnHover={false} className="font-mono" />
             </span>
           )}

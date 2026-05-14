@@ -97,7 +97,7 @@ export default function MarketDetailView() {
     const [showVolatilityHelp, setShowVolatilityHelp] = useState(false);
     const [showTotalCostHelp, setShowTotalCostHelp] = useState(false);
     const [showReceiveHelp, setShowReceiveHelp] = useState(false);
-    const [isActivityCollapsed, setIsActivityCollapsed] = useState(true);
+    const [isActivityCollapsed, setIsActivityCollapsed] = useState(false);
     const [liveAssetPrice, setLiveAssetPrice] = useState<number | null>(null);
     const [sharePosition, setSharePosition] = useState<{
         pos: Position;
@@ -1288,7 +1288,7 @@ export default function MarketDetailView() {
                         </Badge>
                     </div>
                     {market.market_type === "CAPPM" && (
-                        <div className="hidden lg:block ml-2 text-right shrink-0">
+                        <div className="ml-2 text-right shrink-0">
                             <p className="text-[10px] text-gray-400 uppercase tracking-widest">Current</p>
                             <span className="text-lg font-mono text-white">
                                 $<ReelAnimation
