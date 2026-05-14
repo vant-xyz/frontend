@@ -31,6 +31,10 @@ function Avatar({ url, name, size = 36 }: { url?: string; name: string; size?: n
 
 const MEDAL = ["🥇", "🥈", "🥉"];
 
+function combinedScore(e: LeaderboardEntry) {
+  return (e.vantic_points ?? 0) + (e.activity_score ?? 0);
+}
+
 function PodiumCard({ entry, pos }: { entry: LeaderboardEntry; pos: number }) {
   const heights = ["h-28", "h-20", "h-16"];
   const colors = [
@@ -42,7 +46,7 @@ function PodiumCard({ entry, pos }: { entry: LeaderboardEntry; pos: number }) {
     <div className={cn("flex flex-col items-center gap-2 flex-1", pos === 0 ? "order-2" : pos === 1 ? "order-1" : "order-3")}>
       <Avatar url={entry.profile_image_url} name={entry.username} size={pos === 0 ? 52 : 40} />
       <p className="text-xs font-semibold text-white truncate max-w-[80px] text-center">{entry.username}</p>
-      <p className="text-xs text-gray-400">${entry.pnl.toFixed(2)}</p>
+      <p className="text-[10px] text-gray-400">{combinedScore(entry).toFixed(1)} pts</p>
       <div className={cn("w-full rounded-t-lg border flex items-center justify-center text-lg", heights[pos], colors[pos])}>
         {MEDAL[pos]}
       </div>
@@ -63,7 +67,7 @@ function RankRow({ entry, highlight }: { entry: LeaderboardEntry; highlight?: bo
       </span>
       <Avatar url={entry.profile_image_url} name={entry.username} size={32} />
       <span className="flex-1 text-sm font-medium text-white truncate">{entry.username}</span>
-      <div className="flex gap-4 text-right shrink-0">
+      <div className="flex gap-3 text-right shrink-0">
         <div className="hidden sm:block">
           <p className="text-xs text-gray-500">PnL</p>
           <p className={cn("text-xs font-semibold", entry.pnl >= 0 ? "text-green-400" : "text-red-400")}>
@@ -75,8 +79,12 @@ function RankRow({ entry, highlight }: { entry: LeaderboardEntry; highlight?: bo
           <p className="text-xs font-semibold text-white">{entry.trades}</p>
         </div>
         <div>
-          <p className="text-xs text-gray-500">AR Score</p>
-          <p className="text-xs font-semibold text-white">{(entry.ar_score * 100).toFixed(1)}</p>
+          <p className="text-xs text-gray-500">VP</p>
+          <p className="text-xs font-semibold text-primary">{(entry.vantic_points ?? 0).toFixed(0)}</p>
+        </div>
+        <div>
+          <p className="text-xs text-gray-500">AS</p>
+          <p className="text-xs font-semibold text-accent">{(entry.activity_score ?? 0).toFixed(1)}</p>
         </div>
       </div>
     </div>
@@ -120,7 +128,12 @@ export default function LeaderboardPage() {
       <div className="space-y-6 pb-20">
         <div>
           <h1 className="text-3xl font-bold text-white">Leaderboard</h1>
-          <p className="text-gray-400 mt-1 text-sm">Top traders ranked by Activity Rating</p>
+          <p className="text-gray-400 mt-1 text-sm">Ranked by Vantic Points + Activity Score</p>
+        </div>
+
+        <div className="flex gap-4 text-xs text-gray-500">
+          <span><span className="text-primary font-semibold">VP</span> — Vantic Points earned from trading and events</span>
+          <span><span className="text-accent font-semibold">AS</span> — Activity Score (0–100) from relative activity</span>
         </div>
 
         {loading ? (

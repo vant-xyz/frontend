@@ -1299,7 +1299,8 @@ export interface LeaderboardEntry {
   trades: number;
   deposits: number;
   withdrawals: number;
-  ar_score: number;
+  vantic_points: number;
+  activity_score: number;
 }
 
 export async function getLeaderboard(limit = 50): Promise<{ entries: LeaderboardEntry[] }> {
