@@ -1381,8 +1381,8 @@ export default function MarketDetailView() {
                             )}
                         </div>
 
-                        {/* Bottom tabs — 30% */}
-                        <Tabs defaultValue="positions" className="flex-[3] border-[1px] rounded-2xl flex flex-col min-h-0 overflow-hidden mt-2">
+                        {/* Bottom tabs — 30%, desktop only */}
+                        <Tabs defaultValue="positions" className="hidden lg:flex flex-[3] border-[1px] rounded-2xl flex-col min-h-0 overflow-hidden mt-2">
                             <div className="px-4 bg-white/[0.02] shrink-0">
                                 <TabsList className="bg-transparent gap-1 rounded-none h-auto p-0">
                                     <TabsTrigger value="positions" className={cn(
