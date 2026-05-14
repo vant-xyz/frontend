@@ -174,7 +174,6 @@ function ShareCard({ entry, cardRef }: { entry: LeaderboardEntry; cardRef: React
             />
             <div>
               <p className="text-base font-bold text-white leading-tight">{entry.username}</p>
-              <p className="text-xs text-gray-400">Vantic trader</p>
             </div>
           </div>
           <span className="text-4xl font-black text-white tabular-nums shrink-0">
