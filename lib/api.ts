@@ -1305,11 +1305,12 @@ export interface LeaderboardEntry {
 
 export async function getLeaderboard(limit = 50): Promise<{ entries: LeaderboardEntry[] }> {
   const response = await fetch(`${apiBase()}/leaderboard?limit=${limit}`, {
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...serverKey() },
     cache: "no-store",
   });
   if (!response.ok) throw new Error("Failed to fetch leaderboard");
-  return response.json();
+  const data = await response.json();
+  return { entries: data.leaderboard ?? [] };
 }
 
 export async function getMyLeaderboardRank(token: string): Promise<{ entry: LeaderboardEntry }> {
