@@ -252,14 +252,24 @@ export function PositionsWidget({ className, label }: PositionsWidgetProps) {
           <Loader className="w-5 h-5 text-red-600" />
         </div>
       ) : !positions || positions.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-10 text-center px-4">
-          <p className="text-sm text-gray-500 mb-2">No active positions</p>
-          <button
-            onClick={() => { setOpen(false); router.push("/app"); }}
-            className="text-sm font-semibold text-red-400 hover:text-red-300 transition-colors underline underline-offset-2"
-          >
-            Browse markets to get started
-          </button>
+        <div className="flex flex-col items-center justify-center py-10 text-center px-4 gap-3">
+          <p className="text-sm text-gray-500">No active positions</p>
+          <div className="flex flex-col items-center gap-2">
+            <button
+              onClick={() => { setOpen(false); router.push("/app"); }}
+              className="flex items-center gap-1 text-sm font-semibold text-red-400 hover:text-red-300 transition-colors underline underline-offset-2"
+            >
+              Browse markets to get started
+              <ExternalLink size={13} />
+            </button>
+            <button
+              onClick={() => { setOpen(false); router.push("/app/history"); }}
+              className="flex items-center gap-1 text-sm font-semibold text-gray-400 hover:text-gray-300 transition-colors underline underline-offset-2"
+            >
+              Visit Trade history to see settled positions
+              <ExternalLink size={13} />
+            </button>
+          </div>
         </div>
       ) : (
         <div className="space-y-1 px-2 pb-2">
