@@ -4,11 +4,12 @@ import { useEffect, useState } from "react";
 import { Market, placeOrder, OrderSide, getOrderbook, getBalance, BalanceInfo, getTokenPrices, getMarketHistory, MarketHistoryEntry } from "@/lib/api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { ChevronUp, ChevronDown, BarChart3, DollarSign, TrendingUp, TrendingDown, MoreHorizontal } from "lucide-react";
+import { ChevronUp, ChevronDown, BarChart3, DollarSign, TrendingUp, TrendingDown, MoreHorizontal, CircleHelp, X, ExternalLink, LayoutDashboard, BookOpen, CandlestickChart, ListOrdered, LineChart } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Loader } from "@/components/ui/loader";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useDashboard } from "@/hooks/use-dashboard";
+import { useRouter } from "next/navigation";
 
 interface QuickTradeModalProps {
     isOpen: boolean;
@@ -19,7 +20,9 @@ interface QuickTradeModalProps {
 
 export function QuickTradeModal({ isOpen, onClose, market, selectedSide: initialSide }: QuickTradeModalProps) {
     const { isDemoMode } = useDashboard();
+    const router = useRouter();
     const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
+    const [showProHelp, setShowProHelp] = useState(false);
 
     const [selectedSide, setSelectedSide] = useState<OrderSide>(initialSide);
     const [inputMode, setInputMode] = useState<"shares" | "usd">("usd");
@@ -205,15 +208,101 @@ export function QuickTradeModal({ isOpen, onClose, market, selectedSide: initial
         </div>
     ) : null;
 
+    const proViewRow = (
+        <div className="flex items-center justify-between px-4 py-2 border-b border-white/5">
+            {/* Past results (CAPPM only) or spacer */}
+            <div className="flex items-center gap-2 min-w-0 overflow-hidden">
+                {historyBar ? (
+                    <>
+                        <span className="text-[9px] text-gray-600 uppercase tracking-widest shrink-0">Past</span>
+                        {historyBar}
+                    </>
+                ) : (
+                    <span className="text-[9px] text-gray-600 uppercase tracking-widest">Quick Trade</span>
+                )}
+            </div>
+
+            {/* Pro View controls */}
+            <div className="flex items-center gap-1.5 shrink-0 ml-3">
+                <button
+                    onClick={() => setShowProHelp(true)}
+                    className="text-gray-600 hover:text-gray-400 transition-colors"
+                    title="What is Pro View?"
+                >
+                    <CircleHelp size={13} />
+                </button>
+                <button
+                    onClick={() => { onClose(); router.push(`/market/${market.id}`); }}
+                    className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white/8 hover:bg-white/15 text-gray-300 hover:text-white transition-colors text-[10px] font-semibold border border-white/10"
+                >
+                    <ExternalLink size={11} />
+                    Pro View
+                </button>
+            </div>
+        </div>
+    );
+
     const body = (
-        <div className="flex flex-col gap-0 h-full overflow-y-auto">
-            {/* Past results — CAPPM only */}
-            {historyBar && (
-                <div className="flex items-center gap-2 px-4 py-2 border-b border-white/5">
-                    <span className="text-[9px] text-gray-600 uppercase tracking-widest shrink-0">Past</span>
-                    {historyBar}
+        <div className="relative flex flex-col gap-0 h-full overflow-y-auto">
+            {/* Pro View help overlay */}
+            {showProHelp && (
+                <div className="absolute inset-0 z-20 bg-[#0a0a0a]/95 backdrop-blur-sm flex flex-col p-5 overflow-y-auto">
+                    <div className="flex items-start justify-between mb-4">
+                        <div>
+                            <p className="text-[9px] font-black uppercase tracking-widest text-gray-600 mb-1">About</p>
+                            <h3 className="text-base font-black text-white">Pro View Mode</h3>
+                        </div>
+                        <button
+                            onClick={() => setShowProHelp(false)}
+                            className="p-1.5 rounded-lg hover:bg-white/10 text-gray-500 hover:text-white transition-colors"
+                        >
+                            <X size={15} />
+                        </button>
+                    </div>
+
+                    <div className="space-y-4 text-sm">
+                        <p className="text-gray-300 leading-relaxed">
+                            Pro View is the full market terminal for this market — everything you need to trade with precision and context, on one page.
+                        </p>
+
+                        <div className="space-y-3">
+                            {[
+                                { icon: CandlestickChart, label: "Live Charts", desc: "Candlestick spot price chart and opinion trend chart showing market sentiment over time." },
+                                { icon: BookOpen, label: "Live Orderbook", desc: "Real-time depth of YES and NO orders. See exactly where liquidity sits and how prices move." },
+                                { icon: ListOrdered, label: "Limit Orders", desc: "Place limit orders at a specific price instead of hitting the market. Not available in Quick Trade." },
+                                { icon: LineChart, label: "Market Stats", desc: "Open interest, volatility, volume, and trade history for the full picture." },
+                                { icon: LayoutDashboard, label: "Positions & Orders", desc: "View your open orders and active positions for this market alongside your trade form." },
+                            ].map(({ icon: Icon, label, desc }) => (
+                                <div key={label} className="flex gap-3">
+                                    <div className="shrink-0 w-7 h-7 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center mt-0.5">
+                                        <Icon size={13} className="text-gray-400" />
+                                    </div>
+                                    <div>
+                                        <p className="text-white font-semibold text-xs">{label}</p>
+                                        <p className="text-gray-500 text-xs leading-relaxed">{desc}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="pt-3 border-t border-white/10">
+                            <p className="text-[10px] text-gray-600 leading-relaxed">
+                                <span className="text-gray-400 font-semibold">Quick Trade</span> is best for fast market buys when you already know your conviction. Use <span className="text-gray-400 font-semibold">Pro View</span> when you want context, precision, or limit order control.
+                            </p>
+                        </div>
+                    </div>
+
+                    <button
+                        onClick={() => { setShowProHelp(false); onClose(); router.push(`/market/${market.id}`); }}
+                        className="mt-5 w-full py-2.5 rounded-xl bg-white text-black text-xs font-black tracking-wide hover:bg-gray-200 transition-colors flex items-center justify-center gap-1.5"
+                    >
+                        <ExternalLink size={13} />
+                        Open Pro View
+                    </button>
                 </div>
             )}
+
+            {proViewRow}
             {/* YES / NO */}
             <div className="p-4 border-b border-white/8">
                 <div className="grid grid-cols-2 rounded-xl overflow-hidden bg-white/5 p-1 gap-1">
