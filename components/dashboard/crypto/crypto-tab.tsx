@@ -37,8 +37,6 @@ export function CryptoTab() {
         return () => clearInterval(interval);
     }, [loadMarkets]);
 
-    console.log(markets)
-
   if (selectedMarket) {
     return (
       <MarketDetailView

@@ -211,7 +211,7 @@ export function QuickTradeModal({ isOpen, onClose, market, selectedSide: initial
     const proViewRow = (
         <div className="flex items-center justify-between px-4 py-2 border-b border-white/5">
             {/* Past results (CAPPM only) or spacer */}
-            <div className="flex items-center gap-2 min-w-0 overflow-hidden">
+            <div className="flex items-center gap-2 min-w-0">
                 {historyBar ? (
                     <>
                         <span className="text-[9px] text-gray-600 uppercase tracking-widest shrink-0">Past</span>
