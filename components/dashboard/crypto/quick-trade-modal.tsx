@@ -327,18 +327,24 @@ export function QuickTradeModal({ isOpen, onClose, market, selectedSide: initial
                 </div>
 
                 {/* CTA */}
-                <button onClick={handlePlaceOrder} disabled={submitting || effectiveQuantity <= 0}
-                    className={cn(
-                        "w-full py-3 rounded-xl text-xs font-bold tracking-wide transition-all",
-                        "disabled:opacity-40 disabled:cursor-not-allowed",
-                        selectedSide === "YES"
-                            ? "bg-green-500 text-white hover:bg-green-400 shadow-lg shadow-green-500/20"
-                            : "bg-red-600 text-white hover:bg-red-500 shadow-lg shadow-red-600/20"
-                    )}>
-                    {submitting
-                        ? <Loader className="mx-auto" />
-                        : `Buy ${selectedSide[0] + selectedSide.slice(1).toLowerCase()} · ${effectiveQuantity.toFixed(3)} shares`}
-                </button>
+                {(market.status !== "active" || new Date(market.end_time_utc) <= new Date()) ? (
+                    <div className="w-full py-3 rounded-xl text-xs font-bold tracking-wide text-center bg-white/5 text-gray-500 cursor-not-allowed border border-white/10">
+                        Market expired · Orders closed
+                    </div>
+                ) : (
+                    <button onClick={handlePlaceOrder} disabled={submitting || effectiveQuantity <= 0}
+                        className={cn(
+                            "w-full py-3 rounded-xl text-xs font-bold tracking-wide transition-all",
+                            "disabled:opacity-40 disabled:cursor-not-allowed",
+                            selectedSide === "YES"
+                                ? "bg-green-500 text-white hover:bg-green-400 shadow-lg shadow-green-500/20"
+                                : "bg-red-600 text-white hover:bg-red-500 shadow-lg shadow-red-600/20"
+                        )}>
+                        {submitting
+                            ? <Loader className="mx-auto" />
+                            : `Buy ${selectedSide[0] + selectedSide.slice(1).toLowerCase()} · ${effectiveQuantity.toFixed(3)} shares`}
+                    </button>
+                )}
             </div>
         </div>
     );

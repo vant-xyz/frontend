@@ -44,6 +44,7 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/u
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ReelAnimation } from "@/components/landing/reel-animation";
+import { PositionsWidget } from "@/components/dashboard/positions-widget";
 
 export default function MarketDetailView() {
     const { id } = useParams()
@@ -1104,20 +1105,26 @@ export default function MarketDetailView() {
                 </div>
 
                 {/* CTA */}
-                <button onClick={handlePlaceOrder} disabled={submitting || effectiveQuantity <= 0}
-                    className={cn(
-                        "w-full py-3 rounded-xl text-xs font-bold tracking-wide transition-all",
-                        "disabled:opacity-40 disabled:cursor-not-allowed",
-                        orderMode === "SELL"
-                            ? "bg-white text-black hover:bg-gray-100"
-                            : selectedSide === "YES"
-                                ? "bg-green-500 text-white hover:bg-green-400 shadow-lg shadow-green-500/20"
-                                : "bg-red-600 text-white hover:bg-red-500 shadow-lg shadow-red-600/20"
-                    )}>
-                    {submitting
-                        ? <Loader className="mx-auto" />
-                        : `${orderMode === "SELL" ? "Sell" : "Buy"} ${selectedSide[0] + selectedSide.slice(1).toLowerCase()} · ${effectiveQuantity.toFixed(3)} shares`}
-                </button>
+                {isSettling ? (
+                    <div className="w-full py-3 rounded-xl text-xs font-bold tracking-wide text-center bg-white/5 text-gray-500 cursor-not-allowed border border-white/10">
+                        Market expired · Orders closed
+                    </div>
+                ) : (
+                    <button onClick={handlePlaceOrder} disabled={submitting || effectiveQuantity <= 0}
+                        className={cn(
+                            "w-full py-3 rounded-xl text-xs font-bold tracking-wide transition-all",
+                            "disabled:opacity-40 disabled:cursor-not-allowed",
+                            orderMode === "SELL"
+                                ? "bg-white text-black hover:bg-gray-100"
+                                : selectedSide === "YES"
+                                    ? "bg-green-500 text-white hover:bg-green-400 shadow-lg shadow-green-500/20"
+                                    : "bg-red-600 text-white hover:bg-red-500 shadow-lg shadow-red-600/20"
+                        )}>
+                        {submitting
+                            ? <Loader className="mx-auto" />
+                            : `${orderMode === "SELL" ? "Sell" : "Buy"} ${selectedSide[0] + selectedSide.slice(1).toLowerCase()} · ${effectiveQuantity.toFixed(3)} shares`}
+                    </button>
+                )}
 
                 <div className="lg:hidden border-t border-white/8">
                     <button
@@ -1300,6 +1307,15 @@ export default function MarketDetailView() {
                             </span>
                         </div>
                     )}
+                    {/* Positions widget — desktop only beside current price */}
+                    <div className="hidden lg:block ml-2 shrink-0">
+                        <PositionsWidget />
+                    </div>
+                </div>
+
+                {/* Positions widget — mobile only, below header row */}
+                <div className="lg:hidden px-4 py-2 border-b border-white/5">
+                    <PositionsWidget />
                 </div>
 
                 {/* ── Mobile tab switcher ──────────────────────────────────────────── */}
