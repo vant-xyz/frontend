@@ -46,6 +46,7 @@ interface AssetConfig {
   label: string;
   symbol: string;
   icon?: string;
+  roundIcon?: boolean;
   isNaira?: boolean;
   isVNaira?: boolean;
 }
@@ -53,20 +54,20 @@ interface AssetConfig {
 const REAL_ASSETS: AssetConfig[] = [
   { key: "naira", label: "USD Balance", symbol: "USD", isNaira: true },
   { key: "vusd", label: "vUSD", symbol: "vUSD", isVNaira: true },
-  { key: "pusd_sol", label: "Palm USD", symbol: "PUSD", icon: "/media/images/token_icons/PalmUSD.png" },
+  { key: "pusd_sol", label: "Palm USD", symbol: "PUSD", icon: "/media/images/token_icons/PalmUSD.png", roundIcon: true },
   { key: "sol", label: "Solana", symbol: "SOL", icon: "/media/images/token_icons/solana.png" },
   { key: "wsol", label: "Wrapped Solana", symbol: "WSOL", icon: "/media/images/token_icons/solana.png" },
   { key: "eth_base", label: "Ethereum (Base)", symbol: "ETH", icon: "/media/images/token_icons/eth.png" },
-  { key: "usdc_sol", label: "USDC (Solana)", symbol: "USDC", icon: "/media/images/token_icons/usdc.png" },
-  { key: "usdc_base", label: "USDC (Base)", symbol: "USDC", icon: "/media/images/token_icons/usdc.png" },
-  { key: "usdt_sol", label: "USDT (Solana)", symbol: "USDT", icon: "/media/images/token_icons/usdt.png" },
-  { key: "usdg_sol", label: "USDG (Solana)", symbol: "USDG", icon: "/media/images/token_icons/usdg.png" },
+  { key: "usdc_sol", label: "USDC (Solana)", symbol: "USDC", icon: "/media/images/token_icons/usdc.png", roundIcon: true },
+  { key: "usdc_base", label: "USDC (Base)", symbol: "USDC", icon: "/media/images/token_icons/usdc.png", roundIcon: true },
+  { key: "usdt_sol", label: "USDT (Solana)", symbol: "USDT", icon: "/media/images/token_icons/usdt.png", roundIcon: true },
+  { key: "usdg_sol", label: "USDG (Solana)", symbol: "USDG", icon: "/media/images/token_icons/usdg.png", roundIcon: true },
 ];
 
 const DEMO_ASSETS: AssetConfig[] = [
   { key: "demo_naira", label: "Demo USD", symbol: "USD", isNaira: true },
   { key: "demo_sol", label: "Demo Solana", symbol: "SOL", icon: "/media/images/token_icons/solana.png" },
-  { key: "demo_usdc_sol", label: "Demo USDC", symbol: "USDC", icon: "/media/images/token_icons/usdc.png" },
+  { key: "demo_usdc_sol", label: "Demo USDC", symbol: "USDC", icon: "/media/images/token_icons/usdc.png", roundIcon: true },
 ];
 
 export function BalanceModal({
@@ -161,7 +162,7 @@ export function BalanceModal({
         <div className="flex items-center gap-4">
           <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center overflow-hidden">
             {asset.icon ? (
-              <img src={asset.icon} alt={asset.label} className="w-6 h-6 object-contain rounded-full" />
+              <img src={asset.icon} alt={asset.label} className={cn("w-6 h-6 object-contain", asset.roundIcon && "rounded-full")} />
             ) : (
               <span className={cn(
                 "font-bold text-lg",
