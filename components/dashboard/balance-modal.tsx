@@ -159,9 +159,9 @@ export function BalanceModal({
         className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.03] border border-white/5 hover:bg-white/[0.05] transition-all"
       >
         <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center overflow-hidden">
+          <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center overflow-hidden">
             {asset.icon ? (
-              <img src={asset.icon} alt={asset.label} className="w-6 h-6 object-contain" />
+              <img src={asset.icon} alt={asset.label} className="w-full h-full object-cover rounded-full" />
             ) : (
               <span className={cn(
                 "font-bold text-lg",
