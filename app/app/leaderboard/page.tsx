@@ -506,7 +506,7 @@ export default function LeaderboardPage() {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [myEntry, setMyEntry] = useState<LeaderboardEntry | null>(null);
   const [loading, setLoading] = useState(true);
-  const [period, setPeriod] = useState<Period>("all");
+  const [period, setPeriod] = useState<Period>("today");
   const [page, setPage] = useState(1);
   const [pendingScrollToMe, setPendingScrollToMe] = useState(false);
   const [vpOpen, setVpOpen] = useState(false);

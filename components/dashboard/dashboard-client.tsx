@@ -11,6 +11,7 @@ import { SellCryptoModal } from "./sell-crypto-modal";
 import { PrivateDepositModal } from "./private-deposit-modal";
 import { WithdrawModal } from "./withdraw-modal";
 import { TutorialModal } from "./tutorial-modal";
+import { PositionsWidget } from "./positions-widget";
 import { History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -148,15 +149,15 @@ export function DashboardClient({ children }: DashboardClientProps) {
             >
               <History size={20} />
             </Button>
-            <BalanceWidget 
-              totalBalance={totalBalance ?? null} 
+            <PositionsWidget />
+            <BalanceWidget
+              totalBalance={totalBalance ?? null}
               onClick={() => {
                 if (!isDemoMode) {
                   toggleDemoReal();
                 }
                 setIsBalanceModalOpen(true);
-              }} 
-              variant="desktop" 
+              }}
             />
           </div>
         </div>

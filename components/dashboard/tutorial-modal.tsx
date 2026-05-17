@@ -290,8 +290,8 @@ export function TutorialModal() {
 
   return (
     <Dialog open={open} onOpenChange={dismiss}>
-      <DialogContent className="max-w-md bg-black border-white/10 p-0 rounded-3xl shadow-2xl outline-none overflow-hidden">
-        <div className="h-[520px] flex flex-col">
+      <DialogContent className="max-w-sm bg-black border-white/10 p-0 rounded-3xl shadow-2xl outline-none overflow-hidden">
+        <div className="h-[440px] flex flex-col">
           {inner}
         </div>
       </DialogContent>

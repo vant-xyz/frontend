@@ -98,6 +98,7 @@ export default function MarketDetailView() {
     const [showTotalCostHelp, setShowTotalCostHelp] = useState(false);
     const [showReceiveHelp, setShowReceiveHelp] = useState(false);
     const [isActivityCollapsed, setIsActivityCollapsed] = useState(false);
+    const [showOpinionHelp, setShowOpinionHelp] = useState(false);
     const [liveAssetPrice, setLiveAssetPrice] = useState<number | null>(null);
     const [sharePosition, setSharePosition] = useState<{
         pos: Position;
@@ -198,7 +199,7 @@ export default function MarketDetailView() {
         const fetchMarketTrades = async () => {
             try {
                 if (!marketTrades) setLoadingMarketTrades(true);
-                const data = await getTrades(id as string);
+                const data = await getTrades(id as string, 500);
                 setMarketTrades(data.trades);
                 setError(null);
             } catch (err) {
@@ -1171,7 +1172,7 @@ export default function MarketDetailView() {
                             <TabsContent value="trades" className="pt-3">
                                 {marketTrades === null ? <Loader className="w-5 h-5 text-red-600 mx-auto" /> : (
                                     <div className="space-y-2">
-                                        {(marketTrades || []).slice(0, 6).map((trade, idx) => (
+                                        {(marketTrades || []).map((trade, idx) => (
                                             <div key={idx} className="rounded-lg bg-white/5 p-2 text-xs grid grid-cols-3">
                                                 <span className={cn(trade.side === "YES" ? "text-green-400" : "text-red-400")}>{trade.side}</span>
                                                 <span className="text-center text-gray-300 font-mono">{trade.quantity.toFixed(2)}</span>
@@ -1334,23 +1335,32 @@ export default function MarketDetailView() {
                                     forcedYesCents={lastYes}
                                     forcedNoCents={lastNo}
                                     leftSlot={market.market_type === "CAPPM" ? (
-                                        <div className="flex items-center gap-1 border border-white/10 rounded-lg p-1 bg-black/40">
-                                            <button
-                                                onClick={() => setChartType("opinion")}
-                                                className={cn("p-1 rounded-md transition-colors", chartType === "candlestick" ? "text-gray-400 hover:text-white" : "bg-white/15 text-white")}
-                                                title="Trend chart"
-                                            >
-                                                <LineChart size={14} />
+                                        <div className="flex items-center gap-2">
+                                            <button onClick={() => setShowOpinionHelp(true)} className="text-gray-500 hover:text-gray-300 transition-colors" title="What is Opinion Trend?">
+                                                <CircleHelp size={14} />
                                             </button>
-                                            <button
-                                                onClick={() => setChartType("candlestick")}
-                                                className={cn("p-1 rounded-md transition-colors", chartType === "candlestick" ? "bg-white/15 text-white" : "text-gray-400 hover:text-white")}
-                                                title="Candlestick chart"
-                                            >
-                                                <BarChart2 size={14} />
-                                            </button>
+                                            <div className="flex items-center gap-1 border border-white/10 rounded-lg p-1 bg-black/40">
+                                                <button
+                                                    onClick={() => setChartType("opinion")}
+                                                    className={cn("p-1 rounded-md transition-colors", chartType === "candlestick" ? "text-gray-400 hover:text-white" : "bg-white/15 text-white")}
+                                                    title="Trend chart"
+                                                >
+                                                    <LineChart size={14} />
+                                                </button>
+                                                <button
+                                                    onClick={() => setChartType("candlestick")}
+                                                    className={cn("p-1 rounded-md transition-colors", chartType === "candlestick" ? "bg-white/15 text-white" : "text-gray-400 hover:text-white")}
+                                                    title="Candlestick chart"
+                                                >
+                                                    <BarChart2 size={14} />
+                                                </button>
+                                            </div>
                                         </div>
-                                    ) : null}
+                                    ) : (
+                                        <button onClick={() => setShowOpinionHelp(true)} className="text-gray-500 hover:text-gray-300 transition-colors" title="What is Opinion Trend?">
+                                            <CircleHelp size={14} />
+                                        </button>
+                                    )}
                                     rightSlot={historyBar}
                                 />
                             ) : (
@@ -1774,6 +1784,37 @@ export default function MarketDetailView() {
                             <p><span className="text-white font-semibold">Total Cost</span> is what you pay now: shares × entry price.</p>
                             <p><span className="text-white font-semibold">You'll receive</span> is the max payout at settlement if your side wins: about $1 per share.</p>
                             <p className="text-xs text-gray-500">If the market resolves against your side, payout can be $0.</p>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+            )}
+
+            {/* Opinion Trend Help */}
+            {isMobile ? (
+                <Drawer open={showOpinionHelp} onOpenChange={setShowOpinionHelp}>
+                    <DrawerContent className="bg-black border-white/10 text-white px-4 pb-6">
+                        <DrawerHeader>
+                            <DrawerTitle>Opinion Trend Chart</DrawerTitle>
+                        </DrawerHeader>
+                        <div className="space-y-3 text-sm text-gray-300">
+                            <p>The Opinion Trend chart tracks the <span className="text-white font-semibold">live market-implied probability</span> that each side (YES / NO) wins.</p>
+                            <p>It's derived from the <span className="text-white font-semibold">mid-price</span> of the orderbook — if YES is trading at 65¢, the market collectively believes there's a ~65% chance the YES side resolves correct.</p>
+                            <p>Use it to spot momentum shifts, see how sentiment evolves over time, and identify when the crowd's opinion diverges from your own.</p>
+                            <p className="text-xs text-gray-500">Tip: sharp moves often precede or follow breaking news related to the market's question.</p>
+                        </div>
+                    </DrawerContent>
+                </Drawer>
+            ) : (
+                <Dialog open={showOpinionHelp} onOpenChange={setShowOpinionHelp}>
+                    <DialogContent className="bg-black border-white/10 text-white">
+                        <DialogHeader>
+                            <DialogTitle>Opinion Trend Chart</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-3 text-sm text-gray-300">
+                            <p>The Opinion Trend chart tracks the <span className="text-white font-semibold">live market-implied probability</span> that each side (YES / NO) wins.</p>
+                            <p>It's derived from the <span className="text-white font-semibold">mid-price</span> of the orderbook — if YES is trading at 65¢, the market collectively believes there's a ~65% chance the YES side resolves correct.</p>
+                            <p>Use it to spot momentum shifts, see how sentiment evolves over time, and identify when the crowd's opinion diverges from your own.</p>
+                            <p className="text-xs text-gray-500">Tip: sharp moves often precede or follow breaking news related to the market's question.</p>
                         </div>
                     </DialogContent>
                 </Dialog>
