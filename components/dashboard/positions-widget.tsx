@@ -13,6 +13,12 @@ import { useRouter } from "next/navigation";
 
 function PositionRow({ pos }: { pos: Position }) {
   const router = useRouter();
+  const shares = pos.shares ?? 0;
+  const avgEntry = pos.avg_entry_price ?? 0;
+  const cost = (pos.total_cost != null && pos.total_cost > 0)
+    ? pos.total_cost
+    : shares * avgEntry;
+
   return (
     <button
       onClick={() => router.push(`/app/markets/${pos.market_id}`)}
@@ -30,13 +36,13 @@ function PositionRow({ pos }: { pos: Position }) {
             {pos.market_id.slice(0, 8)}…
           </p>
           <p className="text-xs text-gray-400">
-            {pos.shares.toFixed(2)} shares · {(pos.avg_entry_price * 100).toFixed(1)}¢ avg
+            {shares.toFixed(2)} shares · {(avgEntry * 100).toFixed(1)}¢ avg
           </p>
         </div>
       </div>
       <div className="flex items-center gap-2 shrink-0">
         <span className="text-sm font-bold text-white tabular-nums">
-          ${pos.total_cost.toFixed(2)}
+          ${cost.toFixed(2)}
         </span>
         <ExternalLink size={12} className="text-gray-600 group-hover:text-gray-400 transition-colors" />
       </div>
