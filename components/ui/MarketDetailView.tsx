@@ -350,17 +350,18 @@ export default function MarketDetailView() {
             const prev = prevOrderbookRef.current;
             if (prev && newBook) {
                 const flashes: Record<string, "fill" | "new"> = {};
-                const prevBidMap = Object.fromEntries((prev.yes_bids ?? []).map(l => [l.price.toFixed(2), l.quantity]));
-                const prevAskMap = Object.fromEntries((prev.yes_asks ?? []).map(l => [l.price.toFixed(2), l.quantity]));
+                const toCts = (p: number) => (p <= 1 ? p * 100 : p).toFixed(2);
+                const prevBidMap = Object.fromEntries((prev.yes_bids ?? []).map(l => [toCts(l.price), l.quantity]));
+                const prevAskMap = Object.fromEntries((prev.yes_asks ?? []).map(l => [toCts(l.price), l.quantity]));
                 for (const l of newBook.yes_bids ?? []) {
-                    const key = `bid-${l.price.toFixed(2)}`;
-                    const prevQty = prevBidMap[l.price.toFixed(2)];
+                    const key = `bid-${toCts(l.price)}`;
+                    const prevQty = prevBidMap[toCts(l.price)];
                     if (prevQty === undefined) flashes[key] = "new";
                     else if (l.quantity < prevQty) flashes[key] = "fill";
                 }
                 for (const l of newBook.yes_asks ?? []) {
-                    const key = `ask-${l.price.toFixed(2)}`;
-                    const prevQty = prevAskMap[l.price.toFixed(2)];
+                    const key = `ask-${toCts(l.price)}`;
+                    const prevQty = prevAskMap[toCts(l.price)];
                     if (prevQty === undefined) flashes[key] = "new";
                     else if (l.quantity < prevQty) flashes[key] = "fill";
                 }
@@ -679,9 +680,10 @@ export default function MarketDetailView() {
         cum = 0;
         const bidsD = sortedBids.map(b => { cum += b.quantity; return { ...b, cum }; });
         const maxD = Math.max(...asksD.map(a => a.cum), ...bidsD.map(b => b.cum), 1);
-        const mid = sortedBids[0] && sortedAsks[0]
-            ? ((sortedBids[0].price + sortedAsks[0].price) / 2).toFixed(1)
-            : "--";
+        const midRaw = sortedBids[0] && sortedAsks[0]
+            ? (toCents(sortedBids[0].price) + toCents(sortedAsks[0].price)) / 2
+            : null;
+        const mid = midRaw !== null ? midRaw.toFixed(1) : "--";
 
         const totalBidQty = bidsD.reduce((s, b) => s + b.quantity, 0);
         const totalAskQty = asksD.reduce((s, a) => s + a.quantity, 0);
@@ -725,7 +727,8 @@ export default function MarketDetailView() {
                     ) : (
                         <>
                             {asksD.slice().reverse().map((a, i) => {
-                                const flashKey = `ask-${a.price.toFixed(2)}`;
+                                const priceCents = toCents(a.price);
+                                const flashKey = `ask-${priceCents.toFixed(2)}`;
                                 const flash = flashedRows[flashKey];
                                 return (
                                 <div key={i} className={cn(
@@ -733,7 +736,7 @@ export default function MarketDetailView() {
                                     flash && "bg-red-500/40",
                                 )}>
                                     <div className="absolute right-0 top-0 h-full bg-red-500/12" style={{ width: `${(a.cum / maxD) * 100}%` }} />
-                                    <span className="text-red-400 text-[11px] font-mono z-10">{a.price.toFixed(1)}¢</span>
+                                    <span className="text-red-400 text-[11px] font-mono z-10">{priceCents.toFixed(1)}¢</span>
                                     <span className="text-center text-gray-300 text-[11px] font-mono z-10">{a.quantity.toLocaleString()}</span>
                                     <span className="text-right text-gray-500 text-[11px] font-mono z-10">{a.cum.toLocaleString()}</span>
                                 </div>
@@ -741,13 +744,16 @@ export default function MarketDetailView() {
                             })}
 
                             {/* Mid spread */}
-                            <div className="grid grid-cols-3 px-4 py-2 border-y border-white/10 bg-white/3">
-                                <span className="text-white text-xs font-mono font-semibold col-span-2">{mid}¢</span>
-                                <span className="text-right text-gray-600 text-[10px]">spread</span>
+                            <div className="flex items-center justify-between px-4 py-2 border-y border-white/10 bg-white/3">
+                                <span className="text-white text-xs font-mono font-semibold">{mid}¢ mid</span>
+                                <span className="text-gray-500 text-[10px] font-mono">
+                                    {orderbook?.spread != null ? `${toCents(orderbook.spread).toFixed(1)}¢ spread` : "spread"}
+                                </span>
                             </div>
 
                             {bidsD.map((b, i) => {
-                                const flashKey = `bid-${b.price.toFixed(2)}`;
+                                const priceCents = toCents(b.price);
+                                const flashKey = `bid-${priceCents.toFixed(2)}`;
                                 const flash = flashedRows[flashKey];
                                 return (
                                 <div key={i} className={cn(
@@ -755,7 +761,7 @@ export default function MarketDetailView() {
                                     flash && "bg-green-500/40",
                                 )}>
                                     <div className="absolute right-0 top-0 h-full bg-green-500/12" style={{ width: `${(b.cum / maxD) * 100}%` }} />
-                                    <span className="text-green-400 text-[11px] font-mono z-10">{b.price.toFixed(1)}¢</span>
+                                    <span className="text-green-400 text-[11px] font-mono z-10">{priceCents.toFixed(1)}¢</span>
                                     <span className="text-center text-gray-300 text-[11px] font-mono z-10">{b.quantity.toLocaleString()}</span>
                                     <span className="text-right text-gray-500 text-[11px] font-mono z-10">{b.cum.toLocaleString()}</span>
                                 </div>
