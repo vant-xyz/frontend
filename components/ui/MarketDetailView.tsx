@@ -1282,40 +1282,42 @@ export default function MarketDetailView() {
                         </div>
                     </div>
 
-                    {/* Status indicator: pulsing dot on mobile, badge on desktop */}
-                    <div className="shrink-0 flex items-center">
-                        <span className={cn(
-                            "lg:hidden w-2 h-2 rounded-full",
-                            isResolved ? "bg-emerald-400" : isSettling ? "bg-yellow-400 animate-pulse" : "bg-green-400 animate-pulse"
-                        )} />
-                        <Badge className={cn(
-                            "hidden lg:flex text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full border-0",
-                            isResolved ? "bg-emerald-500/15 text-emerald-400" : isSettling ? "bg-yellow-500/15 text-yellow-400" : "bg-green-500/15 text-green-400"
-                        )}>
-                            {isResolved ? "Resolved" : isSettling ? "Settling" : "Active"}
-                        </Badge>
-                    </div>
-                    {market.market_type === "CAPPM" && (
-                        <div className="ml-2 text-right shrink-0">
-                            <p className="text-[10px] text-gray-400 uppercase tracking-widest">Current</p>
-                            <span className="text-lg font-mono text-white">
-                                $<ReelAnimation
-                                    text={(liveAssetPrice ?? ((market.current_price ?? 0) / 100)).toFixed(2)}
-                                    animateOnHover={false}
-                                    className="font-mono"
-                                />
-                            </span>
+                    {/* Status + Price + Positions — flex-col on mobile, flex-row on desktop */}
+                    <div className="shrink-0 flex flex-col items-end gap-1">
+                        <div className="flex items-center gap-2">
+                            {/* Status indicator: pulsing dot on mobile, badge on desktop */}
+                            <div className="flex items-center">
+                                <span className={cn(
+                                    "lg:hidden w-2 h-2 rounded-full",
+                                    isResolved ? "bg-emerald-400" : isSettling ? "bg-yellow-400 animate-pulse" : "bg-green-400 animate-pulse"
+                                )} />
+                                <Badge className={cn(
+                                    "hidden lg:flex text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full border-0",
+                                    isResolved ? "bg-emerald-500/15 text-emerald-400" : isSettling ? "bg-yellow-500/15 text-yellow-400" : "bg-green-500/15 text-green-400"
+                                )}>
+                                    {isResolved ? "Resolved" : isSettling ? "Settling" : "Active"}
+                                </Badge>
+                            </div>
+                            {market.market_type === "CAPPM" && (
+                                <div className="text-right shrink-0">
+                                    <p className="text-[10px] text-gray-400 uppercase tracking-widest">Current</p>
+                                    <span className="text-lg font-mono text-white">
+                                        $<ReelAnimation
+                                            text={(liveAssetPrice ?? ((market.current_price ?? 0) / 100)).toFixed(2)}
+                                            animateOnHover={false}
+                                            className="font-mono"
+                                        />
+                                    </span>
+                                </div>
+                            )}
+                            {/* Desktop: icon button beside price */}
+                            <div className="hidden lg:block shrink-0">
+                                <PositionsWidget />
+                            </div>
                         </div>
-                    )}
-                    {/* Positions widget — desktop only beside current price */}
-                    <div className="hidden lg:block ml-2 shrink-0">
-                        <PositionsWidget />
+                        {/* Mobile: "Positions" text button under the price */}
+                        <PositionsWidget label="Positions" className="lg:hidden" />
                     </div>
-                </div>
-
-                {/* Positions widget — mobile only, below header row */}
-                <div className="lg:hidden px-4 py-2 border-b border-white/5">
-                    <PositionsWidget />
                 </div>
 
                 {/* ── Mobile tab switcher ──────────────────────────────────────────── */}

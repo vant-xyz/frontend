@@ -6,7 +6,7 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/u
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Loader } from "@/components/ui/loader";
 import { cn } from "@/lib/utils";
-import { BarChart3, ExternalLink } from "lucide-react";
+import { BarChart3, ExternalLink, CircleHelp, X } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { getUserPositions, getOrderbook, Position } from "@/lib/api";
 import { ReelAnimation } from "@/components/landing/reel-animation";
@@ -90,38 +90,37 @@ function PositionRow({ pos, prices }: { pos: Position; prices: PriceMap }) {
 
 interface PositionsWidgetProps {
   className?: string;
-  /** When provided, only shows positions for this market and renders inline (no button trigger) */
-  inlineMarketId?: string;
-  /** Called by parent when a trade is placed so we can refetch */
-  onTradePlaced?: (refetch: () => void) => void;
+  /** When set, renders a text button with this label instead of the icon button */
+  label?: string;
 }
 
-export function PositionsWidget({ className, inlineMarketId, onTradePlaced }: PositionsWidgetProps) {
+export function PositionsWidget({ className, label }: PositionsWidgetProps) {
   const isMobile = useIsMobile();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [positions, setPositions] = useState<Position[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [prices, setPrices] = useState<PriceMap>({});
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const isInline = !!inlineMarketId;
-  const isVisible = isInline || open;
+  const [showPnlHelp, setShowPnlHelp] = useState(false);
+  const pollPositionsRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollPricesRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
 
   const fetchPositions = useCallback(async () => {
     if (!token) return;
     try {
-      const res = await getUserPositions(token, inlineMarketId);
+      const res = await getUserPositions(token);
       setPositions(res.positions.filter((p) => p.status === "ACTIVE"));
     } catch {
       setPositions([]);
     } finally {
       setLoading(false);
     }
-  }, [token, inlineMarketId]);
+  }, [token]);
 
   const fetchPrices = useCallback(async (positionList: Position[]) => {
+    if (positionList.length === 0) return;
     const marketIds = [...new Set(positionList.map((p) => p.market_id))];
     const results = await Promise.allSettled(
       marketIds.map((id) => getOrderbook(id).then((res) => ({ id, ob: res.orderbook })))
@@ -139,38 +138,34 @@ export function PositionsWidget({ className, inlineMarketId, onTradePlaced }: Po
     setPrices((prev) => ({ ...prev, ...next }));
   }, []);
 
-  // initial load
+  // Always poll positions every 3s (for badge count + button tint)
   useEffect(() => {
-    if (!isVisible) return;
-    if (positions === null) {
-      setLoading(true);
-      fetchPositions();
-    }
-  }, [isVisible, positions, fetchPositions]);
+    if (!token) return;
+    setLoading(true);
+    fetchPositions();
+    pollPositionsRef.current = setInterval(fetchPositions, 3000);
+    return () => {
+      if (pollPositionsRef.current) clearInterval(pollPositionsRef.current);
+    };
+  }, [fetchPositions, token]);
 
-  // 3s poll while visible
+  // Poll prices every 3s only when modal is open
   useEffect(() => {
-    if (!isVisible) {
-      if (pollRef.current) clearInterval(pollRef.current);
+    if (!open || !positions || positions.length === 0) {
+      if (pollPricesRef.current) clearInterval(pollPricesRef.current);
       return;
     }
-    pollRef.current = setInterval(async () => {
-      await fetchPositions();
-    }, 3000);
+    fetchPrices(positions);
+    pollPricesRef.current = setInterval(() => fetchPrices(positions), 3000);
     return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
+      if (pollPricesRef.current) clearInterval(pollPricesRef.current);
     };
-  }, [isVisible, fetchPositions]);
+  }, [open, positions, fetchPrices]);
 
-  // fetch prices whenever positions change
+  // fetch prices once on open
   useEffect(() => {
-    if (positions && positions.length > 0) fetchPrices(positions);
-  }, [positions, fetchPrices]);
-
-  // expose refetch to parent for post-trade refresh
-  useEffect(() => {
-    onTradePlaced?.(fetchPositions);
-  }, [onTradePlaced, fetchPositions]);
+    if (open && positions && positions.length > 0) fetchPrices(positions);
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const activeCount = positions?.length ?? 0;
 
@@ -182,30 +177,73 @@ export function PositionsWidget({ className, inlineMarketId, onTradePlaced }: Po
       }, null)
     : null;
 
+  const pnlTint = globalPnl === null ? "neutral" : globalPnl >= 0 ? "profit" : "loss";
+
   const inner = (
     <div className="flex flex-col">
       {/* Global PnL header */}
       {!loading && positions && positions.length > 0 && (
         <div className={cn(
           "mx-4 mb-3 p-3 rounded-xl border",
-          globalPnl === null
-            ? "bg-white/5 border-white/10"
-            : globalPnl >= 0
-              ? "bg-green-500/10 border-green-500/20"
+          pnlTint === "neutral" ? "bg-white/5 border-white/10"
+            : pnlTint === "profit" ? "bg-green-500/10 border-green-500/20"
               : "bg-red-500/10 border-red-500/20"
         )}>
-          <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-0.5">Unrealised P&L</p>
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Unrealised P&amp;L</p>
+            <button
+              onClick={() => setShowPnlHelp(true)}
+              className="text-gray-600 hover:text-gray-400 transition-colors"
+            >
+              <CircleHelp size={11} />
+            </button>
+          </div>
           <p className={cn(
             "text-2xl font-black tabular-nums",
-            globalPnl === null ? "text-gray-400"
-              : globalPnl >= 0 ? "text-green-400" : "text-red-400"
+            pnlTint === "neutral" ? "text-gray-400"
+              : pnlTint === "profit" ? "text-green-400" : "text-red-400"
           )}>
             {globalPnl === null
               ? "—"
               : <ReelAnimation text={formatPnl(globalPnl)} animateOnHover={false} />
             }
           </p>
-          <p className="text-[10px] text-gray-600 mt-0.5">{activeCount} active position{activeCount !== 1 ? "s" : ""} · updates every 3s</p>
+          <p className="text-[10px] text-gray-600 mt-0.5">{activeCount} active position{activeCount !== 1 ? "s" : ""}</p>
+        </div>
+      )}
+
+      {/* PnL help overlay */}
+      {showPnlHelp && (
+        <div className="absolute inset-0 z-10 bg-black/95 backdrop-blur-sm flex flex-col p-5">
+          <div className="flex items-start justify-between mb-4">
+            <h3 className="text-base font-black text-white">Unrealised P&amp;L</h3>
+            <button
+              onClick={() => setShowPnlHelp(false)}
+              className="p-1.5 rounded-lg hover:bg-white/10 text-gray-500 hover:text-white transition-colors"
+            >
+              <X size={15} />
+            </button>
+          </div>
+          <div className="space-y-3 text-sm text-gray-300">
+            <p>
+              <span className="text-white font-semibold">Unrealised P&amp;L</span> is the profit or loss on your active positions if you were to close them right now at the current market price.
+            </p>
+            <p>
+              It is calculated as: <span className="text-white font-mono text-xs bg-white/5 px-1.5 py-0.5 rounded">shares × (current price − avg entry price)</span>
+            </p>
+            <p>
+              This number updates every 3 seconds based on the live orderbook. It is <span className="text-white font-semibold">not locked in</span> until you close or sell your position — the market can move against you before settlement.
+            </p>
+            <p className="text-xs text-gray-500">
+              Positions settle automatically at market expiry. Your final P&amp;L is determined by the resolved outcome, not the live price.
+            </p>
+          </div>
+          <button
+            onClick={() => setShowPnlHelp(false)}
+            className="mt-6 py-2.5 rounded-xl bg-white/10 text-white text-xs font-bold hover:bg-white/15 transition-colors"
+          >
+            Got it
+          </button>
         </div>
       )}
 
@@ -233,30 +271,57 @@ export function PositionsWidget({ className, inlineMarketId, onTradePlaced }: Po
     </div>
   );
 
-  // Inline mode: no button, just the list (used on MarketDetailView)
-  if (isInline) {
-    return <div className="w-full">{inner}</div>;
-  }
+  const triggerButton = label ? (
+    // Text-label variant (used on mobile market detail page)
+    <button
+      onClick={() => setOpen(true)}
+      className={cn(
+        "text-[10px] font-semibold uppercase tracking-widest px-2 py-0.5 rounded-md transition-colors",
+        pnlTint === "profit"
+          ? "text-green-400 bg-green-500/10 hover:bg-green-500/20"
+          : pnlTint === "loss"
+            ? "text-red-400 bg-red-500/10 hover:bg-red-500/20"
+            : "text-gray-400 bg-white/5 hover:bg-white/10",
+        activeCount > 0 && "font-black",
+        className
+      )}
+    >
+      {label}{activeCount > 0 ? ` · ${activeCount}` : ""}
+    </button>
+  ) : (
+    // Icon variant (used in dashboard header)
+    <Button
+      variant="outline"
+      size="icon"
+      onClick={() => setOpen(true)}
+      className={cn(
+        "relative h-10 w-10 rounded-xl border transition-all",
+        pnlTint === "profit"
+          ? "border-green-500/30 bg-green-500/10 text-green-400 hover:bg-green-500/20"
+          : pnlTint === "loss"
+            ? "border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20"
+            : "border-white/10 bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white",
+        className
+      )}
+      title="Active positions"
+    >
+      <BarChart3 size={18} />
+      {activeCount > 0 && (
+        <span className={cn(
+          "absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full text-[9px] font-black text-white px-1",
+          pnlTint === "profit" ? "bg-green-500" : pnlTint === "loss" ? "bg-red-600" : "bg-red-600"
+        )}>
+          {activeCount > 99 ? "99+" : activeCount}
+        </span>
+      )}
+    </Button>
+  );
+
+  const dialogInner = <div className="relative overflow-hidden">{inner}</div>;
 
   return (
     <>
-      <Button
-        variant="outline"
-        size="icon"
-        onClick={() => setOpen(true)}
-        className={cn(
-          "relative h-10 w-10 rounded-xl border-white/10 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all",
-          className
-        )}
-        title="Active positions"
-      >
-        <BarChart3 size={18} />
-        {activeCount > 0 && (
-          <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-red-600 text-[9px] font-black text-white px-1">
-            {activeCount > 99 ? "99+" : activeCount}
-          </span>
-        )}
-      </Button>
+      {triggerButton}
 
       {isMobile ? (
         <Drawer open={open} onOpenChange={setOpen}>
@@ -264,7 +329,7 @@ export function PositionsWidget({ className, inlineMarketId, onTradePlaced }: Po
             <DrawerHeader>
               <DrawerTitle>Active Positions</DrawerTitle>
             </DrawerHeader>
-            <div className="overflow-y-auto">{inner}</div>
+            <div className="relative overflow-y-auto">{inner}</div>
           </DrawerContent>
         </Drawer>
       ) : (
@@ -273,7 +338,7 @@ export function PositionsWidget({ className, inlineMarketId, onTradePlaced }: Po
             <DialogHeader>
               <DialogTitle>Active Positions</DialogTitle>
             </DialogHeader>
-            <div className="max-h-[60vh] overflow-y-auto">{inner}</div>
+            <div className="relative max-h-[60vh] overflow-y-auto">{inner}</div>
           </DialogContent>
         </Dialog>
       )}
