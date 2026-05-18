@@ -39,6 +39,11 @@ export function middleware(request: NextRequest) {
   const authToken = request.cookies.get("auth_token")?.value;
 
   if (pathname.startsWith("/app")) {
+    // Market detail pages are publicly viewable — auth is handled client-side
+    if (/^\/app\/general\/[^/]+$/.test(pathname)) {
+      return NextResponse.next();
+    }
+
     if (!authToken) {
       const loginUrl = new URL("/", request.url);
       return NextResponse.redirect(loginUrl);
