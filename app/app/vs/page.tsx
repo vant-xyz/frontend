@@ -129,7 +129,7 @@ export default function VSPage() {
               <h2 className="text-xs font-bold text-white uppercase tracking-widest">Create a Challenge</h2>
               <p className="text-xs text-gray-500 mt-1">Set the stakes, mode, and share the ID with your opponent.</p>
             </div>
-            <CreateEventModal />
+            <CreateEventModal onSuccess={loadCreated} />
           </div>
         </div>
 

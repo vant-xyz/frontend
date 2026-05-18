@@ -13,57 +13,72 @@ import { Textarea } from "./textarea";
 import { createVsEvent } from "@/lib/api";
 import { useDashboard } from "@/hooks/use-dashboard";
 
-export function CreateEventModal() {
+interface CreateEventModalProps {
+    onSuccess?: () => void;
+}
+
+export function CreateEventModal({ onSuccess }: CreateEventModalProps) {
     const [mode, setMode] = useState<"mutual" | "consensus">("mutual");
-    const [threshold, setThreshold] = useState(0);
+    const [threshold, setThreshold] = useState(66);
     const [question, setQuestion] = useState("");
     const [description, setDescription] = useState("");
     const [open, setOpen] = useState(false);
     const [stake, setStake] = useState(0);
-    const [participantTarget, setParticipantTarget] = useState(0);
+    const [participantTarget, setParticipantTarget] = useState(2);
     const [joinDeadline, setJoinDeadline] = useState("");
     const [resolutionDeadline, setResolutionDeadline] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const token = localStorage.getItem("auth_token")
-    const { isDemoMode } = useDashboard()
+    const { isDemoMode } = useDashboard();
 
     const handleSubmit = async (e: React.FormEvent) => {
-    
         e.preventDefault();
+        const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
         if (!token) return;
         if (!question.trim() || !joinDeadline || !resolutionDeadline) {
             toast.error("Please fill all required fields.");
             return;
         }
-
+        if (stake <= 0) {
+            toast.error("Stake must be greater than 0.");
+            return;
+        }
+        if (participantTarget < 2) {
+            toast.error("Participant target must be at least 2.");
+            return;
+        }
+        if (mode === "mutual" && participantTarget !== 2) {
+            toast.error("Mutual mode requires exactly 2 participants.");
+            return;
+        }
 
         const joinTs = Math.floor(new Date(joinDeadline).getTime() / 1000);
         const resolutionTs = Math.floor(new Date(resolutionDeadline).getTime() / 1000);
+        const absThreshold = mode === "consensus"
+            ? Math.ceil((threshold / 100) * participantTarget)
+            : 0;
 
         const newEvent = {
             title: question,
             description,
             mode,
-            threshold: mode === "consensus" ? threshold : 0,
+            threshold: absThreshold,
             participant_target: participantTarget,
             stake_amount: stake,
             join_deadline_utc: joinTs,
             resolve_deadline_utc: resolutionTs,
-            is_demo: isDemoMode
+            is_demo: isDemoMode,
         };
-
 
         try {
             setIsSubmitting(true);
-            const result = await createVsEvent(token, newEvent);
+            await createVsEvent(token, newEvent);
             toast.success("Event created successfully!");
+            setOpen(false);
+            onSuccess?.();
         } catch (error) {
-            console.error("Error creating event:", error);
-            toast.error("Failed to create event.");
-            setIsSubmitting(false);
+            toast.error(error instanceof Error ? error.message : "Failed to create event.");
         } finally {
             setIsSubmitting(false);
-            setOpen(false);
         }
     };
 
@@ -177,7 +192,7 @@ export function CreateEventModal() {
 
                         <div className="space-y-4">
                             <Label className="text-xs uppercase font-bold text-muted-foreground">Wager Mode</Label>
-                            <RadioGroup defaultValue="mutual" onValueChange={(v) => setMode(v as any)} className="grid grid-cols-2 gap-4">
+                            <RadioGroup defaultValue="mutual" onValueChange={(v) => { setMode(v as any); if (v === "mutual") setParticipantTarget(2); }} className="grid grid-cols-2 gap-4">
                                 <div>
                                     <RadioGroupItem value="mutual" id="mutual" className="peer sr-only" />
                                     <Label
@@ -205,19 +220,21 @@ export function CreateEventModal() {
                             <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
                                 <div className="flex justify-between items-center">
                                     <Label className="text-xs uppercase font-bold text-muted-foreground">Resolution Threshold</Label>
-                                    <span className="font-headline font-bold text-primary text-xl">{threshold}%</span>
+                                    <span className="font-headline font-bold text-primary text-xl">
+                                        {threshold}% · {Math.ceil((threshold / 100) * participantTarget)}/{participantTarget} must agree
+                                    </span>
                                 </div>
                                 <Slider
-                                    defaultValue={[66]}
+                                    value={[threshold]}
                                     max={100}
-                                    min={51}
+                                    min={60}
                                     step={1}
                                     onValueChange={(v) => setThreshold(v[0])}
                                 />
                                 <div className="flex items-start gap-2 bg-white/5 p-3 rounded-md border border-white/5">
                                     <Info className="w-4 h-4 text-accent mt-0.5 shrink-0" />
                                     <p className="text-[10px] leading-normal text-muted-foreground">
-                                        The event will automatically resolve when {threshold}% of participants reach an agreement on the outcome.
+                                        The event resolves when {Math.ceil((threshold / 100) * participantTarget)} out of {participantTarget} participants agree on the outcome. YES = creator&apos;s claim was correct. NO = it wasn&apos;t.
                                     </p>
                                 </div>
                             </div>

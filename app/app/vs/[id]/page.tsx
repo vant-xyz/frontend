@@ -57,14 +57,24 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
   const hasJoined = myParticipant !== null
   const myConfirmation = myParticipant?.confirmation ?? null
 
-  const confirmedCount = event ? event.participants.filter(
-    p => p.confirmation === "YES" || p.confirmation === "NO"
-  ).length : 0
-  const progressPercent = event && event.participant_target > 0
-    ? Math.round((confirmedCount / event.participant_target) * 100)
-    : 0
+  const now = new Date()
+  const joinDeadlinePassed = event ? now > new Date(event.join_deadline_utc) : false
+  const resolveDeadlinePassed = event ? now > new Date(event.resolve_deadline_utc) : false
+
   const yesCount = event ? event.participants.filter(p => p.confirmation === 'YES').length : 0
   const noCount = event ? event.participants.filter(p => p.confirmation === 'NO').length : 0
+  const confirmedCount = yesCount + noCount
+  const thresholdCount = event?.threshold ?? 0
+  const progressTarget = event?.mode === 'consensus' ? thresholdCount : event?.participant_target ?? 1
+  const progressPercent = progressTarget > 0
+    ? Math.min(100, Math.round((Math.max(yesCount, noCount) / progressTarget) * 100))
+    : 0
+
+  const winnerEmail = event?.status === 'resolved'
+    ? event.outcome === 'YES'
+      ? event.creator_email
+      : event.participants.find(p => p.user_email !== event.creator_email)?.user_email ?? null
+    : null
 
   const handleJoin = async () => {
     setJoining(true)
@@ -191,8 +201,8 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                 </h1>
                 <p className="text-muted-foreground font-medium">
                   {event.mode === 'mutual'
-                    ? 'Mutual mode: all participants must agree on the same outcome to resolve.'
-                    : `Consensus mode: ${event.threshold ?? 'a threshold of'} confirmations needed to resolve.`}
+                    ? 'Mutual mode: both participants must agree. YES = creator wins the pot. NO = challenger wins.'
+                    : `Consensus mode: ${event.threshold}/${event.participant_target} participants must agree. YES = creator wins. NO = challenger wins.`}
                 </p>
                 <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-xl px-4 py-3">
                   <div className="flex-1 min-w-0">
@@ -215,12 +225,12 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
               </div>
 
               <div className="glass-card rounded-2xl p-8 border-primary/20 space-y-8 neon-glow-primary">
-                {!hasJoined && isActive && !isCreator ? (
+                {!hasJoined && isActive && !isCreator && !joinDeadlinePassed ? (
                   <>
                     <div className="space-y-2">
                       <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-primary">Join Event</h3>
                       <p className="text-xs text-muted-foreground uppercase font-medium">
-                        Join this VS event to participate and confirm the outcome.
+                        Stake ${event.stake_amount} to join. YES = creator&apos;s claim wins. NO = it doesn&apos;t.
                       </p>
                     </div>
                     <Button
@@ -229,17 +239,22 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                       className="w-full h-14 bg-red-600 hover:bg-red-500 font-bold text-sm uppercase tracking-widest"
                     >
                       <UserPlus className="w-4 h-4 mr-2" />
-                      {joining ? 'Joining...' : 'Join Event'}
+                      {joining ? 'Joining...' : `Join · Stake $${event.stake_amount}`}
                     </Button>
                   </>
-                ) : hasJoined && isActive ? (
+                ) : !hasJoined && isActive && !isCreator && joinDeadlinePassed ? (
+                  <div className="bg-white/5 border border-white/10 rounded-2xl p-8 text-center">
+                    <Clock className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
+                    <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Join deadline passed</p>
+                  </div>
+                ) : hasJoined && isActive && !resolveDeadlinePassed ? (
                   <>
                     <div className="space-y-2">
                       <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-primary">Confirm Outcome</h3>
                       <p className="text-xs text-muted-foreground uppercase font-medium">
                         {myConfirmation
-                          ? `You confirmed: ${myConfirmation}. You can change your vote.`
-                          : 'Based on your observation, what is the final state of this event?'}
+                          ? `You voted: ${myConfirmation}. You can change your vote.`
+                          : 'Did the creator\'s claim turn out to be true?'}
                       </p>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
@@ -256,7 +271,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                         <CheckCircle2 className={cn("w-6 h-6 shrink-0 transition-transform group-hover:scale-110",
                           myConfirmation === 'YES' ? "text-success" : "text-muted-foreground")}
                         />
-                        <span className="font-headline font-black text-sm italic uppercase tracking-tight leading-tight text-center">Yes, it happened</span>
+                        <span className="font-headline font-black text-sm italic uppercase tracking-tight leading-tight text-center">YES — Creator wins</span>
                       </Button>
 
                       <Button
@@ -272,22 +287,37 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                         <XCircle className={cn("w-6 h-6 shrink-0 transition-transform group-hover:scale-110",
                           myConfirmation === 'NO' ? "text-error" : "text-muted-foreground")}
                         />
-                        <span className="font-headline font-black text-sm italic uppercase tracking-tight leading-tight text-center">No, it didn't</span>
+                        <span className="font-headline font-black text-sm italic uppercase tracking-tight leading-tight text-center">NO — Challenger wins</span>
                       </Button>
                     </div>
                   </>
-                ) : (
+                ) : hasJoined && isActive && resolveDeadlinePassed ? (
                   <div className="bg-white/5 border border-white/10 rounded-2xl p-8 text-center">
-                    <p className="text-xl font-bold text-muted-foreground">
+                    <Clock className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
+                    <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Resolution deadline passed</p>
+                    <p className="text-xs text-muted-foreground mt-1">Contact the other party if unresolved.</p>
+                  </div>
+                ) : (
+                  <div className="bg-white/5 border border-white/10 rounded-2xl p-8 text-center space-y-3">
+                    <p className="text-xl font-bold text-white">
                       {event.status === 'resolved'
-                        ? 'Event has been resolved'
+                        ? '🏆 Event Resolved'
                         : event.status === 'cancelled'
-                        ? 'Event was cancelled'
+                        ? 'Event Cancelled'
                         : 'Event is no longer active'}
                     </p>
-                    <p className="text-sm text-muted-foreground mt-2">
-                      {event.outcome ? `Outcome: ${event.outcome}` : 'No further action required.'}
-                    </p>
+                    {winnerEmail && (
+                      <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-yellow-500/70 mb-1">Winner</p>
+                        <p className="text-sm font-bold text-yellow-400">{winnerEmail}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Received ${(event.participants.length * event.stake_amount).toFixed(2)} pot
+                        </p>
+                      </div>
+                    )}
+                    {!winnerEmail && event.outcome && (
+                      <p className="text-sm text-muted-foreground">Outcome: {event.outcome}</p>
+                    )}
                   </div>
                 )}
 
@@ -299,8 +329,8 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                       <p className="text-sm font-headline font-bold uppercase tracking-tight">
                         {isActive
                           ? event.mode === 'mutual'
-                            ? 'All participants must confirm the same outcome.'
-                            : `${event.threshold ?? '?'} out of ${event.participant_target} must agree.`
+                            ? 'Both must agree — YES (creator wins) or NO (challenger wins).'
+                            : `${event.threshold} / ${event.participant_target} must agree to resolve.`
                           : 'This event has been finalized.'}
                       </p>
                     </div>
@@ -375,12 +405,14 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                   <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Confirmation Progress</p>
                   <div className="flex items-center justify-between">
                     <p className="font-headline font-bold text-lg">{progressPercent === 100 ? "COMPLETE" : "IN PROGRESS"}</p>
-                    <p className="text-[10px] font-bold text-muted-foreground">{yesCount + noCount}/{event.participant_target}</p>
+                    <p className="text-[10px] font-bold text-muted-foreground">
+                      {Math.max(yesCount, noCount)}/{progressTarget} needed
+                    </p>
                   </div>
                   <Progress value={progressPercent} className="h-2 bg-secondary" />
                   <div className="flex justify-between text-[10px] text-muted-foreground pt-1">
-                    <span>YES: {yesCount}</span>
-                    <span>NO: {noCount}</span>
+                    <span className="text-green-500">YES: {yesCount}</span>
+                    <span className="text-red-400">NO: {noCount}</span>
                   </div>
                 </div>
 
@@ -392,7 +424,9 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                   {event.mode === 'consensus' && (
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-muted-foreground font-medium uppercase tracking-widest">Threshold</span>
-                      <span className="font-bold uppercase tracking-tight text-white">{event.threshold ?? '-'}</span>
+                      <span className="font-bold uppercase tracking-tight text-white">
+                        {event.threshold}/{event.participant_target} agree
+                      </span>
                     </div>
                   )}
                   <div className="flex justify-between items-center text-xs">
