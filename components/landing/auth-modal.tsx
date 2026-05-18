@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader } from "@/components/ui/loader";
@@ -26,7 +25,7 @@ interface AuthModalProps {
 type AuthStep = "email" | "password" | "signup-password" | "username" | "success";
 
 export function AuthModal({ isOpen, onClose, onAuthSuccess, onSuccess }: AuthModalProps) {
-  const router = useRouter();
+  const googleAuthHref = "/api/vcs/auth/google";
   const [step, setStep] = useState<AuthStep>("email");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -310,7 +309,7 @@ export function AuthModal({ isOpen, onClose, onAuthSuccess, onSuccess }: AuthMod
               </div>
 
               <a
-                href={`${process.env.NEXT_PUBLIC_API_URL ?? "/api/vcs"}/auth/google`}
+                href={googleAuthHref}
                 className="w-full h-10 flex items-center justify-center gap-3 border border-gray-800 rounded-md text-sm font-medium text-white hover:bg-gray-900 transition-colors"
               >
                 <svg className="w-4 h-4" viewBox="0 0 24 24">
@@ -563,7 +562,7 @@ export function AuthModal({ isOpen, onClose, onAuthSuccess, onSuccess }: AuthMod
             </div>
 
             <a
-              href={`${process.env.NEXT_PUBLIC_API_URL ?? "/api/vcs"}/auth/google`}
+              href={googleAuthHref}
               className="w-full h-10 flex items-center justify-center gap-3 border border-gray-800 rounded-md text-sm font-medium text-white hover:bg-gray-900 transition-colors"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24">

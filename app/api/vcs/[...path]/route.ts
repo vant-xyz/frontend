@@ -28,12 +28,21 @@ async function proxy(req: NextRequest, pathSegments: string[]) {
       headers,
       body: rawBody && rawBody.byteLength > 0 ? rawBody : undefined,
       cache: "no-store",
+      redirect: "manual",
     });
 
     const body = await resp.text();
+    const outHeaders = new Headers();
+    const contentTypeResp = resp.headers.get("content-type");
+    if (contentTypeResp) outHeaders.set("content-type", contentTypeResp);
+    const location = resp.headers.get("location");
+    if (location) outHeaders.set("location", location);
+    const setCookie = resp.headers.get("set-cookie");
+    if (setCookie) outHeaders.set("set-cookie", setCookie);
+
     return new NextResponse(body, {
       status: resp.status,
-      headers: { "content-type": resp.headers.get("content-type") || "application/json" },
+      headers: outHeaders,
     });
   } catch (err: any) {
     return NextResponse.json({ error: err?.message || "Upstream request failed" }, { status: 502 });
