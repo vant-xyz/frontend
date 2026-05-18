@@ -202,9 +202,9 @@ export function TutorialModal() {
   };
 
   const inner = (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col">
       {/* Slide content */}
-      <div className="flex-1 flex flex-col gap-5 px-6 pt-6 pb-4 overflow-y-auto">
+      <div className={cn("flex flex-col gap-5 px-6 pt-6 pb-4 overflow-y-auto", isMobile && "flex-1")}>
         <div className="flex items-start gap-4">
           {slides[current].icon}
           <div className="flex-1 min-w-0">
@@ -291,7 +291,7 @@ export function TutorialModal() {
   return (
     <Dialog open={open} onOpenChange={dismiss}>
       <DialogContent className="max-w-sm bg-black border-white/10 p-0 rounded-3xl shadow-2xl outline-none overflow-hidden">
-        <div className="h-[440px] flex flex-col">
+        <div className="max-h-[85vh] flex flex-col">
           {inner}
         </div>
       </DialogContent>
