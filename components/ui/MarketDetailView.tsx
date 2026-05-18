@@ -39,6 +39,7 @@ import { OpinionTrendChart } from "@/components/ui/OpinionTrendChart";
 import { CandlestickChart } from "@/components/ui/CandlestickChart";
 import { useParams, useRouter } from "next/navigation";
 import { useDashboard } from "@/hooks/use-dashboard";
+import { AuthModal } from "@/components/landing/auth-modal";
 import { SharePositionModal } from "./sharePositionModal";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -112,7 +113,12 @@ export default function MarketDetailView() {
     const handleSharePosition = (pos: Position, pnl: number, pnlPct: number, currentPriceCents: number, avgPriceCents: number) => {
         setSharePosition({ pos, pnl, pnlPct, avgPriceCents, currentPriceCents });
     };
-    const token = localStorage.getItem("auth_token");
+    const [token, setToken] = useState<string | null>(null);
+    const [authModalOpen, setAuthModalOpen] = useState(false);
+    const [activityTab, setActivityTab] = useState("trades");
+    useEffect(() => {
+        setToken(typeof window !== "undefined" ? localStorage.getItem("auth_token") : null);
+    }, []);
     const { isDemoMode } = useDashboard();
     const isMobile = useIsMobile();
     const router = useRouter();
@@ -648,7 +654,7 @@ export default function MarketDetailView() {
 
     const handlePlaceOrder = async () => {
         const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
-        if (!token) { toast.error("Please login to trade"); return; }
+        if (!token) { setAuthModalOpen(true); return; }
         if (!effectiveQuantity || effectiveQuantity <= 0) { toast.error("Enter a valid quantity"); return; }
         try {
             setSubmitting(true);
@@ -928,9 +934,18 @@ export default function MarketDetailView() {
                             <BarChart3 size={12} />
                             Order Size
                         </span>
-                        <span className="text-[10px] text-gray-400">
-                            Balance ${tradingBalance.toFixed(2)} · Assets ${assetBalance.toFixed(2)}
-                        </span>
+                        {token ? (
+                            <span className="text-[10px] text-gray-400">
+                                Balance ${tradingBalance.toFixed(2)} · Assets ${assetBalance.toFixed(2)}
+                            </span>
+                        ) : (
+                            <button
+                                onClick={() => setAuthModalOpen(true)}
+                                className="text-[10px] text-blue-400 hover:text-blue-300 transition-colors"
+                            >
+                                Sign In to View Balance
+                            </button>
+                        )}
                     </div>
 
                     <div className="grid grid-cols-2 gap-1 mb-3">
@@ -1115,6 +1130,11 @@ export default function MarketDetailView() {
                     <div className="w-full py-3 rounded-xl text-xs font-bold tracking-wide text-center bg-white/5 text-gray-500 cursor-not-allowed border border-white/10">
                         Market expired · Orders closed
                     </div>
+                ) : !token ? (
+                    <button onClick={() => setAuthModalOpen(true)}
+                        className="w-full py-3 rounded-xl text-xs font-bold tracking-wide transition-all bg-white/10 text-white hover:bg-white/15 border border-white/10">
+                        Sign In to Trade
+                    </button>
                 ) : (
                     <button onClick={handlePlaceOrder} disabled={submitting || effectiveQuantity <= 0}
                         className={cn(
@@ -1163,7 +1183,10 @@ export default function MarketDetailView() {
                         </div>
                     </button>
                     {!isActivityCollapsed && (
-                        <Tabs defaultValue="positions" className="w-full">
+                        <Tabs value={activityTab} onValueChange={(v) => {
+                            if (!token && (v === "positions" || v === "open")) { setAuthModalOpen(true); return; }
+                            setActivityTab(v);
+                        }} className="w-full">
                             <TabsList className="w-full bg-white/5">
                                 <TabsTrigger value="positions" className="text-xs">Positions</TabsTrigger>
                                 <TabsTrigger value="trades" className="text-xs">Trades</TabsTrigger>
@@ -1416,7 +1439,10 @@ export default function MarketDetailView() {
                         </div>
 
                         {/* Bottom tabs — 30%, desktop only */}
-                        <Tabs defaultValue="positions" className="hidden lg:flex flex-[3] border-[1px] rounded-2xl flex-col min-h-0 overflow-hidden mt-2">
+                        <Tabs value={activityTab} onValueChange={(v) => {
+                            if (!token && (v === "positions" || v === "open")) { setAuthModalOpen(true); return; }
+                            setActivityTab(v);
+                        }} className="hidden lg:flex flex-[3] border-[1px] rounded-2xl flex-col min-h-0 overflow-hidden mt-2">
                             <div className="px-4 bg-white/[0.02] shrink-0">
                                 <TabsList className="bg-transparent gap-1 rounded-none h-auto p-0">
                                     <TabsTrigger value="positions" className={cn(
@@ -2133,6 +2159,8 @@ export default function MarketDetailView() {
                     </div>
                 </DrawerContent>
             </Drawer>
+
+            <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
         </>
     );
 }
