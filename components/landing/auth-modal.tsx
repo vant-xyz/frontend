@@ -25,7 +25,7 @@ interface AuthModalProps {
 type AuthStep = "email" | "password" | "signup-password" | "username" | "success";
 
 export function AuthModal({ isOpen, onClose, onAuthSuccess, onSuccess }: AuthModalProps) {
-  const googleAuthHref = "/api/vcs/auth/google";
+  const googleAuthHref = `${process.env.NEXT_PUBLIC_API_URL ?? "/api/vcs"}/auth/google`;
   const [step, setStep] = useState<AuthStep>("email");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
