@@ -32,7 +32,7 @@ export function BalanceWidget({
       variant="outline"
       onClick={onClick}
       className={cn(
-        "h-10 px-4 rounded-xl border-white/10 bg-white/5 hover:bg-white/10 text-white font-black tabular-nums tracking-tight text-lg shadow-lg shadow-black/20 transition-all gap-2",
+        "h-9 px-3 rounded-md border-white/10 bg-white/5 hover:bg-white/10 text-white font-semibold tabular-nums text-sm shadow-lg shadow-black/20 transition-all gap-1.5",
         className
       )}
     >

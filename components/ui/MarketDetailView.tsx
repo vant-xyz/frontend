@@ -703,8 +703,7 @@ export default function MarketDetailView() {
         return (
             <div className="flex flex-col h-full">
                 {/* Header */}
-                <div className="flex items-center justify-between px-4 py-2 border-b border-white/8">
-                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Order Book</span>
+                <div className="flex items-center justify-end px-4 py-2 border-b border-white/8">
                     <div className="flex items-center gap-2">
                         <div className="flex gap-0.5">
                             {(["all", "bids", "asks"] as const).map(f => (
@@ -879,25 +878,27 @@ export default function MarketDetailView() {
     const orderForm = (
         <div className="flex flex-col h-full">
             {/* Buy / Sell + Market type */}
-            <div className="p-4 border-b border-white/8 space-y-3">
-                <div className="flex items-center justify-between">
-                    <div className="flex gap-1 bg-white/5 rounded-lg p-1">
+            <div className="border-b border-white/8 space-y-0">
+                <div className="flex items-end justify-between border-b border-white/8">
+                    <div className="flex">
                         {(["BUY", "SELL"] as const).map(m => (
                             <button key={m} onClick={() => setOrderMode(m)}
-                                className={cn("px-4 py-1.5 rounded-md text-xs font-bold transition-all",
-                                    orderMode === m ? "bg-white/15 text-white" : "text-gray-500 hover:text-gray-300"
+                                className={cn(
+                                    "px-5 py-2.5 text-xs font-bold -mb-px border-b-2 transition-colors",
+                                    m === "BUY"
+                                        ? orderMode === "BUY" ? "border-green-500 text-green-400" : "border-transparent text-gray-500 hover:text-gray-300"
+                                        : orderMode === "SELL" ? "border-red-500 text-red-400" : "border-transparent text-gray-500 hover:text-gray-300"
                                 )}>
                                 {m}
                             </button>
                         ))}
                     </div>
-                    <div className="flex gap-1 bg-white/5 rounded-lg p-1">
+                    <div className="flex">
                         {(["MARKET", "LIMIT"] as const).map(t => (
-                            <button
-                                key={t}
-                                onClick={() => handleOrderTypeChange(t)}
-                                className={cn("px-3 py-1.5 rounded-md text-xs font-semibold transition-all",
-                                    orderType === t ? "bg-white/15 text-white" : "text-gray-500 hover:text-gray-300"
+                            <button key={t} onClick={() => handleOrderTypeChange(t)}
+                                className={cn(
+                                    "px-4 py-2.5 text-xs font-semibold -mb-px border-b-2 transition-colors",
+                                    orderType === t ? "border-primary text-white" : "border-transparent text-gray-500 hover:text-gray-300"
                                 )}>
                                 {t.charAt(0) + t.slice(1).toLowerCase()}
                             </button>
@@ -906,16 +907,18 @@ export default function MarketDetailView() {
                 </div>
 
                 {/* YES / NO */}
-                <div className="grid grid-cols-2 rounded-xl overflow-hidden bg-white/5 p-1 gap-1">
+                <div className="flex">
                     <button onClick={() => setSelectedSide("YES")}
-                        className={cn("py-2.5 rounded-lg text-sm font-bold transition-all",
-                            selectedSide === "YES" ? "bg-green-500 text-white shadow-lg shadow-green-500/20" : "text-gray-400 hover:text-white"
+                        className={cn(
+                            "flex-1 py-2.5 text-sm font-bold -mb-px border-b-2 transition-colors",
+                            selectedSide === "YES" ? "border-green-500 text-green-400" : "border-transparent text-gray-400 hover:text-white"
                         )}>
                         Yes {lastYes.toFixed(1)}¢
                     </button>
                     <button onClick={() => setSelectedSide("NO")}
-                        className={cn("py-2.5 rounded-lg text-sm font-bold transition-all",
-                            selectedSide === "NO" ? "bg-red-600 text-white shadow-lg shadow-red-600/20" : "text-gray-400 hover:text-white"
+                        className={cn(
+                            "flex-1 py-2.5 text-sm font-bold -mb-px border-b-2 transition-colors",
+                            selectedSide === "NO" ? "border-red-500 text-red-400" : "border-transparent text-gray-400 hover:text-white"
                         )}>
                         No {lastNo.toFixed(1)}¢
                     </button>
@@ -1319,7 +1322,7 @@ export default function MarketDetailView() {
                         <ArrowLeft size={17} />
                     </button>
 
-                    <img src="/icon.svg" alt="Vantic" className="hidden lg:block w-7 h-7 shrink-0 mt-0.5 opacity-90" />
+                    <img src="/icon.svg" alt="Vantic" className="hidden lg:block w-7 h-7 shrink-0 self-center opacity-90" />
 
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
@@ -2231,10 +2234,16 @@ export default function MarketDetailView() {
                         <DrawerHeader><DrawerTitle>Balance &amp; Assets</DrawerTitle></DrawerHeader>
                         <div className="space-y-3 text-sm text-gray-300">
                             <p><span className="text-white font-semibold">Balance</span> is your available USD for placing new orders.</p>
-                            <p><span className="text-white font-semibold">Assets</span> is the current market value of all your open positions in this market.</p>
-                            <p>When your Balance drops below 30% of your Assets value, you see a <span className="text-yellow-400 font-semibold">· Sell</span> hint. It means your capital is mostly tied up in open positions. Tap the Balance row to open the sell form and close positions to free up funds.</p>
-                            <p className="text-xs text-gray-500">You can also sell any time without waiting for the hint by tapping the Balance row.</p>
+                            <p><span className="text-white font-semibold">Assets</span> is the total value of your open positions in this market.</p>
+                            <p>When your Balance is lower than your Assets value, most of your capital is tied up in open positions. You can sell positions to move value back into your trading balance.</p>
+                            <p>The <span className="text-yellow-400 font-semibold">· Sell</span> hint appears when your Balance drops below 30% of your Assets value as a reminder to consider selling.</p>
                         </div>
+                        <button
+                            onClick={() => { setShowBalanceHelp(false); setOrderMode("SELL"); }}
+                            className="mt-5 w-full py-2.5 rounded-md bg-red-600 text-white text-sm font-bold hover:bg-red-500 transition-colors"
+                        >
+                            Open Sell Form
+                        </button>
                     </DrawerContent>
                 </Drawer>
             ) : (
@@ -2243,10 +2252,16 @@ export default function MarketDetailView() {
                         <DialogHeader><DialogTitle>Balance &amp; Assets</DialogTitle></DialogHeader>
                         <div className="space-y-3 text-sm text-gray-300">
                             <p><span className="text-white font-semibold">Balance</span> is your available USD for placing new orders.</p>
-                            <p><span className="text-white font-semibold">Assets</span> is the current market value of all your open positions in this market.</p>
-                            <p>When your Balance drops below 30% of your Assets value, you see a <span className="text-yellow-400 font-semibold">· Sell</span> hint. It means your capital is mostly tied up in open positions. Click the Balance row to open the sell form and close positions to free up funds.</p>
-                            <p className="text-xs text-gray-500">You can also sell any time without waiting for the hint by clicking the Balance row.</p>
+                            <p><span className="text-white font-semibold">Assets</span> is the total value of your open positions in this market.</p>
+                            <p>When your Balance is lower than your Assets value, most of your capital is tied up in open positions. You can sell positions to move value back into your trading balance.</p>
+                            <p>The <span className="text-yellow-400 font-semibold">· Sell</span> hint appears when your Balance drops below 30% of your Assets value as a reminder to consider selling.</p>
                         </div>
+                        <button
+                            onClick={() => { setShowBalanceHelp(false); setOrderMode("SELL"); }}
+                            className="mt-5 w-full py-2.5 rounded-md bg-red-600 text-white text-sm font-bold hover:bg-red-500 transition-colors"
+                        >
+                            Open Sell Form
+                        </button>
                     </DialogContent>
                 </Dialog>
             )}

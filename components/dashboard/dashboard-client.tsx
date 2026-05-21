@@ -143,7 +143,7 @@ export function DashboardClient({ children }: DashboardClientProps) {
               size="icon"
               onClick={() => router.push("/app/history")}
               className={cn(
-                "h-10 w-10 rounded-xl transition-all shadow-none",
+                "h-9 w-9 rounded-md transition-all shadow-none",
                 pathname === "/app/history" ? "bg-red-600 text-white" : "hover:bg-white/5 text-gray-400 hover:text-white"
               )}
             >

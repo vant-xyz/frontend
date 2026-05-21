@@ -305,7 +305,7 @@ export function PositionsWidget({ className, label }: PositionsWidgetProps) {
       size="icon"
       onClick={() => setOpen(true)}
       className={cn(
-        "relative h-10 w-10 rounded-xl border transition-all",
+        "relative h-9 w-9 rounded-md border transition-all",
         pnlTint === "profit"
           ? "border-green-500/30 bg-green-500/10 text-green-400 hover:bg-green-500/20"
           : pnlTint === "loss"
