@@ -47,6 +47,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ReelAnimation } from "@/components/landing/reel-animation";
 import { PositionsWidget } from "@/components/dashboard/positions-widget";
+import { SellCryptoModal } from "@/components/dashboard/sell-crypto-modal";
 
 export default function MarketDetailView() {
     const { id } = useParams()
@@ -97,6 +98,7 @@ export default function MarketDetailView() {
     const [flashedRows, setFlashedRows] = useState<Record<string, "fill" | "new">>({});
     const [orderbookFilter, setOrderbookFilter] = useState<"all" | "asks" | "bids">("all");
     const [showBalanceHelp, setShowBalanceHelp] = useState(false);
+    const [showSellModal, setShowSellModal] = useState(false);
     const [showOIHelp, setShowOIHelp] = useState(false);
     const [showVolHelp, setShowVolHelp] = useState(false);
     const [showVolatilityHelp, setShowVolatilityHelp] = useState(false);
@@ -203,6 +205,15 @@ export default function MarketDetailView() {
             setDesktopBookTab("details");
         }
     }, [market?.status]);
+
+    useEffect(() => {
+        if (orderMode !== "SELL" || positions === null) return;
+        const yesShares = positions.filter(p => p.status === "ACTIVE" && p.side === "YES").reduce((s, p) => s + p.shares, 0);
+        const noShares = positions.filter(p => p.status === "ACTIVE" && p.side === "NO").reduce((s, p) => s + p.shares, 0);
+        if (yesShares > 0 && noShares === 0) setSelectedSide("YES");
+        else if (noShares > 0 && yesShares === 0) setSelectedSide("NO");
+        setQuantity("");
+    }, [orderMode]);
 
     useEffect(() => {
         if (!id) return
@@ -554,11 +565,17 @@ export default function MarketDetailView() {
             (balance.eth_base ?? 0) * ethPx +
             (balance.vusd ?? 0);
     })();
-    const effectiveQuantity = inputMode === "shares"
+    const ownedYesShares = (positions || []).filter(p => p.status === "ACTIVE" && p.side === "YES").reduce((s, p) => s + p.shares, 0);
+    const ownedNoShares = (positions || []).filter(p => p.status === "ACTIVE" && p.side === "NO").reduce((s, p) => s + p.shares, 0);
+    const ownedSideShares = selectedSide === "YES" ? ownedYesShares : ownedNoShares;
+
+    const effectiveQuantity = orderMode === "SELL"
         ? (parseFloat(quantity) || 0)
-        : (parseFloat(usdAmount) || 0) / (pricePerShareDollars > 0 ? pricePerShareDollars : 1);
+        : inputMode === "shares"
+            ? (parseFloat(quantity) || 0)
+            : (parseFloat(usdAmount) || 0) / (pricePerShareDollars > 0 ? pricePerShareDollars : 1);
     const sharesTotal = effectiveQuantity * pricePerShareDollars;
-    const youReceive = effectiveQuantity * 1.00;
+    const youReceive = orderMode === "SELL" ? sharesTotal : effectiveQuantity * 1.00;
     const expiresAt = new Date(market.end_time_utc);
     const formattedExpiry = expiresAt.toLocaleString(undefined, {
         weekday: "short",
@@ -908,19 +925,27 @@ export default function MarketDetailView() {
 
                 {/* YES / NO */}
                 <div className="flex">
-                    <button onClick={() => setSelectedSide("YES")}
+                    <button
+                        onClick={() => setSelectedSide("YES")}
+                        disabled={orderMode === "SELL" && ownedYesShares === 0}
                         className={cn(
                             "flex-1 py-2.5 text-sm font-bold -mb-px border-b-2 transition-colors",
-                            selectedSide === "YES" ? "border-green-500 text-green-400" : "border-transparent text-gray-400 hover:text-white"
+                            selectedSide === "YES" ? "border-green-500 text-green-400" : "border-transparent text-gray-400 hover:text-white",
+                            orderMode === "SELL" && ownedYesShares === 0 && "opacity-30 cursor-not-allowed hover:text-gray-400"
                         )}>
                         Yes {lastYes.toFixed(1)}¢
+                        {orderMode === "SELL" && ownedYesShares > 0 && <span className="ml-1 text-[10px] font-normal text-gray-500">({ownedYesShares.toFixed(2)} sh)</span>}
                     </button>
-                    <button onClick={() => setSelectedSide("NO")}
+                    <button
+                        onClick={() => setSelectedSide("NO")}
+                        disabled={orderMode === "SELL" && ownedNoShares === 0}
                         className={cn(
                             "flex-1 py-2.5 text-sm font-bold -mb-px border-b-2 transition-colors",
-                            selectedSide === "NO" ? "border-red-500 text-red-400" : "border-transparent text-gray-400 hover:text-white"
+                            selectedSide === "NO" ? "border-red-500 text-red-400" : "border-transparent text-gray-400 hover:text-white",
+                            orderMode === "SELL" && ownedNoShares === 0 && "opacity-30 cursor-not-allowed hover:text-gray-400"
                         )}>
                         No {lastNo.toFixed(1)}¢
+                        {orderMode === "SELL" && ownedNoShares > 0 && <span className="ml-1 text-[10px] font-normal text-gray-500">({ownedNoShares.toFixed(2)} sh)</span>}
                     </button>
                 </div>
             </div>
@@ -960,23 +985,29 @@ export default function MarketDetailView() {
                             Order Size
                         </span>
                         {token ? (
-                            <div className="flex items-center gap-1">
-                                <button
-                                    onClick={() => { setOrderMode("SELL"); }}
-                                    className="text-[10px] text-gray-400 hover:text-white transition-colors text-left"
-                                >
-                                    Balance ${tradingBalance.toFixed(2)} · Assets ${assetBalance.toFixed(2)}
-                                    {tradingBalance < assetBalance * 0.7 && assetBalance > 0 && (
-                                        <span className="text-yellow-400 ml-1">· Sell</span>
-                                    )}
-                                </button>
-                                <button
-                                    onClick={() => setShowBalanceHelp(true)}
-                                    className="text-gray-600 hover:text-gray-400 transition-colors shrink-0"
-                                >
-                                    <CircleHelp size={11} />
-                                </button>
-                            </div>
+                            orderMode === "SELL" ? (
+                                <span className="text-[10px] text-gray-400 font-mono">
+                                    {ownedSideShares.toFixed(2)} {selectedSide} shares owned
+                                </span>
+                            ) : (
+                                <div className="flex items-center gap-1">
+                                    <button
+                                        onClick={() => setShowSellModal(true)}
+                                        className="text-[10px] text-gray-400 hover:text-white transition-colors text-left"
+                                    >
+                                        Balance ${tradingBalance.toFixed(2)} · Assets ${assetBalance.toFixed(2)}
+                                        {tradingBalance < assetBalance * 0.7 && assetBalance > 0 && (
+                                            <span className="text-yellow-400 ml-1">· Sell</span>
+                                        )}
+                                    </button>
+                                    <button
+                                        onClick={() => setShowBalanceHelp(true)}
+                                        className="text-gray-600 hover:text-gray-400 transition-colors shrink-0"
+                                    >
+                                        <CircleHelp size={11} />
+                                    </button>
+                                </div>
+                            )
                         ) : (
                             <button
                                 onClick={() => setAuthModalOpen(true)}
@@ -987,39 +1018,41 @@ export default function MarketDetailView() {
                         )}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-1 mb-3">
-                        <button
-                            onClick={() => setInputMode("shares")}
-                            className={cn(
-                                "py-1.5 rounded-lg text-xs font-semibold transition-colors",
-                                inputMode === "shares" ? "bg-white/15 text-white" : "bg-white/5 text-gray-400 hover:text-gray-200"
-                            )}
-                        >
-                            <span className="inline-flex items-center gap-1">
-                                <BarChart3 size={12} />
-                                Shares
-                            </span>
-                        </button>
-                        <button
-                            onClick={() => setInputMode("usd")}
-                            className={cn(
-                                "py-1.5 rounded-lg text-xs font-semibold transition-colors",
-                                inputMode === "usd" ? "bg-white/15 text-white" : "bg-white/5 text-gray-400 hover:text-gray-200"
-                            )}
-                        >
-                            <span className="inline-flex items-center gap-1">
-                                <DollarSign size={12} />
-                                USD
-                            </span>
-                        </button>
-                    </div>
+                    {orderMode !== "SELL" && (
+                        <div className="grid grid-cols-2 gap-1 mb-3">
+                            <button
+                                onClick={() => setInputMode("shares")}
+                                className={cn(
+                                    "py-1.5 rounded-lg text-xs font-semibold transition-colors",
+                                    inputMode === "shares" ? "bg-white/15 text-white" : "bg-white/5 text-gray-400 hover:text-gray-200"
+                                )}
+                            >
+                                <span className="inline-flex items-center gap-1">
+                                    <BarChart3 size={12} />
+                                    Shares
+                                </span>
+                            </button>
+                            <button
+                                onClick={() => setInputMode("usd")}
+                                className={cn(
+                                    "py-1.5 rounded-lg text-xs font-semibold transition-colors",
+                                    inputMode === "usd" ? "bg-white/15 text-white" : "bg-white/5 text-gray-400 hover:text-gray-200"
+                                )}
+                            >
+                                <span className="inline-flex items-center gap-1">
+                                    <DollarSign size={12} />
+                                    USD
+                                </span>
+                            </button>
+                        </div>
+                    )}
 
                     <div className="mb-3 flex items-stretch gap-1">
                         <Input
                             type="number"
-                            value={inputMode === "shares" ? quantity : usdAmount}
+                            value={orderMode === "SELL" || inputMode === "shares" ? quantity : usdAmount}
                             onChange={(e) => {
-                                if (inputMode === "shares") {
+                                if (orderMode === "SELL" || inputMode === "shares") {
                                     setQuantity(e.target.value);
                                     return;
                                 }
@@ -1075,15 +1108,14 @@ export default function MarketDetailView() {
 
                                     const maxAffordable = Math.floor(userBalance / pricePerShare);
 
-                                    if (label === "25%") {
-                                        const q = Math.max(0, Math.floor(maxAffordable * 0.25));
-                                        inputMode === "shares" ? setQuantity(String(q)) : setUsdAmount(String((q * pricePerShare).toFixed(2)));
-                                    } else if (label === "50%") {
-                                        const q = Math.max(0, Math.floor(maxAffordable * 0.5));
-                                        inputMode === "shares" ? setQuantity(String(q)) : setUsdAmount(String((q * pricePerShare).toFixed(2)));
+                                    const pcts: Record<string, number> = { "25%": 0.25, "50%": 0.5, "MAX": 1 };
+                                    const pct = pcts[label];
+                                    if (orderMode === "SELL") {
+                                        setQuantity(String(Math.max(0, Math.floor(ownedSideShares * pct))));
+                                    } else if (inputMode === "usd") {
+                                        setUsdAmount((tradingBalance * pct).toFixed(2));
                                     } else {
-                                        const q = Math.max(0, maxAffordable);
-                                        inputMode === "shares" ? setQuantity(String(q)) : setUsdAmount(String((q * pricePerShare).toFixed(2)));
+                                        setQuantity(String(Math.max(0, Math.floor(maxAffordable * pct))));
                                     }
                                 }}
                                 className="flex-1 py-1.5 text-[10px] font-semibold border border-white/10 rounded-lg text-gray-400 hover:border-white/25 hover:text-gray-200 transition-colors"
@@ -1094,24 +1126,30 @@ export default function MarketDetailView() {
                     </div>
 
                     {/* Amount slider */}
-                    {tradingBalance > 0 && (
+                    {(orderMode === "SELL" ? ownedSideShares > 0 : tradingBalance > 0) && (
                         <div className="pt-2">
                             <Slider
                                 min={0}
                                 max={100}
                                 step={1}
                                 value={[Math.min(100, Math.round(
-                                    inputMode === "usd"
-                                        ? (parseFloat(usdAmount) || 0) / tradingBalance * 100
-                                        : (parseFloat(quantity) || 0) * (effectivePriceCents / 100) / tradingBalance * 100
+                                    orderMode === "SELL"
+                                        ? ownedSideShares > 0 ? (parseFloat(quantity) || 0) / ownedSideShares * 100 : 0
+                                        : inputMode === "usd"
+                                            ? (parseFloat(usdAmount) || 0) / tradingBalance * 100
+                                            : (parseFloat(quantity) || 0) * (effectivePriceCents / 100) / tradingBalance * 100
                                 ))]}
                                 onValueChange={([val]) => {
-                                    const amount = (val / 100) * tradingBalance;
-                                    if (inputMode === "usd") {
-                                        setUsdAmount(amount.toFixed(2));
+                                    if (orderMode === "SELL") {
+                                        setQuantity(String(Math.floor((val / 100) * ownedSideShares)));
                                     } else {
-                                        const pricePerShare = effectivePriceCents / 100;
-                                        if (pricePerShare > 0) setQuantity(String(Math.floor(amount / pricePerShare)));
+                                        const amount = (val / 100) * tradingBalance;
+                                        if (inputMode === "usd") {
+                                            setUsdAmount(amount.toFixed(2));
+                                        } else {
+                                            const pricePerShare = effectivePriceCents / 100;
+                                            if (pricePerShare > 0) setQuantity(String(Math.floor(amount / pricePerShare)));
+                                        }
                                     }
                                 }}
                                 className="[&_[data-slot=slider-range]]:bg-primary [&_[data-slot=slider-track]]:bg-white/10"
@@ -1124,7 +1162,7 @@ export default function MarketDetailView() {
                 <div className="bg-white/5 rounded-xl p-3 space-y-2">
                     <div className="flex justify-between items-center text-xs">
                         <span className="text-gray-500 inline-flex items-center gap-1">
-                            Quote price
+                            {orderMode === "SELL" ? "Sell price" : "Quote price"}
                             <button
                                 type="button"
                                 onClick={() => setShowQuoteHelp(true)}
@@ -1142,23 +1180,25 @@ export default function MarketDetailView() {
                             />¢ / share
                         </span>
                     </div>
-                    <div className="flex justify-between text-xs">
-                        <span className="text-gray-500 inline-flex items-center gap-1">
-                            Total Cost
-                            <button
-                                type="button"
-                                onClick={() => setShowTotalCostHelp(true)}
-                                className="text-gray-500 hover:text-gray-300 transition-colors"
-                                aria-label="Explain total cost"
-                            >
-                                <CircleHelp size={13} />
-                            </button>
-                        </span>
-                        <span className="text-white font-mono">${sharesTotal.toFixed(2)}</span>
-                    </div>
+                    {orderMode !== "SELL" && (
+                        <div className="flex justify-between text-xs">
+                            <span className="text-gray-500 inline-flex items-center gap-1">
+                                Total Cost
+                                <button
+                                    type="button"
+                                    onClick={() => setShowTotalCostHelp(true)}
+                                    className="text-gray-500 hover:text-gray-300 transition-colors"
+                                    aria-label="Explain total cost"
+                                >
+                                    <CircleHelp size={13} />
+                                </button>
+                            </span>
+                            <span className="text-white font-mono">${sharesTotal.toFixed(2)}</span>
+                        </div>
+                    )}
                     <div className="flex justify-between items-center">
                         <span className="text-gray-500 text-xs inline-flex items-center gap-1">
-                            You'll receive
+                            {orderMode === "SELL" ? "You'll get back" : "You'll receive"}
                             <button
                                 type="button"
                                 onClick={() => setShowReceiveHelp(true)}
@@ -1170,7 +1210,7 @@ export default function MarketDetailView() {
                         </span>
                         <span className="text-teal-400 text-lg font-mono font-semibold">${youReceive.toFixed(2)}</span>
                     </div>
-                    {effectiveQuantity > 0 && sharesTotal > 0 && (
+                    {orderMode !== "SELL" && effectiveQuantity > 0 && sharesTotal > 0 && (
                         <div className="pt-2 border-t border-white/10 flex justify-between items-center">
                             <span className="text-[10px] text-gray-500 uppercase tracking-widest font-semibold inline-flex items-center gap-1">
                                 If {selectedSide} wins
@@ -2233,16 +2273,15 @@ export default function MarketDetailView() {
                     <DrawerContent className="bg-black border-white/10 text-white px-4 pb-6">
                         <DrawerHeader><DrawerTitle>Balance &amp; Assets</DrawerTitle></DrawerHeader>
                         <div className="space-y-3 text-sm text-gray-300">
-                            <p><span className="text-white font-semibold">Balance</span> is your available USD for placing new orders.</p>
-                            <p><span className="text-white font-semibold">Assets</span> is the total value of your open positions in this market.</p>
-                            <p>When your Balance is lower than your Assets value, most of your capital is tied up in open positions. You can sell positions to move value back into your trading balance.</p>
-                            <p>The <span className="text-yellow-400 font-semibold">· Sell</span> hint appears when your Balance drops below 30% of your Assets value as a reminder to consider selling.</p>
+                            <p><span className="text-white font-semibold">Balance</span> is your USD trading balance — the funds you use to place orders on Vantic.</p>
+                            <p><span className="text-white font-semibold">Assets</span> is the total USD value of your crypto holdings on-platform — SOL, ETH, USDC, USDT, USDG, and VUSD.</p>
+                            <p>The <span className="text-yellow-400 font-semibold">· Sell</span> hint appears when your Balance falls below 30% of your Assets value. It means most of your on-platform value is sitting in crypto — you can sell some to get more trading balance.</p>
                         </div>
                         <button
-                            onClick={() => { setShowBalanceHelp(false); setOrderMode("SELL"); }}
+                            onClick={() => { setShowBalanceHelp(false); setShowSellModal(true); }}
                             className="mt-5 w-full py-2.5 rounded-md bg-red-600 text-white text-sm font-bold hover:bg-red-500 transition-colors"
                         >
-                            Open Sell Form
+                            Sell Assets
                         </button>
                     </DrawerContent>
                 </Drawer>
@@ -2251,21 +2290,21 @@ export default function MarketDetailView() {
                     <DialogContent className="bg-black border-white/10 text-white">
                         <DialogHeader><DialogTitle>Balance &amp; Assets</DialogTitle></DialogHeader>
                         <div className="space-y-3 text-sm text-gray-300">
-                            <p><span className="text-white font-semibold">Balance</span> is your available USD for placing new orders.</p>
-                            <p><span className="text-white font-semibold">Assets</span> is the total value of your open positions in this market.</p>
-                            <p>When your Balance is lower than your Assets value, most of your capital is tied up in open positions. You can sell positions to move value back into your trading balance.</p>
-                            <p>The <span className="text-yellow-400 font-semibold">· Sell</span> hint appears when your Balance drops below 30% of your Assets value as a reminder to consider selling.</p>
+                            <p><span className="text-white font-semibold">Balance</span> is your USD trading balance — the funds you use to place orders on Vantic.</p>
+                            <p><span className="text-white font-semibold">Assets</span> is the total USD value of your crypto holdings on-platform — SOL, ETH, USDC, USDT, USDG, and VUSD.</p>
+                            <p>The <span className="text-yellow-400 font-semibold">· Sell</span> hint appears when your Balance falls below 30% of your Assets value. It means most of your on-platform value is sitting in crypto — you can sell some to get more trading balance.</p>
                         </div>
                         <button
-                            onClick={() => { setShowBalanceHelp(false); setOrderMode("SELL"); }}
+                            onClick={() => { setShowBalanceHelp(false); setShowSellModal(true); }}
                             className="mt-5 w-full py-2.5 rounded-md bg-red-600 text-white text-sm font-bold hover:bg-red-500 transition-colors"
                         >
-                            Open Sell Form
+                            Sell Assets
                         </button>
                     </DialogContent>
                 </Dialog>
             )}
 
+            <SellCryptoModal isOpen={showSellModal} onClose={() => setShowSellModal(false)} />
             <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
         </>
     );
