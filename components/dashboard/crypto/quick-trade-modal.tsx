@@ -406,19 +406,8 @@ export function QuickTradeModal({ isOpen, onClose, market, selectedSide: initial
                         </button>
                     </div>
                     <div className="space-y-3 text-sm text-gray-300">
-                        {orderMode === "SELL" ? (
-                            <>
-                                <p><span className="text-white font-semibold">Sell price</span> is the highest active bid for your {selectedSide} shares right now — the best price someone in the market is willing to pay for them.</p>
-                                <p>When you sell, your shares are matched against this bid. The proceeds go straight back to your trading balance.</p>
-                                <p className="text-xs text-gray-500">This price can shift between now and when your sell executes if the orderbook changes. A market sell always fills at the best available bid at execution time.</p>
-                            </>
-                        ) : (
-                            <>
-                                <p><span className="text-white font-semibold">Quote price</span> is the cheapest ask currently available for a {selectedSide} share — the best price you can buy at right now.</p>
-                                <p>On a market order this is the price used to estimate your cost. The actual fill price may differ slightly if the orderbook moves before your order executes.</p>
-                                <p className="text-xs text-gray-500">Prices are shown in cents (¢) and update every second from the live orderbook.</p>
-                            </>
-                        )}
+                        <p>The current market price per {selectedSide} share. This is the price your {orderMode === "SELL" ? "sell" : "buy"} will be secured at when the order executes.</p>
+                        <p className="text-xs text-gray-500">Updates every second from the live orderbook. Shown in cents (¢) — divide by 100 to get the dollar price per share.</p>
                     </div>
                     <button onClick={() => setShowQuotePriceHelp(false)} className="mt-6 py-2.5 rounded-xl bg-white/10 text-white text-xs font-bold hover:bg-white/15 transition-colors">Got it</button>
                 </div>
@@ -436,16 +425,15 @@ export function QuickTradeModal({ isOpen, onClose, market, selectedSide: initial
                     <div className="space-y-3 text-sm text-gray-300">
                         {orderMode === "SELL" ? (
                             <>
-                                <p><span className="text-white font-semibold">You'll get back</span> is the USD credited to your trading balance the moment this sell executes.</p>
-                                <p>Calculated as: <span className="text-white font-mono text-xs bg-white/5 px-1.5 py-0.5 rounded">shares sold × current sell price</span></p>
-                                <p>This is not a future payout — it is real USD back in your account right now, regardless of how the market eventually resolves. You are exiting your position early.</p>
-                                <p className="text-xs text-gray-500">If you think your side will still win, holding until settlement pays $1.00 per share. Selling early locks in the current market price instead, which may be more or less than that.</p>
+                                <p>The dollar value you get back for selling this amount of shares.</p>
+                                <p>Calculated as: <span className="text-white font-mono text-xs bg-white/5 px-1.5 py-0.5 rounded">shares × sell price per share</span></p>
+                                <p className="text-xs text-gray-500">This goes straight back to your trading balance.</p>
                             </>
                         ) : (
                             <>
-                                <p><span className="text-white font-semibold">You'll receive</span> is the maximum payout if your chosen side wins at settlement.</p>
-                                <p>Each share pays out exactly <span className="text-white font-mono text-xs bg-white/5 px-1.5 py-0.5 rounded">$1.00</span> if your side resolves correct. So this is simply the number of shares you are buying.</p>
-                                <p className="text-xs text-gray-500">If your side loses, shares expire worthless. The market must resolve in your favour for this payout to materialise.</p>
+                                <p>The maximum payout if your chosen side wins at settlement.</p>
+                                <p>Each share pays exactly <span className="text-white font-mono text-xs bg-white/5 px-1.5 py-0.5 rounded">$1.00</span> if your side resolves correct, so this equals the number of shares you buy.</p>
+                                <p className="text-xs text-gray-500">If your side loses, shares expire worthless.</p>
                             </>
                         )}
                     </div>
