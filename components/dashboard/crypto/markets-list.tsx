@@ -260,20 +260,34 @@ export function MarketCard({ market, onQuickTrade, prices }: MarketCardProps) {
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-3" onClick={(e) => e.stopPropagation()}>
-                <Button
-                  variant="outline"
-                  className="h-12 border-green-500/50 text-green-400 hover:bg-green-500/10 hover:text-green-300 font-semibold"
-                  onClick={() => onQuickTrade(market, "YES")}
-                >
-                  {typeof yesPriceCents === "number" ? `YES @ ${yesPriceCents.toFixed(1)}¢` : <Skeleton className="h-4 w-20 bg-green-500/15" />}
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-12 border-red-500/50 text-red-400 hover:bg-red-500/10 hover:text-red-300 font-semibold"
-                  onClick={() => onQuickTrade(market, "NO")}
-                >
-                  {typeof noPriceCents === "number" ? `NO @ ${noPriceCents.toFixed(1)}¢` : <Skeleton className="h-4 w-20 bg-red-500/15" />}
-                </Button>
+                <div className="flex flex-col gap-1">
+                  <Button
+                    variant="outline"
+                    className="h-12 border-green-500/50 text-green-400 hover:bg-green-500/10 hover:text-green-300 font-semibold"
+                    onClick={() => onQuickTrade(market, "YES")}
+                  >
+                    {typeof yesPriceCents === "number" ? `YES @ ${yesPriceCents.toFixed(1)}¢` : <Skeleton className="h-4 w-20 bg-green-500/15" />}
+                  </Button>
+                  {typeof yesPriceCents === "number" && yesPriceCents > 0 && (
+                    <p className="text-[10px] font-mono text-center text-gray-500">
+                      $1 <span className="text-gray-600">&#8594;</span> <span className="text-green-400">${(100 / yesPriceCents).toFixed(2)}</span>
+                    </p>
+                  )}
+                </div>
+                <div className="flex flex-col gap-1">
+                  <Button
+                    variant="outline"
+                    className="h-12 border-red-500/50 text-red-400 hover:bg-red-500/10 hover:text-red-300 font-semibold"
+                    onClick={() => onQuickTrade(market, "NO")}
+                  >
+                    {typeof noPriceCents === "number" ? `NO @ ${noPriceCents.toFixed(1)}¢` : <Skeleton className="h-4 w-20 bg-red-500/15" />}
+                  </Button>
+                  {typeof noPriceCents === "number" && noPriceCents > 0 && (
+                    <p className="text-[10px] font-mono text-center text-gray-500">
+                      $1 <span className="text-gray-600">&#8594;</span> <span className="text-red-400">${(100 / noPriceCents).toFixed(2)}</span>
+                    </p>
+                  )}
+                </div>
               </div>
             )}
           </div>

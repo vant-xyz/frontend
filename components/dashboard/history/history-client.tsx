@@ -6,8 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Fuel, Landmark, ChevronRight, ChevronLeft, ExternalLink,
-  Clock, ArrowUpRight, ReceiptText, Share2,
+  Clock, ArrowUpRight, ReceiptText, Share2, TrendingUp, List, Calendar,
 } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { format, getDaysInMonth, getDay } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -288,51 +289,56 @@ export function HistoryClient({ initialTransactions }: HistoryClientProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-2">
-        <Button variant={tab === "transactions" ? "default" : "outline"} onClick={() => setTab("transactions")}>Transactions</Button>
-        <Button variant={tab === "trades" ? "default" : "outline"} onClick={() => setTab("trades")}>Trades</Button>
-      </div>
+      <Tabs value={tab} onValueChange={(v) => setTab(v as "transactions" | "trades")}>
+        <TabsList>
+          <TabsTrigger value="transactions"><ReceiptText size={13} />Transactions</TabsTrigger>
+          <TabsTrigger value="trades"><TrendingUp size={13} />Trades</TabsTrigger>
+        </TabsList>
 
-      {tab === "transactions" ? (
-        transactions.length === 0 ? (
-          <div className="text-center py-24 bg-white/[0.02] border border-white/5 rounded-3xl">
-            <Clock className="w-12 h-12 text-gray-700 mx-auto mb-4 opacity-20" />
-            <p className="text-sm text-gray-500 font-bold uppercase tracking-widest">No transactions yet</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-2">
-            {transactions.map((tx) => (
-              <button
-                key={tx.id}
-                onClick={() => setSelectedTx(tx)}
-                className="group flex items-center justify-between p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] hover:border-white/10 transition-all text-left"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center shrink-0">{getIcon(tx.type)}</div>
-                  <div>
-                    <p className="text-sm font-bold text-white uppercase tracking-tight leading-none mb-1">{tx.type} {tx.currency}</p>
-                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{format(new Date(tx.created_at), "MMM d, HH:mm")}</p>
+        <TabsContent value="transactions" className="mt-4">
+          {transactions.length === 0 ? (
+            <div className="text-center py-24 bg-white/[0.02] border border-white/5 rounded-3xl">
+              <Clock className="w-12 h-12 text-gray-700 mx-auto mb-4 opacity-20" />
+              <p className="text-sm text-gray-500 font-bold uppercase tracking-widest">No transactions yet</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-2">
+              {transactions.map((tx) => (
+                <button
+                  key={tx.id}
+                  onClick={() => setSelectedTx(tx)}
+                  className="group flex items-center justify-between p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] hover:border-white/10 transition-all text-left"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center shrink-0">{getIcon(tx.type)}</div>
+                    <div>
+                      <p className="text-sm font-bold text-white uppercase tracking-tight leading-none mb-1">{tx.type} {tx.currency}</p>
+                      <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{format(new Date(tx.created_at), "MMM d, HH:mm")}</p>
+                    </div>
                   </div>
-                </div>
-                <div className="text-right flex items-center gap-4">
-                  <div>
-                    <p className={cn("text-sm font-black tabular-nums", tx.type.toLowerCase() === "faucet" ? "text-green-500" : "text-white")}>
-                      {tx.type.toLowerCase() === "faucet" ? "+" : "-"}{formatAmount(tx.amount, tx.currency)}
-                    </p>
-                    <div className="flex justify-end mt-0.5">{getStatusBadge(tx.status)}</div>
+                  <div className="text-right flex items-center gap-4">
+                    <div>
+                      <p className={cn("text-sm font-black tabular-nums", tx.type.toLowerCase() === "faucet" ? "text-green-500" : "text-white")}>
+                        {tx.type.toLowerCase() === "faucet" ? "+" : "-"}{formatAmount(tx.amount, tx.currency)}
+                      </p>
+                      <div className="flex justify-end mt-0.5">{getStatusBadge(tx.status)}</div>
+                    </div>
+                    <ChevronRight size={16} className="text-gray-700 group-hover:text-white transition-colors" />
                   </div>
-                  <ChevronRight size={16} className="text-gray-700 group-hover:text-white transition-colors" />
-                </div>
-              </button>
-            ))}
-          </div>
-        )
-      ) : (
+                </button>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="trades" className="mt-4">
         <div className="space-y-3">
-          <div className="flex gap-2">
-            <Button size="sm" variant={tradeView === "list" ? "default" : "outline"} onClick={() => setTradeView("list")}>List</Button>
-            <Button size="sm" variant={tradeView === "calendar" ? "default" : "outline"} onClick={() => setTradeView("calendar")}>Calendar</Button>
-          </div>
+          <Tabs value={tradeView} onValueChange={(v) => setTradeView(v as "list" | "calendar")}>
+            <TabsList>
+              <TabsTrigger value="list"><List size={13} />List</TabsTrigger>
+              <TabsTrigger value="calendar"><Calendar size={13} />Calendar</TabsTrigger>
+            </TabsList>
+          </Tabs>
 
           {tradeView === "list" ? (
             positions.length === 0 ? (
@@ -476,7 +482,8 @@ export function HistoryClient({ initialTransactions }: HistoryClientProps) {
             </div>
           )}
         </div>
-      )}
+        </TabsContent>
+      </Tabs>
 
       {/* Transaction detail */}
       {isMobile ? (

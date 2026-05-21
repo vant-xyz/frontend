@@ -26,6 +26,7 @@ import {
     getMarketHistory,
 } from "@/lib/api";
 import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -94,6 +95,8 @@ export default function MarketDetailView() {
     const [showHistoryDropdown, setShowHistoryDropdown] = useState(false);
     const prevOrderbookRef = useRef<OrderbookSnapshot | null>(null);
     const [flashedRows, setFlashedRows] = useState<Record<string, "fill" | "new">>({});
+    const [orderbookFilter, setOrderbookFilter] = useState<"all" | "asks" | "bids">("all");
+    const [showBalanceHelp, setShowBalanceHelp] = useState(false);
     const [showOIHelp, setShowOIHelp] = useState(false);
     const [showVolHelp, setShowVolHelp] = useState(false);
     const [showVolatilityHelp, setShowVolatilityHelp] = useState(false);
@@ -678,8 +681,8 @@ export default function MarketDetailView() {
     const orderbookPanel = (() => {
         const bids = orderbook?.yes_bids || [];
         const asks = orderbook?.yes_asks || [];
-        const sortedBids = [...bids].sort((a, b) => b.price - a.price).slice(0, 12);
-        const sortedAsks = [...asks].sort((a, b) => a.price - b.price).slice(0, 12);
+        const sortedBids = orderbookFilter === "asks" ? [] : [...bids].sort((a, b) => b.price - a.price).slice(0, 12);
+        const sortedAsks = orderbookFilter === "bids" ? [] : [...asks].sort((a, b) => a.price - b.price).slice(0, 12);
 
         let cum = 0;
         const asksD = sortedAsks.map(a => { cum += a.quantity; return { ...a, cum }; });
@@ -702,10 +705,29 @@ export default function MarketDetailView() {
                 {/* Header */}
                 <div className="flex items-center justify-between px-4 py-2 border-b border-white/8">
                     <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Order Book</span>
-                    <div className="flex gap-2 text-[10px] font-mono">
-                        <span className="text-green-400">YES {lastYes.toFixed(1)}¢</span>
-                        <span className="text-gray-600">·</span>
-                        <span className="text-red-400">NO {lastNo.toFixed(1)}¢</span>
+                    <div className="flex items-center gap-2">
+                        <div className="flex gap-0.5">
+                            {(["all", "bids", "asks"] as const).map(f => (
+                                <button
+                                    key={f}
+                                    onClick={() => setOrderbookFilter(f)}
+                                    className={cn(
+                                        "px-2 py-0.5 text-[9px] font-mono font-semibold rounded transition-colors",
+                                        orderbookFilter === f
+                                            ? f === "bids" ? "bg-green-500/20 text-green-400" : f === "asks" ? "bg-red-500/20 text-red-400" : "bg-white/10 text-white"
+                                            : "text-gray-600 hover:text-gray-400"
+                                    )}
+                                >
+                                    {f === "bids" ? <ChevronUp size={10} className="inline" /> : f === "asks" ? <ChevronDown size={10} className="inline" /> : null}
+                                    {f === "all" ? "All" : f === "bids" ? "Buys" : "Sells"}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="flex gap-2 text-[10px] font-mono">
+                            <span className="text-green-400">YES {lastYes.toFixed(1)}¢</span>
+                            <span className="text-gray-600">·</span>
+                            <span className="text-red-400">NO {lastNo.toFixed(1)}¢</span>
+                        </div>
                     </div>
                 </div>
 
@@ -727,7 +749,7 @@ export default function MarketDetailView() {
                 </div>
 
                 {/* Asks */}
-                <div className="flex-1 overflow-hidden">
+                <div className="flex-1 overflow-y-auto scrollbar-hide min-h-0">
                     {loading ? (
                         <div className="flex items-center justify-center py-8"><Loader className="w-4 h-4 text-red-500" /></div>
                     ) : (
@@ -935,9 +957,23 @@ export default function MarketDetailView() {
                             Order Size
                         </span>
                         {token ? (
-                            <span className="text-[10px] text-gray-400">
-                                Balance ${tradingBalance.toFixed(2)} · Assets ${assetBalance.toFixed(2)}
-                            </span>
+                            <div className="flex items-center gap-1">
+                                <button
+                                    onClick={() => { setOrderMode("SELL"); }}
+                                    className="text-[10px] text-gray-400 hover:text-white transition-colors text-left"
+                                >
+                                    Balance ${tradingBalance.toFixed(2)} · Assets ${assetBalance.toFixed(2)}
+                                    {tradingBalance < assetBalance * 0.7 && assetBalance > 0 && (
+                                        <span className="text-yellow-400 ml-1">· Sell</span>
+                                    )}
+                                </button>
+                                <button
+                                    onClick={() => setShowBalanceHelp(true)}
+                                    className="text-gray-600 hover:text-gray-400 transition-colors shrink-0"
+                                >
+                                    <CircleHelp size={11} />
+                                </button>
+                            </div>
                         ) : (
                             <button
                                 onClick={() => setAuthModalOpen(true)}
@@ -1053,6 +1089,32 @@ export default function MarketDetailView() {
                             </button>
                         ))}
                     </div>
+
+                    {/* Amount slider */}
+                    {tradingBalance > 0 && (
+                        <div className="pt-2">
+                            <Slider
+                                min={0}
+                                max={100}
+                                step={1}
+                                value={[Math.min(100, Math.round(
+                                    inputMode === "usd"
+                                        ? (parseFloat(usdAmount) || 0) / tradingBalance * 100
+                                        : (parseFloat(quantity) || 0) * (effectivePriceCents / 100) / tradingBalance * 100
+                                ))]}
+                                onValueChange={([val]) => {
+                                    const amount = (val / 100) * tradingBalance;
+                                    if (inputMode === "usd") {
+                                        setUsdAmount(amount.toFixed(2));
+                                    } else {
+                                        const pricePerShare = effectivePriceCents / 100;
+                                        if (pricePerShare > 0) setQuantity(String(Math.floor(amount / pricePerShare)));
+                                    }
+                                }}
+                                className="[&_[data-slot=slider-range]]:bg-primary [&_[data-slot=slider-track]]:bg-white/10"
+                            />
+                        </div>
+                    )}
                 </div>
 
                 {/* Summary */}
@@ -1256,6 +1318,8 @@ export default function MarketDetailView() {
                         className="mt-0.5 p-1.5 rounded-lg hover:bg-white/8 transition-colors text-gray-500 hover:text-white shrink-0">
                         <ArrowLeft size={17} />
                     </button>
+
+                    <img src="/icon.svg" alt="Vantic" className="hidden lg:block w-7 h-7 shrink-0 mt-0.5 opacity-90" />
 
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
@@ -2159,6 +2223,33 @@ export default function MarketDetailView() {
                     </div>
                 </DrawerContent>
             </Drawer>
+
+            {/* Balance / Assets explainer */}
+            {isMobile ? (
+                <Drawer open={showBalanceHelp} onOpenChange={setShowBalanceHelp}>
+                    <DrawerContent className="bg-black border-white/10 text-white px-4 pb-6">
+                        <DrawerHeader><DrawerTitle>Balance &amp; Assets</DrawerTitle></DrawerHeader>
+                        <div className="space-y-3 text-sm text-gray-300">
+                            <p><span className="text-white font-semibold">Balance</span> is your available USD for placing new orders.</p>
+                            <p><span className="text-white font-semibold">Assets</span> is the current market value of all your open positions in this market.</p>
+                            <p>When your Balance drops below 30% of your Assets value, you see a <span className="text-yellow-400 font-semibold">· Sell</span> hint. It means your capital is mostly tied up in open positions. Tap the Balance row to open the sell form and close positions to free up funds.</p>
+                            <p className="text-xs text-gray-500">You can also sell any time without waiting for the hint by tapping the Balance row.</p>
+                        </div>
+                    </DrawerContent>
+                </Drawer>
+            ) : (
+                <Dialog open={showBalanceHelp} onOpenChange={setShowBalanceHelp}>
+                    <DialogContent className="bg-black border-white/10 text-white">
+                        <DialogHeader><DialogTitle>Balance &amp; Assets</DialogTitle></DialogHeader>
+                        <div className="space-y-3 text-sm text-gray-300">
+                            <p><span className="text-white font-semibold">Balance</span> is your available USD for placing new orders.</p>
+                            <p><span className="text-white font-semibold">Assets</span> is the current market value of all your open positions in this market.</p>
+                            <p>When your Balance drops below 30% of your Assets value, you see a <span className="text-yellow-400 font-semibold">· Sell</span> hint. It means your capital is mostly tied up in open positions. Click the Balance row to open the sell form and close positions to free up funds.</p>
+                            <p className="text-xs text-gray-500">You can also sell any time without waiting for the hint by clicking the Balance row.</p>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+            )}
 
             <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
         </>
