@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Market, placeOrder, OrderSide, getOrderbook, getBalance, BalanceInfo, getTokenPrices, getMarketHistory, MarketHistoryEntry, getUserPositions, Position } from "@/lib/api";
+import { Market, placeOrder, closePosition, OrderSide, getOrderbook, getBalance, BalanceInfo, getTokenPrices, getMarketHistory, MarketHistoryEntry, getUserPositions, Position } from "@/lib/api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { ChevronUp, ChevronDown, BarChart3, DollarSign, TrendingUp, TrendingDown, MoreHorizontal, CircleHelp, X, ExternalLink, LayoutDashboard, BookOpen, CandlestickChart, ListOrdered, LineChart } from "lucide-react";
@@ -183,11 +183,8 @@ export function QuickTradeModal({ isOpen, onClose, market, selectedSide: initial
 
     const applyPreset = (label: string) => {
         if (orderMode === "SELL") {
-            let q = 0;
-            if (label === "25%") q = Math.max(0, Math.floor(ownedSideShares * 0.25));
-            else if (label === "50%") q = Math.max(0, Math.floor(ownedSideShares * 0.5));
-            else q = Math.max(0, Math.floor(ownedSideShares));
-            setQuantity(String(q));
+            const pct = label === "25%" ? 0.25 : label === "50%" ? 0.5 : 1;
+            setQuantity((ownedSideShares * pct).toFixed(2));
             return;
         }
         if (pricePerShareDollars <= 0) return;
@@ -221,7 +218,7 @@ export function QuickTradeModal({ isOpen, onClose, market, selectedSide: initial
     const handleSliderChange = (val: number[]) => {
         const pct = val[0];
         if (orderMode === "SELL") {
-            setQuantity(String(Math.floor((pct / 100) * ownedSideShares)));
+            setQuantity(((pct / 100) * ownedSideShares).toFixed(2));
         } else {
             const amount = (pct / 100) * tradingBalance;
             if (inputMode === "usd") {
@@ -235,20 +232,27 @@ export function QuickTradeModal({ isOpen, onClose, market, selectedSide: initial
     const handlePlaceOrder = async () => {
         if (!token) { toast.error("Please login to trade"); return; }
         if (effectiveQuantity <= 0) { toast.error("Enter a valid quantity"); return; }
-        if (orderMode === "SELL" && effectiveQuantity > ownedSideShares) {
-            toast.error(`You only own ${ownedSideShares.toFixed(2)} ${selectedSide} shares`);
-            return;
-        }
         try {
             setSubmitting(true);
-            await placeOrder(token, {
-                market_id: market.id,
-                side: selectedSide,
-                type: "MARKET",
-                quantity: effectiveQuantity,
-                is_demo: isDemoMode,
-            });
-            toast.success(orderMode === "SELL" ? "Position sold!" : "Order placed!");
+            if (orderMode === "SELL") {
+                const activePosition = (positions || []).find(p => p.side === selectedSide && p.status === "ACTIVE");
+                if (!activePosition) { toast.error("No active position to sell"); return; }
+                if (effectiveQuantity > activePosition.shares) {
+                    toast.error(`You only own ${activePosition.shares.toFixed(2)} ${selectedSide} shares`);
+                    return;
+                }
+                await closePosition(market.id, token, activePosition.id, { position_id: activePosition.id, shares: effectiveQuantity });
+                toast.success("Position sold!");
+            } else {
+                await placeOrder(token, {
+                    market_id: market.id,
+                    side: selectedSide,
+                    type: "MARKET",
+                    quantity: effectiveQuantity,
+                    is_demo: isDemoMode,
+                });
+                toast.success("Order placed!");
+            }
             setQuantity("0");
             setUsdAmount("");
             fetchPositions();
@@ -392,7 +396,7 @@ export function QuickTradeModal({ isOpen, onClose, market, selectedSide: initial
                 </div>
             )}
 
-            {/* Quote price help overlay */}
+            {/* Quote price / Sell price help overlay */}
             {showQuotePriceHelp && (
                 <div className="absolute inset-0 z-20 bg-[#0a0a0a]/95 backdrop-blur-sm flex flex-col p-5">
                     <div className="flex items-start justify-between mb-4">
@@ -403,11 +407,18 @@ export function QuickTradeModal({ isOpen, onClose, market, selectedSide: initial
                     </div>
                     <div className="space-y-3 text-sm text-gray-300">
                         {orderMode === "SELL" ? (
-                            <p>The current best bid price for your {selectedSide} shares. This is how much you get per share if you sell right now. Market conditions can move this price before your order fills.</p>
+                            <>
+                                <p><span className="text-white font-semibold">Sell price</span> is the highest active bid for your {selectedSide} shares right now — the best price someone in the market is willing to pay for them.</p>
+                                <p>When you sell, your shares are matched against this bid. The proceeds go straight back to your trading balance.</p>
+                                <p className="text-xs text-gray-500">This price can shift between now and when your sell executes if the orderbook changes. A market sell always fills at the best available bid at execution time.</p>
+                            </>
                         ) : (
-                            <p>The current best ask price for a {selectedSide} share on this market. This is how much you pay per share on a market order. Market conditions can shift this price before your order fills.</p>
+                            <>
+                                <p><span className="text-white font-semibold">Quote price</span> is the cheapest ask currently available for a {selectedSide} share — the best price you can buy at right now.</p>
+                                <p>On a market order this is the price used to estimate your cost. The actual fill price may differ slightly if the orderbook moves before your order executes.</p>
+                                <p className="text-xs text-gray-500">Prices are shown in cents (¢) and update every second from the live orderbook.</p>
+                            </>
                         )}
-                        <p className="text-xs text-gray-500">Prices are shown in cents (¢) and update every second from the live orderbook.</p>
                     </div>
                     <button onClick={() => setShowQuotePriceHelp(false)} className="mt-6 py-2.5 rounded-xl bg-white/10 text-white text-xs font-bold hover:bg-white/15 transition-colors">Got it</button>
                 </div>
@@ -425,15 +436,16 @@ export function QuickTradeModal({ isOpen, onClose, market, selectedSide: initial
                     <div className="space-y-3 text-sm text-gray-300">
                         {orderMode === "SELL" ? (
                             <>
-                                <p><span className="text-white font-semibold">You'll get back</span> is the USD you receive immediately when selling your shares at the current market price.</p>
-                                <p>Calculated as: <span className="text-white font-mono text-xs bg-white/5 px-1.5 py-0.5 rounded">shares × sell price per share</span></p>
-                                <p className="text-xs text-gray-500">This is cash back to your trading balance — not a future payout. You are exiting your position now.</p>
+                                <p><span className="text-white font-semibold">You'll get back</span> is the USD credited to your trading balance the moment this sell executes.</p>
+                                <p>Calculated as: <span className="text-white font-mono text-xs bg-white/5 px-1.5 py-0.5 rounded">shares sold × current sell price</span></p>
+                                <p>This is not a future payout — it is real USD back in your account right now, regardless of how the market eventually resolves. You are exiting your position early.</p>
+                                <p className="text-xs text-gray-500">If you think your side will still win, holding until settlement pays $1.00 per share. Selling early locks in the current market price instead, which may be more or less than that.</p>
                             </>
                         ) : (
                             <>
-                                <p><span className="text-white font-semibold">You'll receive</span> is the maximum payout if your chosen side wins at market settlement.</p>
-                                <p>Each share pays out exactly <span className="text-white font-mono text-xs bg-white/5 px-1.5 py-0.5 rounded">$1.00</span> if your side is correct, so this equals the number of shares you buy.</p>
-                                <p className="text-xs text-gray-500">If your side loses, shares expire worthless. This is not locked in until settlement.</p>
+                                <p><span className="text-white font-semibold">You'll receive</span> is the maximum payout if your chosen side wins at settlement.</p>
+                                <p>Each share pays out exactly <span className="text-white font-mono text-xs bg-white/5 px-1.5 py-0.5 rounded">$1.00</span> if your side resolves correct. So this is simply the number of shares you are buying.</p>
+                                <p className="text-xs text-gray-500">If your side loses, shares expire worthless. The market must resolve in your favour for this payout to materialise.</p>
                             </>
                         )}
                     </div>
@@ -674,19 +686,19 @@ export function QuickTradeModal({ isOpen, onClose, market, selectedSide: initial
 
                 {/* CTA */}
                 {(market.status !== "active" || new Date(market.end_time_utc) <= new Date()) ? (
-                    <div className="w-full py-3 rounded-xl text-xs font-bold tracking-wide text-center bg-white/5 text-gray-500 cursor-not-allowed border border-white/10">
+                    <div className="w-full py-3 rounded-md text-xs font-bold tracking-wide text-center bg-white/5 text-gray-500 cursor-not-allowed border border-white/10">
                         Market expired · Orders closed
                     </div>
                 ) : (
                     <button onClick={handlePlaceOrder} disabled={submitting || effectiveQuantity <= 0}
                         className={cn(
-                            "w-full py-3 rounded-xl text-xs font-bold tracking-wide transition-all",
+                            "w-full py-3 rounded-md text-xs font-bold tracking-wide transition-all",
                             "disabled:opacity-40 disabled:cursor-not-allowed",
                             orderMode === "SELL"
                                 ? "bg-white text-black hover:bg-gray-100"
                                 : selectedSide === "YES"
-                                    ? "bg-green-500 text-white hover:bg-green-400 shadow-lg shadow-green-500/20"
-                                    : "bg-red-600 text-white hover:bg-red-500 shadow-lg shadow-red-600/20"
+                                    ? "bg-green-500 text-white hover:bg-green-400"
+                                    : "bg-red-600 text-white hover:bg-red-500"
                         )}>
                         {submitting
                             ? <Loader className="mx-auto" />

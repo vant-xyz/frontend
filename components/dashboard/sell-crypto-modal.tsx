@@ -83,10 +83,11 @@ export function SellCryptoModal({
 
   const assets: AssetOption[] = useMemo(() => {
     const list = [
-      { key: "sol", label: "Solana", symbol: "SOL", icon: "/media/images/token_icons/solana.png", balance: balance?.sol || 0 },
+      { key: "sol", label: "Solana", symbol: "SOL", icon: "/media/images/token_icons/solana.png", balance: (balance?.sol || 0) + (balance?.wsol || 0) },
       { key: "usdc_sol", label: "USDC (Solana)", symbol: "USDC", icon: "/media/images/token_icons/usdc.png", balance: balance?.usdc_sol || 0 },
       { key: "usdc_base", label: "USDC (Base)", symbol: "USDC", icon: "/media/images/token_icons/usdc.png", balance: balance?.usdc_base || 0 },
       { key: "usdt_sol", label: "USDT (Solana)", symbol: "USDT", icon: "/media/images/token_icons/usdt.png", balance: balance?.usdt_sol || 0 },
+      { key: "usdg_sol", label: "Global Dollar (Solana)", symbol: "USDG", icon: "/media/images/token_icons/usdg.png", balance: balance?.usdg_sol || 0 },
       { key: "eth_base", label: "Ethereum (Base)", symbol: "ETH", icon: "/media/images/token_icons/eth.png", balance: balance?.eth_base || 0 },
       { key: "demo_sol", label: "Demo Solana", symbol: "SOL", icon: "/media/images/token_icons/solana.png", balance: balance?.demo_sol || 0 },
       { key: "demo_usdc_sol", label: "Demo USDC", symbol: "USDC", icon: "/media/images/token_icons/usdc.png", balance: balance?.demo_usdc_sol || 0 },

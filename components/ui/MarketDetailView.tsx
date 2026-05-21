@@ -678,15 +678,26 @@ export default function MarketDetailView() {
         if (!effectiveQuantity || effectiveQuantity <= 0) { toast.error("Enter a valid quantity"); return; }
         try {
             setSubmitting(true);
-            await placeOrder(token, {
-                market_id: market.id,
-                side: selectedSide,
-                type: orderType,
-                price: orderType === "LIMIT" ? parseFloat(limitPrice) / 100 : undefined,
-                quantity: effectiveQuantity,
-                is_demo: isDemoMode
-            });
-            toast.success("Order placed!");
+            if (orderMode === "SELL") {
+                const activePosition = (positions || []).find(p => p.side === selectedSide && p.status === "ACTIVE");
+                if (!activePosition) { toast.error("No active position to sell"); return; }
+                if (effectiveQuantity > activePosition.shares) {
+                    toast.error(`You only own ${activePosition.shares.toFixed(2)} ${selectedSide} shares`);
+                    return;
+                }
+                await closePosition(market.id, token, activePosition.id, { position_id: activePosition.id, shares: effectiveQuantity });
+                toast.success("Position sold!");
+            } else {
+                await placeOrder(token, {
+                    market_id: market.id,
+                    side: selectedSide,
+                    type: orderType,
+                    price: orderType === "LIMIT" ? parseFloat(limitPrice) / 100 : undefined,
+                    quantity: effectiveQuantity,
+                    is_demo: isDemoMode
+                });
+                toast.success("Order placed!");
+            }
             refreshBalance();
         } catch (err) {
             toast.error(err instanceof Error ? err.message : "Failed to place order");
@@ -910,17 +921,19 @@ export default function MarketDetailView() {
                             </button>
                         ))}
                     </div>
-                    <div className="flex">
-                        {(["MARKET", "LIMIT"] as const).map(t => (
-                            <button key={t} onClick={() => handleOrderTypeChange(t)}
-                                className={cn(
-                                    "px-4 py-2.5 text-xs font-semibold -mb-px border-b-2 transition-colors",
-                                    orderType === t ? "border-primary text-white" : "border-transparent text-gray-500 hover:text-gray-300"
-                                )}>
-                                {t.charAt(0) + t.slice(1).toLowerCase()}
-                            </button>
-                        ))}
-                    </div>
+                    {orderMode !== "SELL" && (
+                        <div className="flex">
+                            {(["MARKET", "LIMIT"] as const).map(t => (
+                                <button key={t} onClick={() => handleOrderTypeChange(t)}
+                                    className={cn(
+                                        "px-4 py-2.5 text-xs font-semibold -mb-px border-b-2 transition-colors",
+                                        orderType === t ? "border-primary text-white" : "border-transparent text-gray-500 hover:text-gray-300"
+                                    )}>
+                                    {t.charAt(0) + t.slice(1).toLowerCase()}
+                                </button>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 {/* YES / NO */}
@@ -1111,7 +1124,7 @@ export default function MarketDetailView() {
                                     const pcts: Record<string, number> = { "25%": 0.25, "50%": 0.5, "MAX": 1 };
                                     const pct = pcts[label];
                                     if (orderMode === "SELL") {
-                                        setQuantity(String(Math.max(0, Math.floor(ownedSideShares * pct))));
+                                        setQuantity(Math.max(0, ownedSideShares * pct).toFixed(2));
                                     } else if (inputMode === "usd") {
                                         setUsdAmount((tradingBalance * pct).toFixed(2));
                                     } else {
@@ -1141,7 +1154,7 @@ export default function MarketDetailView() {
                                 ))]}
                                 onValueChange={([val]) => {
                                     if (orderMode === "SELL") {
-                                        setQuantity(String(Math.floor((val / 100) * ownedSideShares)));
+                                        setQuantity(((val / 100) * ownedSideShares).toFixed(2));
                                     } else {
                                         const amount = (val / 100) * tradingBalance;
                                         if (inputMode === "usd") {
@@ -1237,19 +1250,19 @@ export default function MarketDetailView() {
                     </div>
                 ) : !token ? (
                     <button onClick={() => setAuthModalOpen(true)}
-                        className="w-full py-3 rounded-xl text-xs font-bold tracking-wide transition-all bg-white/10 text-white hover:bg-white/15 border border-white/10">
+                        className="w-full py-3 rounded-md text-xs font-bold tracking-wide transition-all bg-white/10 text-white hover:bg-white/15 border border-white/10">
                         Sign In to Trade
                     </button>
                 ) : (
                     <button onClick={handlePlaceOrder} disabled={submitting || effectiveQuantity <= 0}
                         className={cn(
-                            "w-full py-3 rounded-xl text-xs font-bold tracking-wide transition-all",
+                            "w-full py-3 rounded-md text-xs font-bold tracking-wide transition-all",
                             "disabled:opacity-40 disabled:cursor-not-allowed",
                             orderMode === "SELL"
                                 ? "bg-white text-black hover:bg-gray-100"
                                 : selectedSide === "YES"
-                                    ? "bg-green-500 text-white hover:bg-green-400 shadow-lg shadow-green-500/20"
-                                    : "bg-red-600 text-white hover:bg-red-500 shadow-lg shadow-red-600/20"
+                                    ? "bg-green-500 text-white hover:bg-green-400"
+                                    : "bg-red-600 text-white hover:bg-red-500"
                         )}>
                         {submitting
                             ? <Loader className="mx-auto" />
