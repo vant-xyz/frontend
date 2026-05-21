@@ -124,7 +124,7 @@ export default function MarketDetailView() {
     useEffect(() => {
         setToken(typeof window !== "undefined" ? localStorage.getItem("auth_token") : null);
     }, []);
-    const { isDemoMode } = useDashboard();
+    const { isDemoMode, prices } = useDashboard();
     const isMobile = useIsMobile();
     const router = useRouter();
     const goBack = () => {
@@ -1358,7 +1358,7 @@ export default function MarketDetailView() {
                     } : undefined}
                 >
                     <button onClick={goBack}
-                        className="mt-0.5 p-1.5 rounded-lg hover:bg-white/8 transition-colors text-gray-500 hover:text-white shrink-0">
+                        className="self-center p-1.5 rounded-lg hover:bg-white/8 transition-colors text-gray-500 hover:text-white shrink-0">
                         <ArrowLeft size={17} />
                     </button>
 
@@ -2304,7 +2304,14 @@ export default function MarketDetailView() {
                 </Dialog>
             )}
 
-            <SellCryptoModal isOpen={showSellModal} onClose={() => setShowSellModal(false)} />
+            <SellCryptoModal
+                isOpen={showSellModal}
+                onClose={() => setShowSellModal(false)}
+                balance={balance}
+                prices={prices}
+                isDemoMode={isDemoMode}
+                onSuccess={refreshBalance}
+            />
             <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
         </>
     );
