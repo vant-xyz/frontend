@@ -1709,7 +1709,7 @@ export async function getPositions(
   return response.json();
 }
 
-export async function closePosition(
+export async function closeJupiterPosition(
   positionPubkey: string,
   token: string
 ): Promise<CreateOrderResponse> {
