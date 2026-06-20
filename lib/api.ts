@@ -1657,14 +1657,19 @@ export interface CreateOrderParams {
 
 export async function createOrder(
   params: CreateOrderParams,
-  token: string
+  token: string,
+  idempotencyKey?: string
 ): Promise<CreateOrderResponse> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  };
+  // Lets the backend dedupe retries/double-clicks so one intent builds one order.
+  if (idempotencyKey) headers["Idempotency-Key"] = idempotencyKey;
+
   const response = await fetch(v2Url("/orders"), {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
+    headers,
     body: JSON.stringify(params),
   });
   if (!response.ok) {

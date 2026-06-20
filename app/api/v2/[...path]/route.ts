@@ -18,6 +18,8 @@ async function proxy(req: NextRequest, pathSegments: string[]) {
   if (API_KEY) headers["X-API-Key"] = API_KEY;
   const contentType = req.headers.get("content-type");
   if (contentType) headers["Content-Type"] = contentType;
+  const idempotencyKey = req.headers.get("idempotency-key");
+  if (idempotencyKey) headers["Idempotency-Key"] = idempotencyKey;
 
   const hasBody = req.method !== "GET" && req.method !== "HEAD";
   const rawBody = hasBody ? await req.arrayBuffer() : undefined;

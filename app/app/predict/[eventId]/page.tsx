@@ -73,24 +73,38 @@ function ProbabilityChart({ eventId }: { eventId: string }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLoading(true);
-    getEventPriceHistory(eventId, range === "ALL" ? "all" : range.toLowerCase() as "1d" | "1w" | "1m")
-      .then((r) => setMarkets(r.markets ?? []))
-      .catch(() => setMarkets([]))
-      .finally(() => setLoading(false));
+    let cancelled = false;
+    const apiRange = range === "ALL" ? "all" : (range.toLowerCase() as "1d" | "1w" | "1m");
+
+    const fetchData = (showSkeleton: boolean) => {
+      if (showSkeleton) setLoading(true);
+      getEventPriceHistory(eventId, apiRange)
+        .then((r) => { if (!cancelled) setMarkets(r.markets ?? []); })
+        .catch(() => { if (!cancelled && showSkeleton) setMarkets([]); })
+        .finally(() => { if (!cancelled && showSkeleton) setLoading(false); });
+    };
+
+    fetchData(true);
+    // Refresh in the background every 60s to track the snapshot poller.
+    const id = setInterval(() => fetchData(false), 60_000);
+    return () => { cancelled = true; clearInterval(id); };
   }, [eventId, range]);
 
   if (loading) return <Skeleton className="h-52 w-full rounded-xl bg-white/4" />;
   if (!markets.length || markets.every((m) => !m.data.length)) return null;
 
+  // Drop markets that only ever had a price of 0 — they never moved and clutter the chart
+  const activeMarkets = markets.filter((m) => m.data.some((p) => p.yesPrice > 0));
+  if (!activeMarkets.length) return null;
+
   // Build flat rows: one entry per unique timestamp, columns per market
   const tsSet = new Set<number>();
-  markets.forEach((m) => m.data.forEach((p) => tsSet.add(p.t)));
+  activeMarkets.forEach((m) => m.data.forEach((p) => tsSet.add(p.t)));
   const timestamps = Array.from(tsSet).sort((a, b) => a - b);
 
   // Price map per market for fast lookup
   const priceMap = new Map<string, Map<number, number>>();
-  markets.forEach((m) => {
+  activeMarkets.forEach((m) => {
     const map = new Map<number, number>();
     m.data.forEach((p) => map.set(p.t, Math.round(p.yesPrice / 10_000)));
     priceMap.set(m.marketId, map);
@@ -102,7 +116,7 @@ function ProbabilityChart({ eventId }: { eventId: string }) {
       ? d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })
       : d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
     const row: ChartRow = { label };
-    markets.forEach((m) => {
+    activeMarkets.forEach((m) => {
       const v = priceMap.get(m.marketId)?.get(t);
       if (v !== undefined) row[m.marketId] = v;
     });
@@ -128,20 +142,20 @@ function ProbabilityChart({ eventId }: { eventId: string }) {
           <Tooltip
             contentStyle={{ background:"#0d0505", border:"1px solid rgba(255,255,255,0.08)", borderRadius:8, fontSize:11, color:"#fff", padding:"8px 12px" }}
             formatter={(v: number, key: string) => {
-              const market = markets.find((m) => m.marketId === key);
+              const market = activeMarkets.find((m) => m.marketId === key);
               return [`${v}%`, market?.title ?? key];
             }}
             labelStyle={{ color:"#52525b", marginBottom:4, fontSize:10 }}
           />
           <Legend
             formatter={(value) => {
-              const market = markets.find((m) => m.marketId === value);
+              const market = activeMarkets.find((m) => m.marketId === value);
               return <span style={{ fontSize: 11, color: "#71717a" }}>{market?.title ?? value}</span>;
             }}
             iconType="circle" iconSize={7}
             wrapperStyle={{ paddingTop: 8 }}
           />
-          {markets.map((m, i) => (
+          {activeMarkets.map((m, i) => (
             <Line
               key={m.marketId}
               type="stepAfter"
@@ -225,10 +239,14 @@ export default function PredictEventPage() {
   const teamMarkets = allMarkets.filter((m) => m.isTeamMarket);
   const openMarkets = allMarkets.filter((m) => m.status === "open");
 
-  const homeTeam = score?.homeTeam ?? title.split(" vs ")?.[0]?.trim() ?? "Home";
-  const awayTeam = score?.awayTeam ?? title.split(" vs ")?.[1]?.trim() ?? "Away";
-  const homeMarket = teamMarkets[0] ?? allMarkets[0] ?? null;
-  const awayMarket = teamMarkets[1] ?? allMarkets[1] ?? null;
+  // Split on "vs", "vs.", "v.", "v" with surrounding whitespace (handles "Tunisia vs. Japan").
+  const titleParts = title.split(/\s+vs?\.?\s+/i);
+  const homeTeam = score?.homeTeam ?? titleParts[0]?.trim() ?? "Home";
+  const awayTeam = score?.awayTeam ?? titleParts[1]?.trim() ?? "Away";
+  // Only treat this as a two-team matchup when there really are team markets.
+  const isMatchup = teamMarkets.length >= 2;
+  const homeMarket = isMatchup ? teamMarkets[0] : allMarkets[0] ?? null;
+  const awayMarket = isMatchup ? teamMarkets[1] : null;
   const homePercent = toPercent(homeMarket?.pricing?.buyYesPriceUsd);
   const awayPercent = toPercent(awayMarket?.pricing?.buyYesPriceUsd);
   const activeChartMarket = selectedMarket ?? homeMarket;
@@ -279,7 +297,7 @@ export default function PredictEventPage() {
                 </p>
               ) : null}
 
-              {(homePercent != null || awayPercent != null) && (
+              {isMatchup && (homePercent != null || awayPercent != null) && (
                 <div className="flex gap-3 pt-1">
                   <TeamOdds name={homeTeam} percent={homePercent}
                     active={selectedMarket?.marketId === homeMarket?.marketId}
@@ -323,7 +341,10 @@ export default function PredictEventPage() {
               <div className="glass-card rounded-[16px] p-4 space-y-3">
                 <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-zinc-600">All Markets</p>
                 <div className="flex flex-wrap gap-2">
-                  {(openMarkets.length ? openMarkets : allMarkets).map((m) => {
+                  {(openMarkets.length ? openMarkets : allMarkets)
+                    .slice()
+                    .sort((a, b) => (b.pricing?.buyYesPriceUsd ?? 0) - (a.pricing?.buyYesPriceUsd ?? 0))
+                    .map((m) => {
                     const pct = toPercent(m.pricing?.buyYesPriceUsd);
                     const isActive = selectedMarket?.marketId === m.marketId;
                     return (

@@ -4,7 +4,7 @@ import { AppShell } from "@/components/dashboard/app-shell";
 import { getV2Events, JupiterEvent } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search, Wifi } from "lucide-react";
 import {
@@ -154,37 +154,58 @@ function EventCard({ event }: { event: JupiterEvent }) {
   );
 }
 
+const PAGE_SIZE = 20;
+
 export default function GeneralPage() {
-  const [events, setEvents] = useState<JupiterEvent[]>([]);
+  const [allEvents, setAllEvents] = useState<JupiterEvent[]>([]);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState<CategoryValue>(undefined);
   const [search, setSearch] = useState("");
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async () => {
+    setLoading(true);
     try {
       const res = await getV2Events({
         category: category ?? undefined,
         includeMarkets: true,
         sortBy: "volume",
+        start: 0,
+        end: 100,
       });
-      setEvents(res.data);
+      setAllEvents(res.data ?? []);
+      setVisibleCount(PAGE_SIZE);
     } catch {
-      // silently retry
+      // silently ignore
     } finally {
       setLoading(false);
     }
   }, [category]);
 
-  useEffect(() => {
-    setLoading(true);
-    load();
-  }, [load]);
+  useEffect(() => { load(); }, [load]);
 
+  // Filtered list (client-side search across all fetched events)
   const filtered = search.trim()
-    ? events.filter((e) =>
+    ? allEvents.filter((e) =>
         (e.metadata?.title || e.eventId).toLowerCase().includes(search.toLowerCase())
       )
-    : events;
+    : allEvents;
+
+  const visible = filtered.slice(0, visibleCount);
+  const hasMore = visibleCount < filtered.length;
+
+  // Reveal more rows when sentinel enters viewport
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting && hasMore) setVisibleCount((n) => n + PAGE_SIZE); },
+      { rootMargin: "200px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasMore]);
 
   return (
     <AppShell>
@@ -241,11 +262,15 @@ export default function GeneralPage() {
             <p className="text-sm">No events found.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filtered.map((e) => (
-              <EventCard key={e.eventId} event={e} />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {visible.map((e) => (
+                <EventCard key={e.eventId} event={e} />
+              ))}
+            </div>
+            {/* Sentinel — when this enters view, visibleCount increases */}
+            <div ref={sentinelRef} className="h-1" />
+          </>
         )}
       </div>
     </AppShell>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { VersionedTransaction, Transaction } from "@solana/web3.js";
 import { toast } from "sonner";
@@ -155,6 +155,17 @@ export function TradePanel({ market, marketTitle }: TradePanelProps) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
+  // One idempotency key per order intent. It regenerates whenever the order
+  // parameters change, so changing side/amount/market starts a new order, but
+  // repeated clicks on the same parameters dedupe to a single built order.
+  const idemKeyRef = useRef<string>("");
+  useEffect(() => {
+    idemKeyRef.current =
+      typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `${market.marketId}-${side}-${amountUsd}-${Date.now()}`;
+  }, [side, amountUsd, market.marketId]);
+
   const pricing = market.pricing;
   const price = side === "YES" ? pricing?.buyYesPriceUsd : pricing?.buyNoPriceUsd;
   const priceDisplay = price != null ? `${Math.round(price / 10_000)}¢` : "—";
@@ -176,7 +187,8 @@ export function TradePanel({ market, marketTitle }: TradePanelProps) {
           depositAmount,
           depositMint: USDC_MINT,
         },
-        token
+        token,
+        idemKeyRef.current
       );
       setPendingTx(res.transaction);
       setPreview(res.preview);
@@ -300,7 +312,7 @@ export function TradePanel({ market, marketTitle }: TradePanelProps) {
         </div>
 
         {/* Inline payout estimate */}
-        {price != null && amountUsd && parseFloat(amountUsd) >= 1 && (() => {
+        {price != null && amountUsd && parseFloat(amountUsd) > 0 && (() => {
           const amt = parseFloat(amountUsd);
           const priceCents = Math.round(price / 10_000);
           if (priceCents <= 0) return null;

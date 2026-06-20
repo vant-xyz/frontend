@@ -6,7 +6,7 @@ import { Toaster } from 'sonner'
 import { PWAInstallPrompt } from '@/components/pwa/install-prompt'
 import { MaintenanceGate } from '@/components/system/maintenance-gate'
 import { SolanaWalletProvider } from '@/components/providers/wallet-provider'
-import NextTopLoader from 'nextjs-toploader'
+import { PageProgressBar } from '@/components/ui/page-progress-bar'
 import './globals.css'
 
 const ubuntu = Ubuntu({
@@ -134,7 +134,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="Vantic" />
       </head>
       <body className={`${ubuntu.variable} ${jetbrainsMono.variable} font-sans antialiased bg-black text-white`}>
-        <NextTopLoader color="#dc2626" height={2} showSpinner={false} shadow="0 0 10px #dc2626, 0 0 5px #dc2626" />
+        <PageProgressBar />
         <SolanaWalletProvider>
           <MaintenanceGate>{children}</MaintenanceGate>
           <PWAInstallPrompt />
