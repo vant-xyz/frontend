@@ -16,7 +16,9 @@ export function SolanaWalletProvider({ children }: { children: React.ReactNode }
 
   return (
     <ConnectionProvider endpoint={endpoint}>
-      <WalletProvider wallets={wallets} autoConnect={false}>
+      {/* autoConnect so the wallet reconnects after the post-auth page reload —
+          otherwise signTransaction is undefined and signing silently fails. */}
+      <WalletProvider wallets={wallets} autoConnect>
         {children}
       </WalletProvider>
     </ConnectionProvider>

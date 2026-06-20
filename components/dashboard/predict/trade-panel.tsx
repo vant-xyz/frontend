@@ -217,7 +217,13 @@ export function TradePanel({ market, marketTitle }: TradePanelProps) {
   };
 
   const handleConfirm = async () => {
-    if (!pendingTx || !signTransaction) return;
+    if (!pendingTx) return;
+    if (!signTransaction) {
+      // Wallet isn't connected for signing (e.g. it didn't reconnect after a
+      // reload). Tell the user instead of silently doing nothing.
+      toast.error("Wallet not connected — reconnect and try again");
+      return;
+    }
     setConfirmStage("signing");
     try {
       const txBytes = Buffer.from(pendingTx, "base64");
