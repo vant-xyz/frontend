@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { GlowButton } from "@/components/ui/glow-button";
 import { AuthModal } from "./auth-modal";
 import { getUserProfile, type AuthResponse } from "@/lib/api";
 
@@ -94,7 +95,7 @@ export function Navigation({ onWaitlistOpen }: NavigationProps) {
         <nav className="w-full max-w-4xl flex items-center justify-between px-6 py-4 bg-black/80 backdrop-blur-md border border-black rounded-2xl shadow-lg">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-red-600 rounded"></div>
+            <div className="w-8 h-8 rounded bg-red-600 shrink-0"></div>
             <span className="text-2xl font-bold text-white">Vantic</span>
           </div>
 
@@ -102,15 +103,9 @@ export function Navigation({ onWaitlistOpen }: NavigationProps) {
           <div className="hidden lg:flex items-center gap-8">
             <a
               href="#how-it-works"
-              className="text-sm text-gray-400 hover:text-red-500 transition-colors"
+              className="text-sm text-zinc-400 hover:text-white transition-colors"
             >
               How It Works
-            </a>
-            <a
-              href="#vant-vs"
-              className="text-sm text-gray-400 hover:text-red-500 transition-colors"
-            >
-              Vantic VS
             </a>
           </div>
 
@@ -130,12 +125,10 @@ export function Navigation({ onWaitlistOpen }: NavigationProps) {
                 </Button>
               </div>
             ) : (
-              <Button
-                onClick={() => setIsAuthModalOpen(true)}
-                className="px-6 py-2 bg-red-600 text-white font-medium rounded hover:bg-red-500 transition-colors"
-              >
-                Start Trading
-              </Button>
+              <GlowButton href="/app" size="sm">
+                Launch App
+                <span className="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
+              </GlowButton>
             )}
           </div>
 
@@ -164,7 +157,7 @@ export function Navigation({ onWaitlistOpen }: NavigationProps) {
             <div className="space-y-4">
               <div className="flex justify-between items-center mb-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-red-600 rounded"></div>
+                  <div className="w-8 h-8 rounded bg-red-600 shrink-0"></div>
                   <span className="text-xl font-bold text-white">Vantic</span>
                 </div>
                 <button
@@ -194,46 +187,19 @@ export function Navigation({ onWaitlistOpen }: NavigationProps) {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {isAuthEnabled ? (
-                    <Button
-                      onClick={() => {
-                        setIsAuthModalOpen(true);
-                        setIsMobileDrawerOpen(false);
-                      }}
-                      className="w-full bg-red-600 text-white font-semibold hover:bg-red-500 h-12"
-                    >
-                      Authenticate
-                    </Button>
-                  ) : (
-                    <div className="relative">
-                      <Button
-                        disabled
-                        className="w-full bg-gray-800 text-gray-500 h-12 blur-[2px] pointer-events-none"
-                      >
-                        Authenticate
-                      </Button>
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-xs text-gray-400 bg-black px-2 py-1 rounded">Coming Soon</span>
-                      </div>
-                    </div>
-                  )}
+                  <GlowButton href="/app" size="sm" className="w-full">
+                    Launch App →
+                  </GlowButton>
                 </div>
               )}
 
-              <div className="pt-4 border-t border-gray-800">
+              <div className="pt-4 border-t border-white/10">
                 <a
                   href="#how-it-works"
                   onClick={() => setIsMobileDrawerOpen(false)}
-                  className="block py-3 text-gray-400 hover:text-red-500 transition-colors"
+                  className="block py-3 text-zinc-400 hover:text-white transition-colors"
                 >
                   How It Works
-                </a>
-                <a
-                  href="#vant-vs"
-                  onClick={() => setIsMobileDrawerOpen(false)}
-                  className="block py-3 text-gray-400 hover:text-red-500 transition-colors"
-                >
-                  Vantic VS
                 </a>
               </div>
             </div>

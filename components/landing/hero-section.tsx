@@ -1,193 +1,120 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { ReelAnimation } from "./reel-animation";
-import { WaitlistModal } from "./waitlist-modal";
-import { AuthModal } from "./auth-modal";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { GlowButton } from "@/components/ui/glow-button";
 
 export function HeroSection() {
   const router = useRouter();
-  const [isVisible, setIsVisible] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [animatedStats, setAnimatedStats] = useState([false, false, false]);
+  const [mounted, setMounted] = useState(false);
 
-  const enableAuth = process.env.NEXT_PUBLIC_ENABLE_AUTH === "true";
-
-  const handleStartTrading = () => {
-    if (!enableAuth) {
-      setIsModalOpen(true);
-      return;
-    }
-
-    const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
-    
-    if (token) {
-      router.push("/app");
-    } else {
-      setIsAuthModalOpen(true);
-    }
-  };
-
-  useEffect(() => {
-    setIsVisible(true);
-  }, []);
-
-  useEffect(() => {
-    if (!isVisible) return;
-    const delays = [600, 800, 1000];
-    delays.forEach((delay, idx) => {
-      setTimeout(() => {
-        setAnimatedStats((prev) => {
-          const newState = [...prev];
-          newState[idx] = true;
-          return newState;
-        });
-      }, delay);
-    });
-  }, [isVisible]);
+  useEffect(() => setMounted(true), []);
 
   return (
-    <section className="relative min-h-screen w-full flex flex-col justify-center items-center overflow-hidden pt-24">
-      {/* Hero Video Background */}
-      <video
-        autoPlay
-        loop
-        muted
-        playsInline
-        className="absolute inset-0 w-full h-full object-cover"
+    <section className="relative min-h-screen w-full flex flex-col items-center justify-center overflow-hidden bg-[#0a0404]">
+      {/* Red ambient glow */}
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[500px] rounded-full bg-red-800/10 blur-[140px] pointer-events-none" />
+
+      {/* Content */}
+      <div
+        className={`relative z-10 flex flex-col items-center text-center px-6 max-w-4xl mx-auto pt-36 transition-all duration-700 ${
+          mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+        }`}
       >
-        <source src="/media/videos/hero.mp4" type="video/mp4" />
-        <source src="/media/videos/hero.mov" type="video/quicktime" />
-      </video>
-
-      {/* Dark overlay for readability */}
-      <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-black/70 to-gray-900/80" />
-
-      {/* Red glow effect */}
-      <div className="absolute -top-40 -right-40 w-80 h-80 bg-red-600 rounded-full opacity-10 blur-3xl" />
-      <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-red-600 rounded-full opacity-10 blur-3xl" />
-
-      <div className="relative z-10 max-w-6xl mx-auto px-6 py-32 text-center">
-        {/* Main headline with reel animation */}
-        <h1
-          className={`text-6xl lg:text-8xl font-bold text-white mb-6 transition-all duration-1000 ${
-            isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-          }`}
-        >
-          <ReelAnimation />
-        </h1>
-
-        {/* Subheading */}
-        <p
-          className={`text-2xl lg:text-3xl text-gray-300 mb-8 max-w-3xl mx-auto transition-all duration-1000 delay-200 ${
-            isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-          }`}
-        >
-          The fastest prediction market terminal for opinions.
-        </p>
-
-        {/* CTA Button */}
-        <div
-          className={`transition-all duration-1000 delay-300 ${
-            isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-          }`}
-        >
-          <Button
-            onClick={handleStartTrading}
-            size="lg"
-            className="px-10 py-6 bg-red-600 text-white text-xl font-bold rounded hover:bg-red-500 transition-colors shadow-lg"
-          >
-            Start Trading
-          </Button>
+        {/* Badge pill — black background */}
+        <div className="inline-flex items-center gap-2 mb-10 px-3 py-1.5 rounded-[10px] bg-black border border-white/10 text-sm">
+          <span className="text-zinc-400 text-xs font-medium">CA Coming Soon</span>
+          <span className="w-px h-3.5 bg-white/10" />
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[8px] bg-zinc-900 border border-white/10 text-xs text-zinc-300 font-medium">
+            <Image
+              src="/media/images/token_icons/solana.png"
+              alt="Solana"
+              width={14}
+              height={14}
+              className="shrink-0 rounded-full"
+            />
+            Solana
+          </span>
         </div>
 
-        {/* Animated stats with wipe effect */}
-        <div className="mt-24 grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Stat 1: Time predictions */}
-          <div
-            className={`p-6 border border-red-900/30 rounded overflow-hidden relative transition-all duration-700 ${
-              animatedStats[0] ? "opacity-100" : "opacity-0"
-            }`}
-            style={{
-              clipPath: animatedStats[0] ? "inset(0 0 0 0)" : "inset(0 100% 0 0)",
-              transition: "clip-path 0.8s ease-out",
-            }}
-          >
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 text-red-600 flex-shrink-0 mt-2 flex items-center justify-center">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-full h-full"><circle cx="12" cy="12" r="9"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-              </div>
-              <div className="text-left">
-                <div className="text-red-600 text-3xl font-bold mb-2">
-                  <ReelAnimation texts={["15 min", "5 min", "3 hrs"]} rotateInterval={2500} />
-                </div>
-                <div className="text-gray-400">Crypto Price Predictions</div>
-              </div>
-            </div>
-          </div>
+        {/* Headline — metallic shimmer */}
+        <h1 className="text-5xl sm:text-6xl lg:text-[5rem] font-bold leading-[1.06] tracking-tight mb-6">
+          <span className="inline-flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+            <span className="shimmer-metallic">Predict</span>
+            <span className="shimmer-metallic">the</span>
+            <span className="inline-flex items-center gap-2">
+              <Image
+                src="/icons8-globe-96.png"
+                alt=""
+                width={64}
+                height={64}
+                className="w-10 h-10 sm:w-12 sm:h-12 lg:w-16 lg:h-16 inline-block"
+              />
+              <span className="shimmer-metallic">World.</span>
+            </span>
+          </span>
+          <br />
+          <span className="inline-flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+            <span className="shimmer-metallic">Win in</span>
+            <span className="inline-flex items-center gap-2">
+              <Image
+                src="/icons8-realtime-96.png"
+                alt=""
+                width={64}
+                height={64}
+                className="w-10 h-10 sm:w-12 sm:h-12 lg:w-16 lg:h-16 inline-block"
+              />
+              <span className="shimmer-metallic">Real Time.</span>
+            </span>
+          </span>
+        </h1>
 
-          {/* Stat 2: Instant */}
-          <div
-            className={`p-6 border border-red-900/30 rounded overflow-hidden relative transition-all duration-700 ${
-              animatedStats[1] ? "opacity-100" : "opacity-0"
-            }`}
-            style={{
-              clipPath: animatedStats[1] ? "inset(0 0 0 0)" : "inset(0 100% 0 0)",
-              transition: "clip-path 0.8s ease-out",
-            }}
-          >
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 text-red-600 flex-shrink-0 mt-2 flex items-center justify-center">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-full h-full"><line x1="13" y1="2" x2="13" y2="22"></line><polyline points="18 5 13 12 18 19"></polyline><polyline points="6 5 11 12 6 19"></polyline></svg>
-              </div>
-              <div className="text-left">
-                <div className="text-red-600 text-3xl font-bold mb-2">
-                  <ReelAnimation text="Instant" />
-                </div>
-                <div className="text-gray-400">Payouts in USDC or Crypto</div>
-              </div>
-            </div>
-          </div>
+        {/* Subtitle */}
+        <p className="text-lg text-zinc-500 max-w-lg mx-auto mb-10 leading-relaxed">
+          Trade yes/no outcomes on World Cup matches, crypto, and politics.
+          Non-custodial. Settled on-chain.
+        </p>
 
-          {/* Stat 3: Zero */}
-          <div
-            className={`p-6 border border-red-900/30 rounded overflow-hidden relative transition-all duration-700 ${
-              animatedStats[2] ? "opacity-100" : "opacity-0"
-            }`}
-            style={{
-              clipPath: animatedStats[2] ? "inset(0 0 0 0)" : "inset(0 100% 0 0)",
-              transition: "clip-path 0.8s ease-out",
-            }}
+        {/* CTAs — squircle buttons */}
+        <div className="flex flex-col sm:flex-row items-center gap-4">
+          <GlowButton onClick={() => router.push("/app")}>
+            Launch App
+            <span className="inline-block transition-transform duration-200 group-hover:translate-x-1">→</span>
+          </GlowButton>
+          <a
+            href="#how-it-works"
+            className="flex items-center gap-2 px-7 py-3.5 rounded-[12px] border border-white/10 bg-white/[0.03] backdrop-blur-sm text-zinc-400 hover:text-white hover:border-white/20 font-medium text-sm transition-all duration-200"
           >
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 text-red-600 flex-shrink-0 mt-2 flex items-center justify-center">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-full h-full"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-              </div>
-              <div className="text-left">
-                <div className="text-red-600 text-3xl font-bold mb-2">
-                  <ReelAnimation text="Zero" />
-                </div>
-                <div className="text-gray-400">Hidden Fees • Full Transparency</div>
-              </div>
-            </div>
-          </div>
+            How it Works
+          </a>
         </div>
       </div>
 
-      <WaitlistModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
-      {enableAuth && (
-        <AuthModal 
-          isOpen={isAuthModalOpen} 
-          onClose={() => setIsAuthModalOpen(false)}
-          onSuccess={() => {
-            setIsAuthModalOpen(false);
-            router.push("/app");
-          }} 
-        />
-      )}
+      {/* App screenshot — perspective tilt */}
+      <div
+        className={`relative z-10 w-full max-w-5xl mx-auto px-6 mt-20 transition-all duration-1000 delay-300 ${
+          mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"
+        }`}
+        style={{ perspective: "1200px" }}
+      >
+        <div
+          style={{ transform: "rotateX(18deg) scale(1.02)", transformOrigin: "top center" }}
+          className="relative rounded-[14px] overflow-hidden border border-white/[0.08] shadow-2xl shadow-black/80"
+        >
+          <Image
+            src="/public-hero-image.png"
+            alt="Vantic app"
+            width={1440}
+            height={900}
+            className="w-full h-auto"
+            priority
+          />
+          <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-b from-transparent to-[#0a0404]" />
+        </div>
+      </div>
+
+      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#0a0404] to-transparent pointer-events-none" />
     </section>
   );
 }

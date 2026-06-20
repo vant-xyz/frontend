@@ -92,6 +92,72 @@
   }
 }
 
+/* ── Landing page: film grain ───────────────────────── */
+.grain {
+  position: fixed;
+  inset: -150%;
+  width: 400%;
+  height: 400%;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.22;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 170px 170px;
+  animation: grain-move 0.4s steps(1) infinite;
+  will-change: transform;
+}
+@keyframes grain-move {
+  0%   { transform: translate(0,0); }
+  14%  { transform: translate(-4%,-8%); }
+  28%  { transform: translate(6%, 3%); }
+  42%  { transform: translate(-8%, 9%); }
+  57%  { transform: translate(4%,-6%); }
+  71%  { transform: translate(-6%, 2%); }
+  85%  { transform: translate(9%,-4%); }
+  100% { transform: translate(-3%, 7%); }
+}
+
+/* ── Landing: metallic shimmer ──────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: 0% center; }
+  100% { background-position: -200% center; }
+}
+.shimmer-metallic {
+  /* first and last stops match (#3f3f3f) so the tile loops seamlessly */
+  background: linear-gradient(
+    100deg,
+    #3f3f3f 0%,
+    #9a9a9a 10%,
+    #ffffff 20%,
+    #5a5a5a 30%,
+    #ffffff 40%,
+    #6a6a6a 50%,
+    #ffffff 60%,
+    #5a5a5a 70%,
+    #ffffff 80%,
+    #9a9a9a 90%,
+    #3f3f3f 100%
+  );
+  background-size: 200% auto;
+  background-repeat: repeat;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.4));
+  animation: shimmer 3s linear infinite;
+  will-change: background-position;
+}
+/* ── liquid glass ───────────────────────────────────── */
+.glass-card {
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid rgba(255,255,255,0.09);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.1),
+    0 4px 32px rgba(0,0,0,0.4);
+}
+
 @layer utilities {
   .marquee {
     animation: marquee 30s linear infinite;

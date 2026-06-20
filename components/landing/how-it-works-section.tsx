@@ -1,187 +1,229 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ReelAnimation } from "./reel-animation";
+
+function Ico({ src, size = 22, rounded = false }: { src: string; size?: number; rounded?: boolean }) {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt=""
+      aria-hidden="true"
+      className={`inline-block align-[-0.18em] mr-1.5${rounded ? " rounded-full" : ""}`}
+      style={{ width: size, height: size }}
+    />
+  );
+}
+
+const USDC = () => <Ico src="/media/images/token_icons/usdc.png" size={16} rounded />;
 
 const steps = [
   {
-    number: "1",
-    title: "Fund Your Account",
-    description: "Deposit via Crypto (SOL/BASE). Your balance is displayed in USD for zero-friction trading.",
-    icon: "wallet",
+    n: "01",
+    label: "Connect Your Wallet",
+    title: (
+      <>
+        Connect Your <Ico src="/icons8-wallet-96.png" />Wallet
+      </>
+    ),
+    body: (
+      <>
+        Link any Solana wallet. Phantom, Backpack, or Solflare. No email, no
+        account. One signature proves who you are.
+      </>
+    ),
+    tag: "non-custodial",
   },
   {
-    number: "2",
-    title: "Pick Your Market",
-    description: "Choose between 1-minute Crypto price predictions, Sports, or P2P wagers.",
-    icon: "trending",
+    n: "02",
+    label: "Browse Live Markets",
+    title: (
+      <>
+        <Ico src="/icons8-search-96.png" />Browse Live Markets
+      </>
+    ),
+    body: (
+      <>
+        World Cup matches, crypto outcomes, and politics. Powered by Jupiter
+        Predict and updated in real time.
+      </>
+    ),
+    tag: "powered by Jupiter",
   },
   {
-    number: "3",
-    title: "Stake & Vantic",
-    description: "Place your prediction. Low fees, high speed, and absolute transparency on Solana.",
-    icon: "zap",
+    n: "03",
+    label: "Place Your Prediction",
+    title: (
+      <>
+        Place Your <Ico src="/icons8-select-96.png" />Prediction
+      </>
+    ),
+    body: (
+      <>
+        Pick YES or NO, enter your <USDC />USDC, review the fee breakdown, then
+        sign in your wallet. The backend builds the transaction. You only sign.
+      </>
+    ),
+    tag: "0.5% fee, flat",
   },
   {
-    number: "4",
-    title: "Instant Payouts",
-    description: "Win and withdraw immediately to your crypto wallet. Instant, borderless, on Solana.",
-    icon: "send",
+    n: "04",
+    label: "Collect Your Winnings",
+    title: (
+      <>
+        Collect Your <Ico src="/icons8-money-96.png" />Winnings
+      </>
+    ),
+    body: (
+      <>
+        When the event resolves, claim on-chain. Instant <USDC />USDC payout.
+        The contract holds the funds the whole way, never us.
+      </>
+    ),
+    tag: "instant on-chain",
   },
 ];
 
 export function HowItWorksSection() {
-  const [isVisible, setIsVisible] = useState(false);
-  const [activeIndex, setActiveIndex] = useState(-1);
-  const sectionRef = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLDivElement>(null);
+  const [progress, setProgress] = useState(0); // 0..1 through the section
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) setIsVisible(true);
-      },
-      { threshold: 0.1 }
-    );
-
-    if (sectionRef.current) observer.observe(sectionRef.current);
-    return () => observer.disconnect();
-  }, []);
-
-  // Sequential animation loop
-  useEffect(() => {
-    if (!isVisible) return;
-
-    const sequence = () => {
-      steps.forEach((_, idx) => {
-        setTimeout(() => {
-          setActiveIndex(idx);
-        }, idx * 500);
-      });
-
-      setTimeout(() => {
-        sequence();
-      }, steps.length * 500 + 2000);
+    const update = () => {
+      const el = ref.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const total = rect.height - window.innerHeight;
+      const p = total > 0 ? Math.min(1, Math.max(0, -rect.top / total)) : 0;
+      setProgress(p);
     };
 
-    sequence();
-  }, [isVisible]);
+    let raf = 0;
+    const onScroll = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(update);
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    update();
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      cancelAnimationFrame(raf);
+    };
+  }, []);
+
+  // Heading reveals early; cards advance across the middle of the scroll.
+  const headIn = progress > 0.02;
+  const n = steps.length;
+  // map progress 0.12 → 0.92 onto card index 0..n-1
+  const cardStart = 0.12;
+  const cardEnd = 0.92;
+  let activeCard = -1;
+  if (progress >= cardStart) {
+    activeCard = Math.min(n - 1, Math.floor(((progress - cardStart) / (cardEnd - cardStart)) * n));
+  }
+  if (progress >= cardEnd) activeCard = n - 1;
 
   return (
     <section
       id="how-it-works"
-      ref={sectionRef}
-      className="relative py-24 lg:py-32 bg-black overflow-hidden"
+      ref={ref}
+      // tall track gives the pin room to scroll through; ~100vh per card
+      style={{ height: `${(n + 1) * 100}vh` }}
+      className="relative bg-[#0a0404]"
     >
-      <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-12">
-        {/* Header */}
-        <div className="mb-20 text-center">
-          <h2
-            className={`text-5xl lg:text-6xl font-bold text-white mb-6 transition-all duration-700 ${
-              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-            }`}
+      <div className="sticky top-0 h-screen w-full overflow-hidden flex items-center">
+        {/* ambient glow */}
+        <div className="pointer-events-none absolute top-1/2 left-[20%] -translate-y-1/2 w-[480px] h-[480px] rounded-full bg-red-900/10 blur-[120px]" />
+
+        <div className="relative z-10 w-full max-w-6xl mx-auto px-6 grid lg:grid-cols-[40%_60%] gap-10 lg:gap-16 items-center">
+
+          {/* LEFT — pinned heading */}
+          <div
+            className="transition-all duration-700"
+            style={{
+              opacity: headIn ? 1 : 0,
+              filter: headIn ? "blur(0)" : "blur(12px)",
+              transform: headIn ? "translateY(0)" : "translateY(20px)",
+            }}
           >
-            <ReelAnimation text="How It Works" />
-          </h2>
-          <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-            Four simple steps to start trading predictions on the fastest terminal on Solana
-          </p>
-        </div>
+            <span className="block text-red-600 text-[11px] font-bold uppercase tracking-[0.16em] mb-5">
+              Simple by design
+            </span>
+            <h2 className="text-4xl lg:text-5xl font-bold text-white leading-tight mb-5">
+              How It Works
+            </h2>
+            <p className="text-zinc-500 text-base leading-relaxed max-w-xs">
+              Four steps from zero to an on-chain prediction.
+            </p>
 
-        {/* Steps Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {steps.map((step, index) => {
-            const Icon = step.icon;
-            const isActive = activeIndex === index;
+            {/* progress rail */}
+            <div className="mt-10 flex flex-col gap-3">
+              {steps.map((s, i) => (
+                <button
+                  key={s.n}
+                  type="button"
+                  className="group flex items-center gap-3 text-left"
+                >
+                  <span
+                    className="h-px rounded-full transition-all duration-500"
+                    style={{
+                      width: i === activeCard ? 40 : 18,
+                      backgroundColor: i <= activeCard ? "#dc2626" : "rgba(255,255,255,0.12)",
+                    }}
+                  />
+                  <span
+                    className="text-xs font-medium tabular-nums transition-colors duration-300"
+                    style={{ color: i === activeCard ? "#fff" : i < activeCard ? "#71717a" : "#3f3f46" }}
+                  >
+                    {s.n} · {s.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
 
-            const renderIcon = () => {
-              const iconProps = "w-12 h-12 text-red-600 transition-all duration-500";
-              switch (step.icon) {
-                case "wallet":
-                  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`${iconProps} ${isActive ? "scale-125" : "scale-100"}`}><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><path d="M1 10h22"></path></svg>;
-                case "trending":
-                  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`${iconProps} ${isActive ? "scale-125" : "scale-100"}`}><polyline points="23 6 13.5 15.5 8.5 10.5 1 17"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>;
-                case "zap":
-                  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`${iconProps} ${isActive ? "scale-125" : "scale-100"}`}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>;
-                case "send":
-                  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`${iconProps} ${isActive ? "scale-125" : "scale-100"}`}><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>;
-                default:
-                  return null;
-              }
-            };
+          {/* RIGHT — stacked cards, cross-fade */}
+          <div className="relative h-[340px] sm:h-[300px]">
+            {steps.map((step, i) => {
+              const active = i === activeCard;
+              const past = i < activeCard;
+              return (
+                <article
+                  key={step.n}
+                  className="absolute inset-0 rounded-[16px] p-8 transition-all duration-500 glass-card"
+                  style={{
+                    opacity: active ? 1 : 0,
+                    filter: active ? "blur(0)" : "blur(14px)",
+                    transform: active
+                      ? "translateY(0) scale(1)"
+                      : past
+                      ? "translateY(-28px) scale(0.97)"
+                      : "translateY(28px) scale(0.97)",
+                    pointerEvents: active ? "auto" : "none",
+                  }}
+                >
+                  <span className="block text-[44px] font-black leading-none text-white/[0.06] mb-4 select-none">
+                    {step.n}
+                  </span>
+                  <h3 className="text-2xl font-semibold text-white mb-3">{step.title}</h3>
+                  <p className="text-sm text-zinc-400 leading-relaxed mb-6">{step.body}</p>
+                  <span className="inline-flex items-center px-3 py-1 rounded-[8px] bg-red-950/40 border border-red-900/30 text-red-400 text-xs font-medium">
+                    {step.tag}
+                  </span>
+                </article>
+              );
+            })}
 
-            const renderBackgroundIcon = () => {
-              const bgIconProps = "w-32 h-32 text-red-600";
-              switch (step.icon) {
-                case "wallet":
-                  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={bgIconProps}><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><path d="M1 10h22"></path></svg>;
-                case "trending":
-                  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={bgIconProps}><polyline points="23 6 13.5 15.5 8.5 10.5 1 17"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>;
-                case "zap":
-                  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={bgIconProps}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>;
-                case "send":
-                  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={bgIconProps}><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>;
-                default:
-                  return null;
-              }
-            };
+            {activeCard === -1 && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <p className="text-zinc-700 text-sm animate-pulse">Keep scrolling ↓</p>
+              </div>
+            )}
+          </div>
 
-            return (
-              <Card
-                key={step.number}
-                className={`group relative p-8 bg-black border-2 rounded-lg overflow-hidden transition-all duration-500 ${
-                  isActive
-                    ? "border-red-600 scale-105"
-                    : "border-red-900/30"
-                } ${
-                  isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-                }`}
-                style={{
-                  transitionDelay: isVisible ? `${index * 100}ms` : "0ms",
-                  transform: isActive ? "perspective(1000px) rotateX(5deg) rotateY(-5deg)" : "perspective(1000px) rotateX(0deg) rotateY(0deg)",
-                }}
-              >
-                {/* Vertex Brackets */}
-                <div className="absolute top-3 left-3 w-3 h-3 border-t-2 border-l-2 border-red-600" />
-                <div className="absolute top-3 right-3 w-3 h-3 border-t-2 border-r-2 border-red-600" />
-                <div className="absolute bottom-3 left-3 w-3 h-3 border-b-2 border-l-2 border-red-600" />
-                <div className="absolute bottom-3 right-3 w-3 h-3 border-b-2 border-r-2 border-red-600" />
-
-                {/* Icon Background */}
-                <div className="absolute inset-0 flex items-center justify-center opacity-5 transition-all duration-500">
-                  {renderBackgroundIcon()}
-                </div>
-
-                {/* Content */}
-                <CardContent className="relative z-10 p-0">
-                  {/* Icon */}
-                  <div className="mb-6 transition-all duration-500">
-                    {renderIcon()}
-                  </div>
-
-                  {/* Title with animation */}
-                  <h3 className={`text-2xl font-bold text-white mb-4 transition-all duration-500 ${
-                    isActive ? "translate-x-2" : "translate-x-0"
-                  }`}>
-                    <ReelAnimation text={step.title} />
-                  </h3>
-
-                  {/* Description */}
-                  <p className={`text-gray-400 leading-relaxed transition-all duration-500 ${
-                    isActive ? "text-gray-300" : "text-gray-500"
-                  }`}>
-                    {step.description}
-                  </p>
-                </CardContent>
-
-                {/* Connector */}
-                {index < steps.length - 1 && (
-                  <div className="hidden lg:block absolute -right-4 top-1/2 -translate-y-1/2 w-8 h-px bg-gradient-to-r from-red-600 to-transparent opacity-30" />
-                )}
-              </Card>
-            );
-          })}
         </div>
       </div>
     </section>

@@ -1,105 +1,138 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import { CreditsModal } from "./credits-modal";
+import { useState } from "react";
+import { GlowButton } from "@/components/ui/glow-button";
 
 export function FooterSection() {
-  const [isCreditsOpen, setIsCreditsOpen] = useState(false);
-
-  const footerLinks = [
-    { name: "Privacy Policy", href: "/privacy-policy" },
-    { name: "Terms of Service", href: "/terms-of-service" },
-    { name: "Contact Us", href: "mailto:me@davidnzube.xyz" },
-  ];
+  const [comingSoon, setComingSoon] = useState<string | null>(null);
 
   return (
-    <>
-      <footer className="relative border-t border-red-900/30 bg-black overflow-hidden">
-        {/* Faded VANTIC text background */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-3 pointer-events-none overflow-hidden">
-          <span className="text-9xl font-bold text-red-600 whitespace-nowrap select-none">VANTIC VANTIC VANTIC</span>
+    <footer className="relative overflow-hidden bg-[#060810] pt-24">
+      {/* Oversized VANTIC wordmark as background — cut off at the bottom edge */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none select-none absolute inset-x-0 bottom-0 flex justify-center overflow-hidden"
+        style={{ height: "78%" }}
+      >
+        <span
+          className="font-black whitespace-nowrap"
+          style={{
+            fontSize: "clamp(140px, 30vw, 460px)",
+            letterSpacing: "-0.05em",
+            lineHeight: 0.78,
+            // letters sit below the baseline so the bottom is clipped by the footer edge
+            transform: "translateY(22%)",
+            background: "linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(220,38,38,0.05) 55%, transparent 100%)",
+            WebkitBackgroundClip: "text",
+            backgroundClip: "text",
+            color: "transparent",
+          }}
+        >
+          VANTIC
+        </span>
+      </div>
+
+      {/* Content sits above the wordmark */}
+      <div className="relative z-10 max-w-6xl mx-auto px-6">
+        <div
+          className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-10 py-14"
+          style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
+        >
+          {/* Brand */}
+          <div className="flex items-center gap-2.5 shrink-0">
+            <div className="w-7 h-7 rounded-[7px] bg-red-600 shrink-0" />
+            <span className="text-base font-semibold text-white">Vantic</span>
+          </div>
+
+          {/* Columns */}
+          <div className="flex flex-wrap gap-10 sm:gap-16">
+            <nav aria-label="Product" className="flex flex-col">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.13em] text-zinc-600 mb-4">Product</span>
+              <a href="#how-it-works" className="text-sm text-zinc-400 hover:text-white transition-colors py-1.5">How it works</a>
+              <Link href="/app" className="text-sm text-zinc-400 hover:text-white transition-colors py-1.5">Launch App</Link>
+            </nav>
+
+            <nav aria-label="Resources" className="flex flex-col">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.13em] text-zinc-600 mb-4">Resources</span>
+              <button
+                onClick={() => setComingSoon("Whitepaper")}
+                className="text-left text-sm text-zinc-400 hover:text-white transition-colors py-1.5"
+              >
+                Whitepaper
+              </button>
+              <button
+                onClick={() => setComingSoon("Roadmap")}
+                className="text-left text-sm text-zinc-400 hover:text-white transition-colors py-1.5"
+              >
+                Roadmap
+              </button>
+              <Link href="/terms-of-service" className="text-sm text-zinc-400 hover:text-white transition-colors py-1.5">Terms of Service</Link>
+              <Link href="/privacy-policy" className="text-sm text-zinc-400 hover:text-white transition-colors py-1.5">Privacy Policy</Link>
+              <a
+                href="https://vantic.xyz/v1"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-zinc-400 hover:text-white transition-colors py-1.5 flex items-center gap-1"
+              >
+                Vantic v1
+                <svg viewBox="0 0 12 12" width="9" height="9" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M2 10 10 2M5 2h5v5" />
+                </svg>
+              </a>
+            </nav>
+
+            <nav aria-label="Community" className="flex flex-col">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.13em] text-zinc-600 mb-4">Community</span>
+              <a
+                href="https://x.com/vanticxyz"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-zinc-400 hover:text-white transition-colors py-1.5 flex items-center gap-2"
+              >
+                <svg viewBox="0 0 16 16" width="12" height="12" fill="currentColor" aria-hidden="true">
+                  <path d="M9.294 6.928 14.357 1h-1.2L8.762 6.147 5.25 1H1l5.31 7.722L1 15.143h1.2l4.642-5.396 3.708 5.396H15zM7.38 8.98l-.538-.77L2.64 1.908h1.843l3.454 4.942.537.769 4.491 6.423h-1.843z" />
+                </svg>
+                X (Twitter)
+              </a>
+            </nav>
+          </div>
         </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-12">
-          {/* Main Footer */}
-          <div className="py-16 lg:py-20">
-            <div className="grid md:grid-cols-3 gap-12">
-              {/* Brand Column */}
-              <div>
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-8 h-8 bg-red-600 rounded"></div>
-                  <span className="text-2xl font-bold text-white">Vantic</span>
-                </div>
+        {/* Fine print */}
+        <p
+          className="py-5 text-xs text-zinc-700"
+          style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
+        >
+          © 2026 Vantic. Non-custodial. On Solana.
+        </p>
+      </div>
 
-                <p className="text-gray-400 leading-relaxed mb-8 max-w-xs">
-                  The fastest prediction market terminal for opinions. Trade crypto, sports, and custom wagers on the fastest execution engine.
-                </p>
-
-                {/* Social Links */}
-                <div className="flex gap-4">
-                  <a
-                    href="https://x.com/vanticxyz"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-gray-400 hover:text-red-500 transition-colors"
-                    aria-label="X (Twitter)"
-                  >
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-                    </svg>
-                  </a>
-                </div>
-              </div>
-
-              {/* Empty column for spacing on desktop */}
-              <div />
-
-              {/* Links Column */}
-              <div className="space-y-4">
-                {footerLinks.map((link) => (
-                  link.href.startsWith("mailto") ? (
-                    <a
-                      key={link.name}
-                      href={link.href}
-                      className="block text-gray-400 hover:text-red-500 transition-colors text-sm"
-                    >
-                      {link.name}
-                    </a>
-                  ) : (
-                    <Link
-                      key={link.name}
-                      href={link.href}
-                      className="block text-gray-400 hover:text-red-500 transition-colors text-sm"
-                    >
-                      {link.name}
-                    </Link>
-                  )
-                ))}
-                <button
-                  onClick={() => setIsCreditsOpen(true)}
-                  className="block text-gray-400 hover:text-red-500 transition-colors text-sm cursor-pointer"
-                >
-                  Credits
-                </button>
-              </div>
+      {/* Coming soon modal */}
+      {comingSoon && (
+        <div
+          className="fixed inset-0 z-[10000] flex items-center justify-center p-6 bg-black/70 backdrop-blur-sm"
+          onClick={() => setComingSoon(null)}
+        >
+          <div
+            className="glass-card rounded-[16px] p-8 max-w-sm w-full text-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-12 h-12 mx-auto mb-5 rounded-[12px] bg-red-950/50 border border-red-900/30 flex items-center justify-center">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#f87171" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" />
+              </svg>
             </div>
-          </div>
-
-          {/* Bottom Bar */}
-          <div className="py-6 border-t border-red-900/30 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-gray-500">
-            <p>
-              2025 Vantic. All rights reserved.
+            <h3 className="text-lg font-semibold text-white mb-2">{comingSoon} coming soon</h3>
+            <p className="text-sm text-zinc-400 mb-6">
+              We are putting the finishing touches on the {comingSoon.toLowerCase()}. Check back shortly.
             </p>
-
-            <p>
-              Built for speedy execution.
-            </p>
+            <GlowButton onClick={() => setComingSoon(null)} size="sm" className="w-full">
+              Got it
+            </GlowButton>
           </div>
         </div>
-      </footer>
-
-      <CreditsModal isOpen={isCreditsOpen} onClose={() => setIsCreditsOpen(false)} />
-    </>
+      )}
+    </footer>
   );
 }
