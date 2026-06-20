@@ -1565,7 +1565,7 @@ export async function getV2Market(marketId: string): Promise<Market> {
   return resp.json();
 }
 
-export async function getOrderbook(marketId: string): Promise<OrderbookResponse> {
+export async function getJupiterOrderbook(marketId: string): Promise<OrderbookResponse> {
   const resp = await fetch(v2Url(`/orderbook/${marketId}`), { cache: "no-store" });
   if (!resp.ok) throw new Error("Failed to fetch orderbook");
   return resp.json();
