@@ -1639,6 +1639,8 @@ export interface OrderPreview {
 
 export interface CreateOrderResponse {
   transaction: string;
+  /** Separate Vantic fee transfer tx; "" when no fee applies. */
+  feeTransaction?: string;
   txMeta: { blockhash: string; lastValidBlockHeight: number };
   order: Record<string, unknown>;
   preview: OrderPreview;

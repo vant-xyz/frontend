@@ -149,7 +149,7 @@ interface TradePanelProps {
 
 export function TradePanel({ market, marketTitle }: TradePanelProps) {
   const { token, isV2 } = useV2Auth();
-  const { signTransaction, connected } = useWallet();
+  const { signTransaction, signAllTransactions, connected } = useWallet();
 
   const [side, setSide] = useState<"YES" | "NO">("YES");
   const [amountUsd, setAmountUsd] = useState("10");
@@ -157,6 +157,7 @@ export function TradePanel({ market, marketTitle }: TradePanelProps) {
   const [confirmStage, setConfirmStage] = useState<"idle" | "signing" | "submitting">("idle");
 
   const [pendingTx, setPendingTx] = useState<string | null>(null);
+  const [pendingFeeTx, setPendingFeeTx] = useState<string | null>(null);
   const [preview, setPreview] = useState<OrderPreview | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const confirming = confirmStage !== "idle";
@@ -207,6 +208,7 @@ export function TradePanel({ market, marketTitle }: TradePanelProps) {
         idemKeyRef.current
       );
       setPendingTx(res.transaction);
+      setPendingFeeTx(res.feeTransaction || null);
       setPreview(res.preview);
       setShowPreview(true);
     } catch (err: any) {
@@ -226,28 +228,52 @@ export function TradePanel({ market, marketTitle }: TradePanelProps) {
     }
     setConfirmStage("signing");
     try {
-      const txBytes = Buffer.from(pendingTx, "base64");
+      // Detect type (Jupiter's order tx is v0; our fee tx is legacy). Detection
+      // only — no signing here, so a rejected prompt can't double-fire.
+      const decode = (b64: string): VersionedTransaction | Transaction => {
+        const bytes = Buffer.from(b64, "base64");
+        try {
+          return VersionedTransaction.deserialize(bytes);
+        } catch {
+          return Transaction.from(bytes);
+        }
+      };
+      const serialize = (tx: VersionedTransaction | Transaction) =>
+        Buffer.from(tx.serialize()).toString("base64");
 
-      // Pick the transaction type (Jupiter returns v0) — detection only, no
-      // signing here, so a rejected signature can't trigger a second prompt.
-      let tx: VersionedTransaction | Transaction;
-      try {
-        tx = VersionedTransaction.deserialize(txBytes);
-      } catch {
-        tx = Transaction.from(txBytes);
+      const orderTx = decode(pendingTx);
+      const feeTx = pendingFeeTx ? decode(pendingFeeTx) : null;
+
+      // Sign the order tx + the separate Vantic fee tx in ONE wallet prompt.
+      let signedOrder: VersionedTransaction | Transaction;
+      let signedFee: VersionedTransaction | Transaction | null = null;
+      if (feeTx && signAllTransactions) {
+        const [o, f] = await signAllTransactions([orderTx as any, feeTx as any]);
+        signedOrder = o;
+        signedFee = f;
+      } else {
+        signedOrder = await signTransaction(orderTx as any);
+        if (feeTx) signedFee = await signTransaction(feeTx as any);
       }
 
-      // Sign exactly once.
-      const signedTx = await signTransaction(tx as any);
-      const signed = (signedTx as VersionedTransaction | Transaction).serialize();
-      const signedBase64 = Buffer.from(signed).toString("base64");
-
-      // Submit waits for on-chain confirmation, so this can take a few seconds.
+      // Submit the ORDER first and wait for it to confirm. The fee is only
+      // charged after the order lands, so a failed order never costs the user.
       setConfirmStage("submitting");
-      const { signature } = await submitSignedTransaction(signedBase64);
+      const { signature } = await submitSignedTransaction(serialize(signedOrder));
+
+      // Order confirmed — now collect the fee. If this fails, the order still
+      // stands; we just miss the fee (logged client-side, never blocks the user).
+      if (signedFee) {
+        try {
+          await submitSignedTransaction(serialize(signedFee));
+        } catch (feeErr) {
+          console.error("Vantic fee tx failed (order already placed):", feeErr);
+        }
+      }
 
       setShowPreview(false);
       setPendingTx(null);
+      setPendingFeeTx(null);
       toast.success(`Order placed! Tx: ${signature.slice(0, 8)}…`);
     } catch (err: any) {
       toast.error(err?.message || "Transaction failed");
