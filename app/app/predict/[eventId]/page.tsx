@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { DashboardClient } from "@/components/dashboard/dashboard-client";
+import { AppShell } from "@/components/dashboard/app-shell";
 import { TradePanel } from "@/components/dashboard/predict/trade-panel";
 import { getV2Event, JupiterEvent, Market, GameScore } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -83,26 +83,26 @@ export default function PredictEventPage() {
 
   if (loading) {
     return (
-      <DashboardClient>
+      <AppShell>
         <div className="space-y-4 max-w-2xl">
           <Skeleton className="h-8 w-48 bg-white/5" />
           <Skeleton className="h-48 w-full bg-white/5 rounded-xl" />
           <Skeleton className="h-32 w-full bg-white/5 rounded-xl" />
         </div>
-      </DashboardClient>
+      </AppShell>
     );
   }
 
   if (!event) {
     return (
-      <DashboardClient>
+      <AppShell>
         <div className="text-center py-16">
           <p className="text-zinc-500">Event not found.</p>
           <button onClick={() => router.back()} className="mt-4 text-sm text-zinc-400 underline">
             Go back
           </button>
         </div>
-      </DashboardClient>
+      </AppShell>
     );
   }
 
@@ -110,7 +110,7 @@ export default function PredictEventPage() {
   const imageUrl = event.metadata?.imageUrl;
 
   return (
-    <DashboardClient>
+    <AppShell>
       <div className="max-w-2xl space-y-6">
         {/* Back */}
         <button
@@ -201,6 +201,6 @@ export default function PredictEventPage() {
           </div>
         )}
       </div>
-    </DashboardClient>
+    </AppShell>
   );
 }

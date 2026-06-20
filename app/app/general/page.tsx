@@ -1,6 +1,6 @@
 "use client";
 
-import { DashboardClient } from "@/components/dashboard/dashboard-client";
+import { AppShell } from "@/components/dashboard/app-shell";
 import { getV2Events, JupiterEvent } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -110,7 +110,7 @@ export default function GeneralPage() {
     : events;
 
   return (
-    <DashboardClient>
+    <AppShell>
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-white flex items-center gap-2">
@@ -170,6 +170,6 @@ export default function GeneralPage() {
           </div>
         )}
       </div>
-    </DashboardClient>
+    </AppShell>
   );
 }

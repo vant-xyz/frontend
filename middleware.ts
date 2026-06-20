@@ -38,12 +38,9 @@ export function middleware(request: NextRequest) {
 
   const authToken = request.cookies.get("auth_token")?.value;
 
-  if (pathname.startsWith("/app")) {
-    // Market detail pages are publicly viewable — auth is handled client-side
-    if (/^\/app\/general\/[^/]+$/.test(pathname)) {
-      return NextResponse.next();
-    }
-
+  // v2 (/app) is wallet-based and fully client-guarded — no server gating.
+  // Only the legacy v1 app (/v1) is gated here. Wiring lands later.
+  if (pathname.startsWith("/v1")) {
     if (!authToken) {
       const loginUrl = new URL("/", request.url);
       return NextResponse.redirect(loginUrl);
@@ -58,5 +55,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/app/:path*"],
+  matcher: ["/v1/:path*"],
 };
