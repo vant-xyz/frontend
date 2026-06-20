@@ -3,14 +3,19 @@
 import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
 import { useMemo } from "react";
 
-// Routes all RPC calls through our Next.js proxy so SOLANA_RPC_URL stays server-only.
-const RPC_PROXY = "/api/solana/rpc";
-
 export function SolanaWalletProvider({ children }: { children: React.ReactNode }) {
   const wallets = useMemo(() => [], []);
 
+  // Build absolute URL at runtime so SSR prerender gets a valid http:// endpoint.
+  const endpoint = useMemo(() => {
+    if (typeof window !== "undefined") {
+      return `${window.location.origin}/api/solana/rpc`;
+    }
+    return "https://api.mainnet-beta.solana.com";
+  }, []);
+
   return (
-    <ConnectionProvider endpoint={RPC_PROXY}>
+    <ConnectionProvider endpoint={endpoint}>
       <WalletProvider wallets={wallets} autoConnect={false}>
         {children}
       </WalletProvider>
