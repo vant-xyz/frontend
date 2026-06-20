@@ -32,6 +32,7 @@ function PreviewModal({
   marketTitle,
   onConfirm,
   confirming,
+  confirmStage,
 }: {
   open: boolean;
   onClose: () => void;
@@ -40,6 +41,7 @@ function PreviewModal({
   marketTitle: string;
   onConfirm: () => void;
   confirming: boolean;
+  confirmStage: "idle" | "signing" | "submitting";
 }) {
   const depositAmt  = preview.depositAmount / Math.pow(10, USDC_DECIMALS);
   const payoutAmt   = Number(preview.newPayoutUsd) / 1_000_000;
@@ -126,7 +128,13 @@ function PreviewModal({
             Cancel
           </button>
           <GlowButton onClick={onConfirm} disabled={confirming} size="sm" className="flex-1">
-            {confirming ? <Loader2 size={15} className="animate-spin" /> : "Confirm & Sign"}
+            {confirmStage === "signing" ? (
+              <><Loader2 size={15} className="animate-spin" /> Awaiting signature…</>
+            ) : confirmStage === "submitting" ? (
+              <><Loader2 size={15} className="animate-spin" /> Confirming on-chain…</>
+            ) : (
+              "Confirm & Sign"
+            )}
           </GlowButton>
         </div>
       </DialogContent>
@@ -146,11 +154,12 @@ export function TradePanel({ market, marketTitle }: TradePanelProps) {
   const [side, setSide] = useState<"YES" | "NO">("YES");
   const [amountUsd, setAmountUsd] = useState("10");
   const [loading, setLoading] = useState(false);
-  const [confirming, setConfirming] = useState(false);
+  const [confirmStage, setConfirmStage] = useState<"idle" | "signing" | "submitting">("idle");
 
   const [pendingTx, setPendingTx] = useState<string | null>(null);
   const [preview, setPreview] = useState<OrderPreview | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const confirming = confirmStage !== "idle";
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -209,23 +218,26 @@ export function TradePanel({ market, marketTitle }: TradePanelProps) {
 
   const handleConfirm = async () => {
     if (!pendingTx || !signTransaction) return;
-    setConfirming(true);
+    setConfirmStage("signing");
     try {
       const txBytes = Buffer.from(pendingTx, "base64");
 
-      // Try versioned first (Jupiter returns v0), fall back to legacy
-      let signed: Uint8Array;
+      // Pick the transaction type (Jupiter returns v0) — detection only, no
+      // signing here, so a rejected signature can't trigger a second prompt.
+      let tx: VersionedTransaction | Transaction;
       try {
-        const vtx = VersionedTransaction.deserialize(txBytes);
-        const signedVtx = await signTransaction(vtx as any);
-        signed = (signedVtx as VersionedTransaction).serialize();
+        tx = VersionedTransaction.deserialize(txBytes);
       } catch {
-        const ltx = Transaction.from(txBytes);
-        const signedLtx = await signTransaction(ltx as any);
-        signed = (signedLtx as Transaction).serialize();
+        tx = Transaction.from(txBytes);
       }
 
+      // Sign exactly once.
+      const signedTx = await signTransaction(tx as any);
+      const signed = (signedTx as VersionedTransaction | Transaction).serialize();
       const signedBase64 = Buffer.from(signed).toString("base64");
+
+      // Submit waits for on-chain confirmation, so this can take a few seconds.
+      setConfirmStage("submitting");
       const { signature } = await submitSignedTransaction(signedBase64);
 
       setShowPreview(false);
@@ -234,7 +246,7 @@ export function TradePanel({ market, marketTitle }: TradePanelProps) {
     } catch (err: any) {
       toast.error(err?.message || "Transaction failed");
     } finally {
-      setConfirming(false);
+      setConfirmStage("idle");
     }
   };
 
@@ -380,6 +392,7 @@ export function TradePanel({ market, marketTitle }: TradePanelProps) {
           marketTitle={marketTitle ?? market.title}
           onConfirm={handleConfirm}
           confirming={confirming}
+          confirmStage={confirmStage}
         />
       )}
     </>
