@@ -30,5 +30,5 @@ export async function GET(
   { params }: { params: Promise<{ asset: string }> }
 ) {
   const { asset } = await params;
-  return proxyTo(`prices/vant/${asset}`, req);
+  return proxyTo(`v1/prices/vant/${asset}`, req);
 }

@@ -10,7 +10,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ path
     }
     const { path: pathSegments } = await params;
     const path = (pathSegments || []).join("/");
-    const upstream = new URL(`${BACKEND_API_URL.replace(/\/$/, "")}/${path}`);
+    const upstream = new URL(`${BACKEND_API_URL.replace(/\/$/, "")}/v1/${path}`);
     req.nextUrl.searchParams.forEach((value, key) => upstream.searchParams.append(key, value));
 
     const headers: Record<string, string> = {

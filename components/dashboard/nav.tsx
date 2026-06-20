@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
-  Bitcoin,
+  Home,
   TrendingUp,
   LayoutGrid,
   User,
@@ -18,7 +18,7 @@ interface DashboardNavProps {
 }
 
 const navItems = [
-  { id: "crypto", label: "Crypto", path: "/app", icon: Bitcoin },
+  { id: "crypto", label: "Home", path: "/app", icon: Home },
   { id: "vs", label: "VS", path: "/app/vs", icon: TrendingUp },
   { id: "general", label: "General", path: "/app/general", icon: LayoutGrid },
   { id: "account", label: "Account", path: "/app/account", icon: User },

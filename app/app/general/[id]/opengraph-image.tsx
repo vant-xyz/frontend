@@ -46,8 +46,8 @@ export default async function Image({ params }: { params: Promise<{ id: string }
   let noCents = 50;
 
   const [marketData, orderbookData] = await Promise.all([
-    fetchJSON<{ market?: OGMarket } | OGMarket>(`${apiUrl}/markets/${id}`, headers),
-    fetchJSON<{ orderbook?: OGOrderbook }>(`${apiUrl}/markets/${id}/orderbook`, headers),
+    fetchJSON<{ market?: OGMarket } | OGMarket>(`${apiUrl}/v1/markets/${id}`, headers),
+    fetchJSON<{ orderbook?: OGOrderbook }>(`${apiUrl}/v1/markets/${id}/orderbook`, headers),
   ]);
 
   if (marketData) {

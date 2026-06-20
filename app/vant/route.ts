@@ -26,5 +26,5 @@ async function proxyTo(backendPath: string, req: NextRequest): Promise<NextRespo
 }
 
 export async function GET(req: NextRequest) {
-  return proxyTo("prices/vant", req);
+  return proxyTo("v1/prices/vant", req);
 }

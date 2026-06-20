@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const ogImageUrl = `https://vantic.xyz/app/general/${id}/opengraph-image`;
 
   try {
-    const res = await fetch(`${apiUrl}/markets/${id}`, { headers, cache: "no-store" });
+    const res = await fetch(`${apiUrl}/v1/markets/${id}`, { headers, cache: "no-store" });
     if (!res.ok) throw new Error("not ok");
     const data = await res.json();
     const market: MarketMeta = data?.market ?? data ?? {};

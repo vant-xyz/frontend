@@ -5,6 +5,7 @@ import { Analytics } from '@vercel/analytics/next'
 import { Toaster } from 'sonner'
 import { PWAInstallPrompt } from '@/components/pwa/install-prompt'
 import { MaintenanceGate } from '@/components/system/maintenance-gate'
+import { SolanaWalletProvider } from '@/components/providers/wallet-provider'
 import './globals.css'
 
 const ubuntu = Ubuntu({
@@ -132,17 +133,19 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="Vantic" />
       </head>
       <body className={`${ubuntu.variable} ${jetbrainsMono.variable} font-sans antialiased bg-black text-white`}>
-        <MaintenanceGate>{children}</MaintenanceGate>
-        <PWAInstallPrompt />
-        <Analytics />
-        <Toaster
-          position="top-center"
-          theme="dark"
-          toastOptions={{
-            className: 'bg-zinc-900 border border-zinc-700 text-white',
-            duration: 4000,
-          }}
-        />
+        <SolanaWalletProvider>
+          <MaintenanceGate>{children}</MaintenanceGate>
+          <PWAInstallPrompt />
+          <Analytics />
+          <Toaster
+            position="top-center"
+            theme="dark"
+            toastOptions={{
+              className: 'bg-zinc-900 border border-zinc-700 text-white',
+              duration: 4000,
+            }}
+          />
+        </SolanaWalletProvider>
       </body>
     </html>
   )

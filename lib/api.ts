@@ -1,7 +1,7 @@
 const _isServer = typeof window === "undefined";
 
 function apiBase(): string {
-  return _isServer ? (process.env.NEXT_PUBLIC_API_URL || "") : "/api/vcs";
+  return _isServer ? `${(process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "")}/v1` : "/api/vcs";
 }
 
 function serverKey(): Record<string, string> {
@@ -249,7 +249,7 @@ export function connectToPriceFeed(
   onMessage: (data: any) => void,
   onError?: (error: Event) => void
 ): WebSocket {
-  const wsUrl = process.env.NEXT_PUBLIC_WS_URL || `ws://localhost:8080/ws`;
+  const wsUrl = process.env.NEXT_PUBLIC_WS_URL || `ws://localhost:8080/v1/ws`;
   const authedWsUrl = `${wsUrl}?token=${token}`;
 
   try {
@@ -1107,7 +1107,7 @@ export function connectToOrderbookFeed(
   onMessage: (data: any) => void,
   onError?: (error: Event) => void
 ): WebSocket {
-  const wsUrl = process.env.NEXT_PUBLIC_WS_URL || `ws://localhost:8080/ws`;
+  const wsUrl = process.env.NEXT_PUBLIC_WS_URL || `ws://localhost:8080/v1/ws`;
   const authedWsUrl = `${wsUrl}/markets/${marketId}/orderbook?token=${token}`;
   const ws = new WebSocket(authedWsUrl);
 
@@ -1347,4 +1347,415 @@ export async function getMyLeaderboardRank(token: string): Promise<{ entry: Lead
   });
   if (!response.ok) throw new Error("Failed to fetch own rank");
   return response.json();
-} 
+}
+
+// ── v2 Wallet Auth ─────────────────────────────────────────────────────────
+
+export interface WalletNonceResponse {
+  nonce: string;
+  message: string;
+}
+
+export interface WalletAuthResponse {
+  success: boolean;
+  token: string;
+  user: {
+    email: string;
+    username: string;
+    vant_id: string;
+    balance_id: string;
+    profile_image_url?: string;
+  };
+}
+
+export async function getWalletNonce(address: string): Promise<WalletNonceResponse> {
+  const response = await fetch(`/api/v2/auth/nonce?address=${encodeURIComponent(address)}`, {
+    method: "GET",
+    cache: "no-store",
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err?.message || "Failed to get nonce");
+  }
+  return response.json();
+}
+
+export async function verifyWalletSignature(
+  address: string,
+  signature: string
+): Promise<WalletAuthResponse> {
+  const response = await fetch(`/api/v2/auth/verify`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ address, signature }),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err?.message || "Signature verification failed");
+  }
+  return response.json();
+}
+
+// ── v2 Jupiter Predict data ────────────────────────────────────────────────
+
+export interface MarketPricing {
+  buyYesPriceUsd: number | null;
+  buyNoPriceUsd: number | null;
+  sellYesPriceUsd: number | null;
+  sellNoPriceUsd: number | null;
+  volume: number;
+}
+
+export interface Market {
+  marketId: string;
+  eventId: string;
+  provider: "polymarket" | "gx" | "bisonfi";
+  title: string;
+  status: "open" | "closed" | "cancelled";
+  result: "yes" | "no" | null;
+  openTime: number;
+  closeTime: number;
+  resolveAt: string | number | null;
+  marketResultPubkey: string | null;
+  imageUrl: string | null;
+  rulesPrimary: string;
+  rulesSecondary: string;
+  outcomes: string[];
+  marketOptions?: { label: string; buyYes: boolean }[];
+  clobTokenIds: string[];
+  isTeamMarket: boolean;
+  team: object | null;
+  sportsLine: number | null;
+  sportsMarketType: string | null;
+  pricing?: MarketPricing;
+}
+
+export interface EventMetadata {
+  eventId: string;
+  title?: string;
+  subtitle?: string;
+  slug?: string;
+  series?: string;
+  closeTime?: string;
+  imageUrl?: string;
+  isLive?: boolean;
+}
+
+export interface JupiterEvent {
+  eventId: string;
+  isActive: boolean;
+  isLive: boolean;
+  category: string;
+  subcategory: string;
+  tags?: string[];
+  metadata?: EventMetadata;
+  markets?: Market[];
+  volumeUsd: string;
+  volume24hr: string;
+  liveScore: GameScore | null;
+  closeCondition: string;
+  beginAt: string | null;
+  rulesPdf: string;
+}
+
+export interface GameScore {
+  eventId: string;
+  gameId: string;
+  leagueAbbreviation: string | null;
+  homeTeam: string | null;
+  awayTeam: string | null;
+  score: string | null;
+  period: string | null;
+  elapsed: string | null;
+  status: string | null;
+  live: boolean;
+  ended: boolean;
+  finishedTimestamp: string | null;
+  updatedAt: string;
+}
+
+export interface EventsResponse {
+  data: JupiterEvent[];
+  pagination: { start: number; end: number; total: number; hasNext: boolean };
+}
+
+export interface OrderbookResponse {
+  yes: [number, number][];
+  no: [number, number][];
+  yes_dollars: [string, number][];
+  no_dollars: [string, number][];
+}
+
+function v2Url(path: string): string {
+  return `/api/v2${path}`;
+}
+
+export async function getV2Events(params?: {
+  category?: string;
+  tags?: string;
+  filter?: string;
+  sortBy?: string;
+  sortDirection?: string;
+  start?: number;
+  end?: number;
+  includeMarkets?: boolean;
+  provider?: string;
+}): Promise<EventsResponse> {
+  const q = new URLSearchParams();
+  if (params) {
+    Object.entries(params).forEach(([k, v]) => {
+      if (v !== undefined) q.set(k, String(v));
+    });
+  }
+  const qs = q.toString();
+  const resp = await fetch(v2Url(`/events${qs ? "?" + qs : ""}`), { cache: "no-store" });
+  if (!resp.ok) throw new Error("Failed to fetch events");
+  return resp.json();
+}
+
+export async function getWorldCupEvents(params?: {
+  filter?: string;
+  sortBy?: string;
+  sortDirection?: string;
+  start?: number;
+}): Promise<EventsResponse> {
+  const q = new URLSearchParams();
+  if (params) {
+    Object.entries(params).forEach(([k, v]) => {
+      if (v !== undefined) q.set(k, String(v));
+    });
+  }
+  const qs = q.toString();
+  const resp = await fetch(v2Url(`/events/worldcup${qs ? "?" + qs : ""}`), { cache: "no-store" });
+  if (!resp.ok) throw new Error("Failed to fetch World Cup events");
+  return resp.json();
+}
+
+export async function searchEvents(query: string, limit?: number): Promise<EventsResponse> {
+  const q = new URLSearchParams({ query });
+  if (limit) q.set("limit", String(limit));
+  const resp = await fetch(v2Url(`/events/search?${q}`), { cache: "no-store" });
+  if (!resp.ok) throw new Error("Failed to search events");
+  return resp.json();
+}
+
+export async function getV2Event(eventId: string, includeMarkets = true): Promise<JupiterEvent> {
+  const q = new URLSearchParams({ includeMarkets: String(includeMarkets) });
+  const resp = await fetch(v2Url(`/events/${eventId}?${q}`), { cache: "no-store" });
+  if (!resp.ok) throw new Error("Failed to fetch event");
+  return resp.json();
+}
+
+export async function getEventScore(eventId: string): Promise<GameScore | null> {
+  const resp = await fetch(v2Url(`/events/${eventId}/score`), { cache: "no-store" });
+  if (!resp.ok) throw new Error("Failed to fetch event score");
+  return resp.json();
+}
+
+export async function getEventScores(eventIds: string[]): Promise<{ data: GameScore[] }> {
+  const q = new URLSearchParams({ eventIds: eventIds.join(",") });
+  const resp = await fetch(v2Url(`/events/scores?${q}`), { cache: "no-store" });
+  if (!resp.ok) throw new Error("Failed to fetch event scores");
+  return resp.json();
+}
+
+export async function getV2Market(marketId: string): Promise<Market> {
+  const resp = await fetch(v2Url(`/markets/${marketId}`), { cache: "no-store" });
+  if (!resp.ok) throw new Error("Failed to fetch market");
+  return resp.json();
+}
+
+export async function getOrderbook(marketId: string): Promise<OrderbookResponse> {
+  const resp = await fetch(v2Url(`/orderbook/${marketId}`), { cache: "no-store" });
+  if (!resp.ok) throw new Error("Failed to fetch orderbook");
+  return resp.json();
+}
+
+export async function getTradingStatus(): Promise<{ trading_active: boolean }> {
+  const resp = await fetch(v2Url(`/trading-status`), { cache: "no-store" });
+  if (!resp.ok) throw new Error("Failed to fetch trading status");
+  return resp.json();
+}
+
+// ── Transaction submission ─────────────────────────────────────────────────
+// The backend builds all transactions (Jupiter + fee injection). The frontend
+// only signs. Signed txs are submitted here so the RPC URL stays server-side.
+
+export async function submitSignedTransaction(
+  signedTransactionBase64: string
+): Promise<{ signature: string }> {
+  const response = await fetch(`/api/v2/transactions/submit`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ transaction: signedTransactionBase64 }),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err?.message || "Transaction submission failed");
+  }
+  return response.json();
+}
+
+// ── v2 Orders & Positions ──────────────────────────────────────────────────
+
+export interface OrderPreview {
+  depositAmount: number;
+  depositMint: string;
+  orderCostUsd: string;
+  estimatedProtocolFeeUsd: string;
+  estimatedVenueFeeUsd: string;
+  estimatedJupiterFeeUsd: string;
+  vanticFeeAmount: number;
+  vanticFeeBps: number;
+  newPayoutUsd: string;
+}
+
+export interface CreateOrderResponse {
+  transaction: string;
+  txMeta: { blockhash: string; lastValidBlockHeight: number };
+  order: Record<string, unknown>;
+  preview: OrderPreview;
+}
+
+export interface CreateOrderParams {
+  marketId: string;
+  isYes: boolean;
+  isBuy: boolean;
+  depositAmount?: number;
+  depositMint?: string;
+  positionPubkey?: string;
+  contractsMicro?: string;
+  contractsDecimal?: string;
+}
+
+export async function createOrder(
+  params: CreateOrderParams,
+  token: string
+): Promise<CreateOrderResponse> {
+  const response = await fetch(v2Url("/orders"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(params),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err?.message || "Failed to create order");
+  }
+  return response.json();
+}
+
+export interface Position {
+  pubkey: string;
+  owner: string;
+  ownerPubkey: string;
+  market: string;
+  marketId: string;
+  marketIdHash: string;
+  isYes: boolean;
+  contracts: string;
+  contractsMicro: string;
+  contractsDecimal: string;
+  totalCostUsd: string;
+  sizeUsd: string;
+  valueUsd: string | null;
+  avgPriceUsd: string;
+  markPriceUsd: string | null;
+  sellPriceUsd: string | null;
+  pnlUsd: string | null;
+  pnlUsdPercent: number | null;
+  pnlUsdAfterFees: string | null;
+  pnlUsdAfterFeesPercent: number | null;
+  openOrders: number;
+  feesPaidUsd: string;
+  realizedPnlUsd: number;
+  claimed: boolean;
+  claimedUsd: string;
+  openedAt: number;
+  updatedAt: number;
+  claimableAt: number | null;
+  payoutUsd: string;
+  bump: number;
+  eventId: string;
+  eventMetadata?: EventMetadata;
+  marketMetadata?: Record<string, unknown>;
+  settlementDate: number | null;
+  claimable: boolean;
+}
+
+export interface PositionsResponse {
+  data: Position[];
+  pagination: { start: number; end: number; total: number; hasNext: boolean };
+}
+
+export async function getPositions(
+  token: string,
+  params?: { marketId?: string; isYes?: boolean; start?: number }
+): Promise<PositionsResponse> {
+  const q = new URLSearchParams();
+  if (params) {
+    Object.entries(params).forEach(([k, v]) => {
+      if (v !== undefined) q.set(k, String(v));
+    });
+  }
+  const qs = q.toString();
+  const response = await fetch(v2Url(`/positions${qs ? "?" + qs : ""}`), {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  if (!response.ok) throw new Error("Failed to fetch positions");
+  return response.json();
+}
+
+export async function closePosition(
+  positionPubkey: string,
+  token: string
+): Promise<CreateOrderResponse> {
+  const response = await fetch(v2Url(`/positions/${positionPubkey}`), {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err?.message || "Failed to close position");
+  }
+  return response.json();
+}
+
+export interface ClaimPositionResponse {
+  transaction: string;
+  txMeta: { blockhash: string; lastValidBlockHeight: number };
+  position: {
+    positionPubkey: string;
+    marketPubkey: string;
+    userPubkey: string;
+    ownerPubkey: string;
+    isYes: boolean;
+    contracts: string;
+    payoutAmountUsd: string;
+  };
+}
+
+export async function claimPosition(
+  positionPubkey: string,
+  token: string
+): Promise<ClaimPositionResponse> {
+  const response = await fetch(v2Url(`/positions/${positionPubkey}/claim`), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err?.message || "Failed to claim position");
+  }
+  return response.json();
+}
+
