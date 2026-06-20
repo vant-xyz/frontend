@@ -17,6 +17,30 @@ function Ico({ src, size = 22, rounded = false }: { src: string; size?: number; 
 
 const USDC = () => <Ico src="/media/images/token_icons/usdc.png" size={16} rounded />;
 
+// Bottom-left logos that blur-in when the card becomes active
+function CardLogos({ srcs, active }: { srcs: string[]; active: boolean }) {
+  return (
+    <div className="flex items-center gap-2">
+      {srcs.map((src, i) => (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          key={src}
+          src={src}
+          alt=""
+          aria-hidden="true"
+          className="w-7 h-7 rounded-[6px] object-cover"
+          style={{
+            opacity: active ? 1 : 0,
+            filter: active ? "blur(0px)" : "blur(8px)",
+            transform: active ? "scale(1)" : "scale(0.85)",
+            transition: `opacity 0.45s ease ${0.1 + i * 0.08}s, filter 0.45s ease ${0.1 + i * 0.08}s, transform 0.45s ease ${0.1 + i * 0.08}s`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
 const steps = [
   {
     n: "01",
@@ -33,6 +57,7 @@ const steps = [
       </>
     ),
     tag: "non-custodial",
+    logos: ["/phantom_logo.jpeg", "/solflare_logo.jpeg"],
   },
   {
     n: "02",
@@ -49,6 +74,7 @@ const steps = [
       </>
     ),
     tag: "powered by Jupiter",
+    logos: ["/jupiter-logo.png", "/kalshi-logo.jpeg"],
   },
   {
     n: "03",
@@ -61,10 +87,11 @@ const steps = [
     body: (
       <>
         Pick YES or NO, enter your <USDC />USDC, review the fee breakdown, then
-        sign in your wallet. The backend builds the transaction. You only sign.
+        sign in your wallet.
       </>
     ),
     tag: "0.5% fee, flat",
+    logos: [],
   },
   {
     n: "04",
@@ -81,12 +108,13 @@ const steps = [
       </>
     ),
     tag: "instant on-chain",
+    logos: [],
   },
 ];
 
 export function HowItWorksSection() {
   const ref = useRef<HTMLDivElement>(null);
-  const [progress, setProgress] = useState(0); // 0..1 through the section
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     const update = () => {
@@ -114,10 +142,8 @@ export function HowItWorksSection() {
     };
   }, []);
 
-  // Heading reveals early; cards advance across the middle of the scroll.
   const headIn = progress > 0.02;
   const n = steps.length;
-  // map progress 0.12 → 0.92 onto card index 0..n-1
   const cardStart = 0.12;
   const cardEnd = 0.92;
   let activeCard = -1;
@@ -130,7 +156,6 @@ export function HowItWorksSection() {
     <section
       id="how-it-works"
       ref={ref}
-      // tall track gives the pin room to scroll through; ~100vh per card
       style={{ height: `${(n + 1) * 100}vh` }}
       className="relative bg-[#0a0404]"
     >
@@ -182,7 +207,7 @@ export function HowItWorksSection() {
             </div>
           </div>
 
-          {/* RIGHT — stacked cards, cross-fade */}
+          {/* RIGHT — stacked cards */}
           <div className="relative h-[300px] sm:h-[280px]">
             {steps.map((step, i) => {
               const active = i === activeCard;
@@ -190,7 +215,7 @@ export function HowItWorksSection() {
               return (
                 <article
                   key={step.n}
-                  className="absolute inset-0 rounded-[16px] p-8 transition-all duration-500 glass-card"
+                  className="absolute inset-0 rounded-[16px] p-8 transition-all duration-500 glass-card flex flex-col"
                   style={{
                     opacity: active ? 1 : 0,
                     filter: active ? "blur(0)" : "blur(14px)",
@@ -206,10 +231,17 @@ export function HowItWorksSection() {
                     {step.n}
                   </span>
                   <h3 className="text-2xl font-semibold text-white mb-3">{step.title}</h3>
-                  <p className="text-sm text-zinc-400 leading-relaxed mb-6">{step.body}</p>
-                  <span className="inline-flex items-center px-3 py-1 rounded-[8px] bg-red-950/40 border border-red-900/30 text-red-400 text-xs font-medium">
-                    {step.tag}
-                  </span>
+                  <p className="text-sm text-zinc-400 leading-relaxed mb-auto">{step.body}</p>
+
+                  {/* Bottom row: badge left, logos right */}
+                  <div className="flex items-center justify-between mt-6">
+                    <span className="inline-flex items-center px-3 py-1 rounded-[8px] bg-red-950/40 border border-red-900/30 text-red-400 text-xs font-medium">
+                      {step.tag}
+                    </span>
+                    {step.logos.length > 0 && (
+                      <CardLogos srcs={step.logos} active={active} />
+                    )}
+                  </div>
                 </article>
               );
             })}

@@ -1577,6 +1577,33 @@ export async function getTradingStatus(): Promise<{ trading_active: boolean }> {
   return resp.json();
 }
 
+export interface PriceHistoryPoint {
+  t: number;        // unix seconds
+  yesPrice: number; // micro-USD
+  noPrice: number;
+}
+
+export interface MarketPriceHistory {
+  marketId: string;
+  title: string;
+  data: PriceHistoryPoint[];
+}
+
+export interface EventPriceHistoryResponse {
+  eventId: string;
+  markets: MarketPriceHistory[];
+}
+
+export async function getEventPriceHistory(
+  eventId: string,
+  range?: "1d" | "1w" | "1m" | "all"
+): Promise<EventPriceHistoryResponse> {
+  const qs = range && range !== "all" ? `?range=${range}` : "";
+  const resp = await fetch(v2Url(`/events/${eventId}/price-history${qs}`), { cache: "no-store" });
+  if (!resp.ok) throw new Error("Failed to fetch price history");
+  return resp.json();
+}
+
 // ── Transaction submission ─────────────────────────────────────────────────
 // The backend builds all transactions (Jupiter + fee injection). The frontend
 // only signs. Signed txs are submitted here so the RPC URL stays server-side.

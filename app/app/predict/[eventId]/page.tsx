@@ -6,22 +6,23 @@ import { AppShell } from "@/components/dashboard/app-shell";
 import { TradePanel } from "@/components/dashboard/predict/trade-panel";
 import {
   getV2Event,
-  getMarketCandles,
+  getEventPriceHistory,
   JupiterEvent,
   Market,
   GameScore,
-  MarketCandle,
+  MarketPriceHistory,
 } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { ArrowLeft, Wifi, ExternalLink, TrendingUp } from "lucide-react";
 import {
-  AreaChart,
-  Area,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   Tooltip,
   ResponsiveContainer,
+  Legend,
 } from "recharts";
 
 function microUsdToDisplay(v: string | undefined): string {
@@ -59,45 +60,58 @@ function Countdown({ beginAt }: { beginAt: string | null }) {
   return <span className="tabular-nums">{display}</span>;
 }
 
-type ChartPoint = { label: string; yes: number };
+// Distinct colors for up to 6 market lines (matches the chart in the screenshot)
+const LINE_COLORS = ["#84cc16", "#22d3ee", "#f97316", "#a855f7", "#f43f5e", "#facc15"];
+
 type Range = "1D" | "1W" | "1M" | "ALL";
 
-function ProbabilityChart({ marketId }: { marketId: string }) {
-  const [raw, setRaw] = useState<MarketCandle[]>([]);
+type ChartRow = Record<string, number | string>; // { label, [marketId]: pct }
+
+function ProbabilityChart({ eventId }: { eventId: string }) {
+  const [markets, setMarkets] = useState<MarketPriceHistory[]>([]);
   const [range, setRange] = useState<Range>("ALL");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
-    getMarketCandles(marketId)
-      .then((r) => setRaw(r.candles ?? []))
-      .catch(() => setRaw([]))
+    getEventPriceHistory(eventId, range === "ALL" ? "all" : range.toLowerCase() as "1d" | "1w" | "1m")
+      .then((r) => setMarkets(r.markets ?? []))
+      .catch(() => setMarkets([]))
       .finally(() => setLoading(false));
-  }, [marketId]);
+  }, [eventId, range]);
 
-  const filtered = (() => {
-    if (!raw.length) return [];
-    const now = Date.now() / 1000;
-    const cutoff: Record<Range, number> = { "1D": now - 86400, "1W": now - 604800, "1M": now - 2592000, ALL: 0 };
-    return raw.filter((c) => c.time >= cutoff[range]);
-  })();
+  if (loading) return <Skeleton className="h-52 w-full rounded-xl bg-white/4" />;
+  if (!markets.length || markets.every((m) => !m.data.length)) return null;
 
-  const data: ChartPoint[] = filtered.map((c) => {
-    const yes = c.close > 1 ? Math.round(c.close / 10_000) : Math.round(c.close * 100);
-    const d = new Date(c.time * 1000);
+  // Build flat rows: one entry per unique timestamp, columns per market
+  const tsSet = new Set<number>();
+  markets.forEach((m) => m.data.forEach((p) => tsSet.add(p.t)));
+  const timestamps = Array.from(tsSet).sort((a, b) => a - b);
+
+  // Price map per market for fast lookup
+  const priceMap = new Map<string, Map<number, number>>();
+  markets.forEach((m) => {
+    const map = new Map<number, number>();
+    m.data.forEach((p) => map.set(p.t, Math.round(p.yesPrice / 10_000)));
+    priceMap.set(m.marketId, map);
+  });
+
+  const data: ChartRow[] = timestamps.map((t) => {
+    const d = new Date(t * 1000);
     const label = range === "1D"
       ? d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })
       : d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-    return { label, yes };
+    const row: ChartRow = { label };
+    markets.forEach((m) => {
+      const v = priceMap.get(m.marketId)?.get(t);
+      if (v !== undefined) row[m.marketId] = v;
+    });
+    return row;
   });
-
-  if (loading) return <Skeleton className="h-44 w-full rounded-xl bg-white/4" />;
-
-  if (!data.length) return null;
 
   return (
     <div>
-      <div className="flex justify-end gap-1 mb-2">
+      <div className="flex justify-end gap-1 mb-3">
         {(["1D","1W","1M","ALL"] as Range[]).map((r) => (
           <button key={r} onClick={() => setRange(r)}
             className={cn("px-2.5 py-1 rounded-[6px] text-[11px] font-semibold transition-all",
@@ -106,20 +120,40 @@ function ProbabilityChart({ marketId }: { marketId: string }) {
           </button>
         ))}
       </div>
-      <ResponsiveContainer width="100%" height={180}>
-        <AreaChart data={data} margin={{ top: 4, right: 0, left: -28, bottom: 0 }}>
-          <defs>
-            <linearGradient id="yesGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#dc2626" stopOpacity={0.3} />
-              <stop offset="95%" stopColor="#dc2626" stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <XAxis dataKey="label" tick={{ fill:"#52525b", fontSize:10 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-          <YAxis domain={[0,100]} tick={{ fill:"#52525b", fontSize:10 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} />
-          <Tooltip contentStyle={{ background:"#0d0505", border:"1px solid rgba(255,255,255,0.08)", borderRadius:8, fontSize:12, color:"#fff" }}
-            formatter={(v: number) => [`${v}¢`,"YES"]} labelStyle={{ color:"#71717a", marginBottom:2 }} />
-          <Area type="monotone" dataKey="yes" stroke="#dc2626" strokeWidth={1.5} fill="url(#yesGrad)" dot={false} activeDot={{ r:4, fill:"#dc2626" }} />
-        </AreaChart>
+      <ResponsiveContainer width="100%" height={200}>
+        <LineChart data={data} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+          <XAxis dataKey="label" tick={{ fill:"#3f3f46", fontSize:10 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+          <YAxis domain={[0, 55]} tick={{ fill:"#3f3f46", fontSize:10 }} axisLine={false} tickLine={false}
+            tickFormatter={(v) => `${v}%`} tickCount={6} />
+          <Tooltip
+            contentStyle={{ background:"#0d0505", border:"1px solid rgba(255,255,255,0.08)", borderRadius:8, fontSize:11, color:"#fff", padding:"8px 12px" }}
+            formatter={(v: number, key: string) => {
+              const market = markets.find((m) => m.marketId === key);
+              return [`${v}%`, market?.title ?? key];
+            }}
+            labelStyle={{ color:"#52525b", marginBottom:4, fontSize:10 }}
+          />
+          <Legend
+            formatter={(value) => {
+              const market = markets.find((m) => m.marketId === value);
+              return <span style={{ fontSize: 11, color: "#71717a" }}>{market?.title ?? value}</span>;
+            }}
+            iconType="circle" iconSize={7}
+            wrapperStyle={{ paddingTop: 8 }}
+          />
+          {markets.map((m, i) => (
+            <Line
+              key={m.marketId}
+              type="stepAfter"
+              dataKey={m.marketId}
+              stroke={LINE_COLORS[i % LINE_COLORS.length]}
+              strokeWidth={1.5}
+              dot={false}
+              activeDot={{ r: 3, strokeWidth: 0 }}
+              connectNulls
+            />
+          ))}
+        </LineChart>
       </ResponsiveContainer>
     </div>
   );
@@ -257,39 +291,32 @@ export default function PredictEventPage() {
               )}
             </div>
 
-            {/* Chart / Current Price */}
-            {activeChartMarket && (() => {
-              const yesPrice = toPercent(activeChartMarket.pricing?.buyYesPriceUsd);
-              const noPrice  = toPercent(activeChartMarket.pricing?.buyNoPriceUsd);
-              return (
-                <div className="glass-card rounded-[16px] p-5 space-y-4">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-zinc-600">
-                    Market · {activeChartMarket.title}
-                  </p>
+            {/* Multi-line probability history chart */}
+            <div className="glass-card rounded-[16px] p-5 space-y-1">
+              <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-zinc-600">
+                Probability History
+              </p>
+              <ProbabilityChart eventId={event.eventId} />
 
-                  {/* ProbabilityChart renders nothing when empty — show stat view instead */}
-                  <ProbabilityChart marketId={activeChartMarket.marketId} />
-
-                  {/* Always show current split */}
-                  {yesPrice != null && noPrice != null && (
-                    <div className="space-y-3">
-                      {/* probability bar */}
-                      <div className="h-2 rounded-full overflow-hidden bg-red-900/40 flex">
-                        <div
-                          className="h-full bg-gradient-to-r from-green-700 to-green-400 transition-all duration-500"
-                          style={{ width: `${yesPrice}%` }}
-                        />
-                      </div>
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-green-400 font-bold">YES {yesPrice}¢</span>
-                        <span className="text-zinc-600 text-[10px]">Current probability</span>
-                        <span className="text-red-400 font-bold">NO {noPrice}¢</span>
-                      </div>
+              {/* Current split bar — shown below chart */}
+              {activeChartMarket && (() => {
+                const yesPrice = toPercent(activeChartMarket.pricing?.buyYesPriceUsd);
+                const noPrice  = toPercent(activeChartMarket.pricing?.buyNoPriceUsd);
+                if (yesPrice == null || noPrice == null) return null;
+                return (
+                  <div className="space-y-2 pt-3 border-t border-white/[0.05]">
+                    <div className="h-1.5 rounded-full overflow-hidden bg-red-900/40 flex">
+                      <div className="h-full bg-gradient-to-r from-green-700 to-green-400 transition-all duration-500" style={{ width: `${yesPrice}%` }} />
                     </div>
-                  )}
-                </div>
-              );
-            })()}
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-green-400 font-bold">YES {yesPrice}¢</span>
+                      <span className="text-zinc-600 text-[10px]">{activeChartMarket.title} · now</span>
+                      <span className="text-red-400 font-bold">NO {noPrice}¢</span>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
 
             {/* Market selector — show whenever there are multiple markets */}
             {allMarkets.length > 1 && (
