@@ -5,7 +5,12 @@ import { useRouter } from "next/navigation";
 import { getWorldCupEvents, JupiterEvent, GameScore } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { Trophy, Wifi, Clock } from "lucide-react";
+import { Wifi, Clock } from "lucide-react";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 
 function microUsdToDisplay(microUsd: string): string {
   const n = Number(microUsd);
@@ -57,7 +62,12 @@ function MatchCard({ event }: { event: JupiterEvent }) {
   const yesP = pricing?.buyYesPriceUsd != null ? Math.round(pricing.buyYesPriceUsd / 10_000) : null;
   const noP  = pricing?.buyNoPriceUsd  != null ? Math.round(pricing.buyNoPriceUsd  / 10_000) : null;
 
-  return (
+  // Safer side = whichever of YES/NO has higher probability
+  const saferSide = yesP != null && noP != null
+    ? (yesP >= noP ? { label: "YES", pct: yesP } : { label: "NO", pct: noP })
+    : null;
+
+  const cardInner = (
     <div
       onClick={() => router.push(`/app/predict/${event.eventId}`)}
       className="glass-card relative overflow-hidden rounded-[16px] cursor-pointer group transition-all duration-200 hover:border-white/20 hover:shadow-red-950/20"
@@ -120,9 +130,9 @@ function MatchCard({ event }: { event: JupiterEvent }) {
           <div className="space-y-2 pt-1">
             {/* probability bar */}
             {yesP != null && noP != null && (
-              <div className="h-1 rounded-full overflow-hidden bg-white/5">
+              <div className="h-1 rounded-full overflow-hidden bg-red-900/50">
                 <div
-                  className="h-full bg-gradient-to-r from-green-500 to-green-400 rounded-full transition-all duration-500"
+                  className="h-full bg-gradient-to-r from-green-600 to-green-400 rounded-full transition-all duration-500"
                   style={{ width: `${yesP}%` }}
                 />
               </div>
@@ -149,6 +159,31 @@ function MatchCard({ event }: { event: JupiterEvent }) {
         )}
       </div>
     </div>
+  );
+
+  return (
+    <HoverCard openDelay={300} closeDelay={100}>
+      <HoverCardTrigger asChild>{cardInner}</HoverCardTrigger>
+      <HoverCardContent
+        side="top"
+        align="center"
+        className="w-auto min-w-[200px] p-3 bg-[#0d0505] border border-white/10 rounded-[10px] shadow-xl"
+      >
+        <p className="text-xs font-semibold text-white mb-1 truncate">{title}</p>
+        <div className="flex items-center gap-3 text-[11px]">
+          {saferSide && (
+            <span className={cn(
+              "font-bold",
+              saferSide.label === "YES" ? "text-green-400" : "text-red-400"
+            )}>
+              {saferSide.label} {saferSide.pct}¢
+            </span>
+          )}
+          <span className="text-zinc-600">·</span>
+          <span className="text-zinc-400">Vol {microUsdToDisplay(event.volume24hr)}</span>
+        </div>
+      </HoverCardContent>
+    </HoverCard>
   );
 }
 
@@ -194,7 +229,8 @@ export function WorldCupTab() {
               Live Markets
             </p>
             <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-              <Trophy size={26} className="text-yellow-500/80" />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/icons8-world-cup-96.png" alt="" aria-hidden="true" className="w-8 h-8" />
               FIFA World Cup 2026
             </h1>
             <p className="text-zinc-500 text-sm mt-2">
@@ -244,7 +280,8 @@ export function WorldCupTab() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-20">
-          <Trophy size={32} className="mx-auto mb-3 text-zinc-800" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icons8-world-cup-96.png" alt="" aria-hidden="true" className="w-10 h-10 mx-auto mb-3 opacity-20" />
           <p className="text-sm text-zinc-600">
             No {filter === "all" ? "" : filter + " "}matches right now.
           </p>

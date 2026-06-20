@@ -87,8 +87,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             })}
           </div>
 
-          {/* Wallet */}
-          <div className="flex items-center gap-3">
+          {/* Wallet — desktop only */}
+          <div className="hidden lg:flex items-center gap-3">
             {isV2 && walletPubkey ? (
               <button
                 onClick={handleLogout}

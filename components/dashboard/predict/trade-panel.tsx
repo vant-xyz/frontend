@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { VersionedTransaction, Transaction } from "@solana/web3.js";
 import { toast } from "sonner";
 import { Loader2, ArrowRight, Info } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { GlowButton } from "@/components/ui/glow-button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { createOrder, submitSignedTransaction, Market, OrderPreview } from "@/lib/api";
@@ -87,16 +87,12 @@ function PreviewModal({
         </div>
 
         <div className="flex gap-2 pt-2">
-          <Button variant="outline" className="flex-1 border-white/10 text-zinc-400" onClick={onClose} disabled={confirming}>
+          <button className="flex-1 py-2.5 rounded-[10px] border border-white/10 text-zinc-400 text-sm font-semibold hover:text-white transition" onClick={onClose} disabled={confirming}>
             Cancel
-          </Button>
-          <Button
-            className="flex-1 bg-white text-black hover:bg-zinc-200 font-bold"
-            onClick={onConfirm}
-            disabled={confirming}
-          >
-            {confirming ? <Loader2 size={16} className="animate-spin" /> : "Confirm & Sign"}
-          </Button>
+          </button>
+          <GlowButton onClick={onConfirm} disabled={confirming} size="sm" className="flex-1">
+            {confirming ? <Loader2 size={15} className="animate-spin" /> : "Confirm & Sign"}
+          </GlowButton>
         </div>
       </DialogContent>
     </Dialog>
@@ -120,9 +116,12 @@ export function TradePanel({ market }: TradePanelProps) {
   const [preview, setPreview] = useState<OrderPreview | null>(null);
   const [showPreview, setShowPreview] = useState(false);
 
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const pricing = market.pricing;
   const price = side === "YES" ? pricing?.buyYesPriceUsd : pricing?.buyNoPriceUsd;
-  const priceDisplay = price != null ? `${Math.round(price * 100)}¢` : "—";
+  const priceDisplay = price != null ? `${Math.round(price / 10_000)}¢` : "—";
 
   const depositAmount = Math.round(parseFloat(amountUsd || "0") * Math.pow(10, USDC_DECIMALS));
 
@@ -184,12 +183,15 @@ export function TradePanel({ market }: TradePanelProps) {
     }
   };
 
-  if (!isV2 || !connected) {
+  // Don't flash the connect prompt during SSR hydration — wait for localStorage read
+  if (!mounted) return null;
+
+  if (!isV2) {
     return (
-      <div className="rounded-xl border border-white/10 bg-white/[0.03] p-5 space-y-3">
+      <div className="space-y-3 py-2">
         <p className="text-sm text-zinc-400 text-center">Connect your wallet to trade</p>
         <ConnectWalletButton
-          className="w-full py-2.5 px-4 bg-white text-black font-semibold rounded-lg hover:bg-zinc-100 transition-colors text-sm"
+          className="w-full py-2.5 px-4 bg-red-700 hover:bg-red-600 text-white font-semibold rounded-[10px] transition-colors text-sm shadow-lg shadow-red-950/40"
           onAuthSuccess={() => window.location.reload()}
         />
       </div>
@@ -200,57 +202,56 @@ export function TradePanel({ market }: TradePanelProps) {
 
   return (
     <>
-      <div className="rounded-xl border border-white/10 bg-white/[0.03] p-5 space-y-4">
-        <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Place Order</h3>
-
+      <div className="space-y-4">
         {/* Side selector */}
         <div className="grid grid-cols-2 gap-2">
           <button
             onClick={() => setSide("YES")}
             className={cn(
-              "py-2.5 rounded-lg text-sm font-semibold border transition",
+              "py-3 rounded-[10px] text-sm font-bold border transition-all",
               side === "YES"
-                ? "bg-green-500/15 border-green-500/50 text-green-400"
-                : "bg-white/5 border-white/10 text-zinc-400 hover:text-white"
+                ? "bg-green-500/15 border-green-500/40 text-green-400 shadow-sm shadow-green-950/30"
+                : "bg-white/[0.03] border-white/10 text-zinc-500 hover:text-white hover:border-white/20"
             )}
           >
-            YES · {pricing?.buyYesPriceUsd != null ? `${Math.round(pricing.buyYesPriceUsd * 100)}¢` : "—"}
+            YES · {pricing?.buyYesPriceUsd != null ? `${Math.round(pricing.buyYesPriceUsd / 10_000)}¢` : "—"}
           </button>
           <button
             onClick={() => setSide("NO")}
             className={cn(
-              "py-2.5 rounded-lg text-sm font-semibold border transition",
+              "py-3 rounded-[10px] text-sm font-bold border transition-all",
               side === "NO"
-                ? "bg-red-500/15 border-red-500/50 text-red-400"
-                : "bg-white/5 border-white/10 text-zinc-400 hover:text-white"
+                ? "bg-red-500/15 border-red-500/40 text-red-400 shadow-sm shadow-red-950/30"
+                : "bg-white/[0.03] border-white/10 text-zinc-500 hover:text-white hover:border-white/20"
             )}
           >
-            NO · {pricing?.buyNoPriceUsd != null ? `${Math.round(pricing.buyNoPriceUsd * 100)}¢` : "—"}
+            NO · {pricing?.buyNoPriceUsd != null ? `${Math.round(pricing.buyNoPriceUsd / 10_000)}¢` : "—"}
           </button>
         </div>
 
         {/* Amount */}
-        <div className="space-y-1.5">
-          <label className="text-xs text-zinc-500">Amount (USDC)</label>
+        <div className="space-y-2">
+          <label className="text-xs text-zinc-500">You&apos;re paying</label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm">$</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm font-medium">$</span>
             <input
               type="number"
               min="5"
               step="1"
               value={amountUsd}
               onChange={(e) => setAmountUsd(e.target.value)}
-              className="w-full bg-black border border-white/10 rounded-lg pl-7 pr-4 py-2.5 text-white text-sm focus:outline-none focus:border-white/30 transition"
-              placeholder="10"
+              className="w-full bg-white/[0.04] border border-white/10 rounded-[10px] pl-7 pr-16 py-3 text-white text-sm font-semibold focus:outline-none focus:border-white/25 transition"
+              placeholder="0.00"
               disabled={isDisabled}
             />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-500 font-semibold">USDC</span>
           </div>
           <div className="flex gap-1.5">
             {["5", "10", "25", "50"].map((v) => (
               <button
                 key={v}
                 onClick={() => setAmountUsd(v)}
-                className="px-2.5 py-1 rounded text-[11px] bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10 transition"
+                className="flex-1 py-1.5 rounded-[7px] text-[11px] font-semibold bg-white/[0.04] border border-white/8 text-zinc-500 hover:text-white hover:border-white/15 transition"
               >
                 ${v}
               </button>
@@ -258,20 +259,27 @@ export function TradePanel({ market }: TradePanelProps) {
           </div>
         </div>
 
-        {/* Submit */}
-        <Button
-          className="w-full bg-white text-black hover:bg-zinc-200 font-bold"
+        {/* Odds line */}
+        {price != null && (
+          <div className="flex items-center justify-between text-xs text-zinc-500 px-1">
+            <span>Odds</span>
+            <span className="text-white font-semibold">{Math.round(price / 10_000)}% chance</span>
+          </div>
+        )}
+
+        {/* CTA */}
+        <GlowButton
           onClick={handlePreview}
           disabled={loading || isDisabled || !amountUsd || parseFloat(amountUsd) < 5}
+          className="w-full"
+          size="md"
         >
           {loading ? (
             <Loader2 size={16} className="animate-spin" />
           ) : (
-            <>
-              Preview {side} Order <ArrowRight size={14} className="ml-1" />
-            </>
+            <>Place {side} Order <ArrowRight size={14} /></>
           )}
-        </Button>
+        </GlowButton>
 
         {isDisabled && (
           <p className="text-xs text-zinc-600 text-center">Market is {market.status}</p>
