@@ -99,7 +99,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </button>
             ) : (
               <ConnectWalletButton
-                className="px-4 py-2.5 rounded-[10px] bg-red-700 hover:bg-red-600 text-white font-semibold text-sm transition-colors shadow-lg shadow-red-950/50"
+                className="px-4 py-2.5 rounded-[10px] text-sm"
                 onAuthSuccess={() => window.location.reload()}
               />
             )}
@@ -116,7 +116,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </button>
             ) : (
               <ConnectWalletButton
-                className="px-3 py-2 rounded-[8px] bg-red-700 text-white font-semibold text-xs shadow-lg shadow-red-950/50"
+                className="px-3 py-2 rounded-[8px] text-xs"
                 label="Connect"
                 onAuthSuccess={() => window.location.reload()}
               />

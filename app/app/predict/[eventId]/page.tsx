@@ -195,13 +195,35 @@ export default function PredictEventPage() {
 
   useEffect(() => {
     if (!eventId) return;
+    let cancelled = false;
+
+    // Initial load — sets the default selected market and clears the skeleton.
     getV2Event(eventId, true)
       .then((e) => {
+        if (cancelled) return;
         setEvent(e);
         setSelectedMarket(e.markets?.find((m) => m.status === "open") ?? e.markets?.[0] ?? null);
       })
       .catch(() => {})
-      .finally(() => setLoading(false));
+      .finally(() => { if (!cancelled) setLoading(false); });
+
+    // Live price refresh — Jupiter has no price stream, so we poll the event
+    // every 5s and update pricing in place. The header odds, All Markets chips,
+    // and trade panel all read from this, so they all stay current. Selection is
+    // preserved by re-pointing selectedMarket at the same marketId's fresh data.
+    const id = setInterval(() => {
+      getV2Event(eventId, true)
+        .then((e) => {
+          if (cancelled) return;
+          setEvent(e);
+          setSelectedMarket((prev) =>
+            prev ? e.markets?.find((m) => m.marketId === prev.marketId) ?? prev : prev
+          );
+        })
+        .catch(() => {});
+    }, 5_000);
+
+    return () => { cancelled = true; clearInterval(id); };
   }, [eventId]);
 
   if (loading) {

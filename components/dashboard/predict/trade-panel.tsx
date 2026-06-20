@@ -173,8 +173,12 @@ export function TradePanel({ market, marketTitle }: TradePanelProps) {
   const depositAmount = Math.round(parseFloat(amountUsd || "0") * Math.pow(10, USDC_DECIMALS));
 
   const handlePreview = async () => {
-    if (!token || depositAmount < 5_000_000) {
-      toast.error("Minimum order is $5 USDC");
+    if (!token) {
+      toast.error("Connect your wallet to trade");
+      return;
+    }
+    if (depositAmount <= 0) {
+      toast.error("Enter an amount");
       return;
     }
     setLoading(true);
@@ -239,7 +243,7 @@ export function TradePanel({ market, marketTitle }: TradePanelProps) {
       <div className="space-y-3 py-2">
         <p className="text-sm text-zinc-400 text-center">Connect your wallet to trade</p>
         <ConnectWalletButton
-          className="w-full py-2.5 px-4 bg-red-700 hover:bg-red-600 text-white font-semibold rounded-[10px] transition-colors text-sm shadow-lg shadow-red-950/40"
+          className="w-full py-2.5 px-4 rounded-[10px] text-sm"
           onAuthSuccess={() => window.location.reload()}
         />
       </div>
@@ -284,8 +288,8 @@ export function TradePanel({ market, marketTitle }: TradePanelProps) {
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm font-medium">$</span>
             <input
               type="number"
-              min="5"
-              step="1"
+              min="0"
+              step="any"
               value={amountUsd}
               onChange={(e) => setAmountUsd(e.target.value)}
               className="w-full bg-white/[0.04] border border-white/10 rounded-[10px] pl-7 pr-16 py-3 text-white text-sm font-semibold focus:outline-none focus:border-white/25 transition [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
@@ -311,23 +315,35 @@ export function TradePanel({ market, marketTitle }: TradePanelProps) {
           </div>
         </div>
 
-        {/* Inline payout estimate */}
+        {/* Inline order estimate */}
         {price != null && amountUsd && parseFloat(amountUsd) > 0 && (() => {
           const amt = parseFloat(amountUsd);
           const priceCents = Math.round(price / 10_000);
           if (priceCents <= 0) return null;
-          const payout = amt * (100 / priceCents);
+          const shares = amt * (100 / priceCents); // contracts; each pays out $1
+          const payout = shares;                   // max payout = shares × $1
           const profit = payout - amt;
           const roi    = (profit / amt) * 100;
           return (
-            <div className="rounded-[10px] bg-white/[0.02] border border-white/[0.06] px-4 py-3 flex items-center justify-between">
-              <div>
-                <p className="text-[10px] text-zinc-600 uppercase tracking-wider mb-0.5">Potential payout</p>
-                <p className="text-sm font-bold text-white tabular-nums">${payout.toFixed(2)}</p>
+            <div className="rounded-[10px] bg-white/[0.02] border border-white/[0.06] divide-y divide-white/[0.05]">
+              {/* What you're buying */}
+              <div className="px-4 py-2.5 flex items-center justify-between">
+                <p className="text-[10px] text-zinc-600 uppercase tracking-wider">You&apos;re buying</p>
+                <p className="text-sm font-bold text-white tabular-nums">
+                  {shares.toFixed(2)} <span className="text-zinc-500 font-medium">{side} shares</span>
+                  <span className="text-zinc-600 font-medium"> @ {priceCents}¢</span>
+                </p>
               </div>
-              <div className="text-right">
-                <p className="text-[10px] text-zinc-600 uppercase tracking-wider mb-0.5">Return</p>
-                <p className="text-sm font-bold text-green-400 tabular-nums">+{roi.toFixed(0)}%</p>
+              {/* Payout + return */}
+              <div className="px-4 py-3 flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] text-zinc-600 uppercase tracking-wider mb-0.5">Potential payout</p>
+                  <p className="text-sm font-bold text-white tabular-nums">${payout.toFixed(2)}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] text-zinc-600 uppercase tracking-wider mb-0.5">Return</p>
+                  <p className="text-sm font-bold text-green-400 tabular-nums">+{roi.toFixed(0)}%</p>
+                </div>
               </div>
             </div>
           );
@@ -336,7 +352,7 @@ export function TradePanel({ market, marketTitle }: TradePanelProps) {
         {/* CTA */}
         <GlowButton
           onClick={handlePreview}
-          disabled={loading || isDisabled || !amountUsd || parseFloat(amountUsd) < 5}
+          disabled={loading || isDisabled || !amountUsd || parseFloat(amountUsd) <= 0}
           className="w-full"
           size="md"
         >

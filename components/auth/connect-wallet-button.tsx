@@ -6,6 +6,8 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { toast } from "sonner";
 import bs58 from "bs58";
 import { getWalletNonce, verifyWalletSignature, type WalletAuthResponse } from "@/lib/api";
+import { GlowButton } from "@/components/ui/glow-button";
+import { cn } from "@/lib/utils";
 
 interface ConnectWalletButtonProps {
   onAuthSuccess?: (user: WalletAuthResponse["user"], token: string) => void;
@@ -246,13 +248,13 @@ export function ConnectWalletButton({
 
   return (
     <>
-      <button
+      <GlowButton
         onClick={handleClick}
         disabled={isLoading}
-        className={className || "w-full py-3 px-4 bg-red-700 hover:bg-red-600 text-white font-semibold rounded-[10px] disabled:opacity-50 transition-colors shadow-lg shadow-red-950/40"}
+        className={cn("disabled:opacity-50", className || "w-full py-3 px-4 rounded-[10px]")}
       >
         {stepLabel[step]}
-      </button>
+      </GlowButton>
 
       {showPicker && (
         <WalletPicker
