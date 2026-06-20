@@ -177,8 +177,11 @@ export function TradePanel({ market, marketTitle }: TradePanelProps) {
       toast.error("Connect your wallet to trade");
       return;
     }
-    if (depositAmount <= 0) {
-      toast.error("Enter an amount");
+    // Jupiter enforces a hard 5 USD minimum (5_000_000 native units) and returns
+    // "400 Minimum order is $5" for anything smaller. Guard here so the user gets
+    // an instant message instead of a failed round-trip to Jupiter.
+    if (depositAmount < 5_000_000) {
+      toast.error("Minimum order is $5");
       return;
     }
     setLoading(true);
@@ -288,7 +291,7 @@ export function TradePanel({ market, marketTitle }: TradePanelProps) {
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm font-medium">$</span>
             <input
               type="number"
-              min="0"
+              min="5"
               step="any"
               value={amountUsd}
               onChange={(e) => setAmountUsd(e.target.value)}
@@ -352,7 +355,7 @@ export function TradePanel({ market, marketTitle }: TradePanelProps) {
         {/* CTA */}
         <GlowButton
           onClick={handlePreview}
-          disabled={loading || isDisabled || !amountUsd || parseFloat(amountUsd) <= 0}
+          disabled={loading || isDisabled || !amountUsd || parseFloat(amountUsd) < 5}
           className="w-full"
           size="md"
         >
