@@ -93,14 +93,7 @@ function ProbabilityChart({ marketId }: { marketId: string }) {
 
   if (loading) return <Skeleton className="h-44 w-full rounded-xl bg-white/4" />;
 
-  if (!data.length) {
-    return (
-      <div className="h-36 flex flex-col items-center justify-center gap-2 text-zinc-700">
-        <TrendingUp size={26} />
-        <p className="text-xs">No chart data yet</p>
-      </div>
-    );
-  }
+  if (!data.length) return null;
 
   return (
     <div>
@@ -264,30 +257,63 @@ export default function PredictEventPage() {
               )}
             </div>
 
-            {/* Chart */}
-            {activeChartMarket && (
-              <div className="glass-card rounded-[16px] p-5">
-                <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-zinc-600 mb-3">
-                  YES probability · {activeChartMarket.title}
-                </p>
-                <ProbabilityChart marketId={activeChartMarket.marketId} />
-              </div>
-            )}
+            {/* Chart / Current Price */}
+            {activeChartMarket && (() => {
+              const yesPrice = toPercent(activeChartMarket.pricing?.buyYesPriceUsd);
+              const noPrice  = toPercent(activeChartMarket.pricing?.buyNoPriceUsd);
+              return (
+                <div className="glass-card rounded-[16px] p-5 space-y-4">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-zinc-600">
+                    Market · {activeChartMarket.title}
+                  </p>
 
-            {/* Market selector */}
-            {allMarkets.length > 2 && (
+                  {/* ProbabilityChart renders nothing when empty — show stat view instead */}
+                  <ProbabilityChart marketId={activeChartMarket.marketId} />
+
+                  {/* Always show current split */}
+                  {yesPrice != null && noPrice != null && (
+                    <div className="space-y-3">
+                      {/* probability bar */}
+                      <div className="h-2 rounded-full overflow-hidden bg-red-900/40 flex">
+                        <div
+                          className="h-full bg-gradient-to-r from-green-700 to-green-400 transition-all duration-500"
+                          style={{ width: `${yesPrice}%` }}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-green-400 font-bold">YES {yesPrice}¢</span>
+                        <span className="text-zinc-600 text-[10px]">Current probability</span>
+                        <span className="text-red-400 font-bold">NO {noPrice}¢</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* Market selector — show whenever there are multiple markets */}
+            {allMarkets.length > 1 && (
               <div className="glass-card rounded-[16px] p-4 space-y-3">
                 <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-zinc-600">All Markets</p>
                 <div className="flex flex-wrap gap-2">
-                  {(openMarkets.length ? openMarkets : allMarkets).map((m) => (
-                    <button key={m.marketId} onClick={() => setSelectedMarket(m)}
-                      className={cn("px-3 py-1.5 rounded-[8px] text-xs font-medium border transition-all",
-                        selectedMarket?.marketId === m.marketId
-                          ? "bg-red-700/80 border-red-600/50 text-white"
-                          : "border-white/10 bg-white/[0.03] text-zinc-400 hover:text-white")}>
-                      {m.title}
-                    </button>
-                  ))}
+                  {(openMarkets.length ? openMarkets : allMarkets).map((m) => {
+                    const pct = toPercent(m.pricing?.buyYesPriceUsd);
+                    const isActive = selectedMarket?.marketId === m.marketId;
+                    return (
+                      <button key={m.marketId} onClick={() => setSelectedMarket(m)}
+                        className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-xs font-medium border transition-all",
+                          isActive
+                            ? "bg-red-700/80 border-red-600/50 text-white"
+                            : "border-white/10 bg-white/[0.03] text-zinc-400 hover:text-white")}>
+                        {m.title}
+                        {pct != null && (
+                          <span className={cn("font-bold tabular-nums", isActive ? "text-white/80" : "text-zinc-500")}>
+                            {pct}¢
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -309,7 +335,7 @@ export default function PredictEventPage() {
                   </div>
                 </div>
                 <div className="p-5">
-                  <TradePanel market={selectedMarket} />
+                  <TradePanel market={selectedMarket} marketTitle={`${title} · ${selectedMarket.title}`} />
                 </div>
               </div>
             ) : (

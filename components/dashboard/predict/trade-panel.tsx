@@ -29,6 +29,7 @@ function PreviewModal({
   onClose,
   preview,
   side,
+  marketTitle,
   onConfirm,
   confirming,
 }: {
@@ -36,58 +37,92 @@ function PreviewModal({
   onClose: () => void;
   preview: OrderPreview;
   side: "YES" | "NO";
+  marketTitle: string;
   onConfirm: () => void;
   confirming: boolean;
 }) {
-  const depositUsd = (preview.depositAmount / Math.pow(10, USDC_DECIMALS)).toFixed(2);
+  const depositAmt  = preview.depositAmount / Math.pow(10, USDC_DECIMALS);
+  const payoutAmt   = Number(preview.newPayoutUsd) / 1_000_000;
+  const profit      = payoutAmt - depositAmt;
+  const roiPct      = depositAmt > 0 ? (profit / depositAmt) * 100 : 0;
   const vanticFeeUsd = (preview.vanticFeeAmount / Math.pow(10, USDC_DECIMALS)).toFixed(4);
-  const jupFeeUsd = microUsdToDisplay(preview.estimatedJupiterFeeUsd);
-  const potentialWin = microUsdToDisplay(preview.newPayoutUsd);
+  const jupFeeUsd    = microUsdToDisplay(preview.estimatedJupiterFeeUsd);
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="bg-zinc-950 border border-white/10 text-white max-w-sm">
-        <DialogHeader>
-          <DialogTitle className="text-base font-bold">Order Preview</DialogTitle>
-        </DialogHeader>
+      <DialogContent className="bg-[#0d0505] border border-white/10 text-white max-w-sm p-0 overflow-hidden">
+        {/* Header */}
+        <div className="px-6 pt-6 pb-4 border-b border-white/[0.06]">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold">Confirm Order</DialogTitle>
+          </DialogHeader>
+          <p className="text-xs text-zinc-500 mt-1 truncate">{marketTitle}</p>
+        </div>
 
-        <div className="space-y-3 text-sm">
-          <div className="flex justify-between">
-            <span className="text-zinc-400">Side</span>
-            <span className={cn("font-semibold", side === "YES" ? "text-green-400" : "text-red-400")}>
-              {side}
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-zinc-400">Deposit</span>
-            <span className="text-white">${depositUsd} USDC</span>
-          </div>
-
-          <div className="border-t border-white/5 pt-3 space-y-2">
-            <p className="text-[11px] text-zinc-500 uppercase tracking-wider">Fees</p>
-            <div className="flex justify-between">
-              <span className="text-zinc-400">Jupiter protocol fee</span>
-              <span className="text-zinc-300">{jupFeeUsd}</span>
+        <div className="px-6 py-5 space-y-5">
+          {/* Side badge + paying */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className={cn(
+                "px-3 py-1 rounded-[6px] text-xs font-bold border",
+                side === "YES"
+                  ? "bg-green-500/15 border-green-500/30 text-green-400"
+                  : "bg-red-500/15 border-red-500/30 text-red-400"
+              )}>
+                {side}
+              </span>
+              <span className="text-xs text-zinc-500">outcome</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-zinc-400">Vantic fee (0.5%)</span>
-              <span className="text-zinc-300">${vanticFeeUsd}</span>
+            <div className="text-right">
+              <p className="text-[10px] text-zinc-600 uppercase tracking-wider">You pay</p>
+              <p className="text-lg font-black text-white tabular-nums">${depositAmt.toFixed(2)}</p>
             </div>
           </div>
 
-          <div className="border-t border-white/5 pt-3 flex justify-between font-semibold">
-            <span className="text-zinc-300">Potential win</span>
-            <span className="text-white">{potentialWin}</span>
+          {/* Payout highlight */}
+          <div className="rounded-[12px] bg-white/[0.03] border border-white/[0.07] p-4">
+            <div className="flex items-end justify-between gap-2">
+              <div>
+                <p className="text-[10px] text-zinc-600 uppercase tracking-wider mb-1">Potential payout</p>
+                <p className="text-3xl font-black text-white tabular-nums">${payoutAmt.toFixed(2)}</p>
+              </div>
+              <div className="text-right pb-0.5">
+                <span className="text-green-400 font-bold text-sm">+{roiPct.toFixed(0)}%</span>
+                <p className="text-[10px] text-zinc-600 mt-0.5">return</p>
+              </div>
+            </div>
+            <div className="mt-3 h-px w-full bg-white/[0.05]" />
+            <p className="text-xs text-zinc-500 mt-3">
+              Profit if {side} wins: <span className="text-green-400 font-semibold">${profit.toFixed(2)}</span>
+            </p>
           </div>
 
-          <p className="text-[10px] text-zinc-600 flex items-start gap-1 pt-1">
+          {/* Fee breakdown */}
+          <div className="space-y-2 text-xs">
+            <p className="text-[10px] text-zinc-600 uppercase tracking-wider">Fees</p>
+            <div className="flex justify-between text-zinc-400">
+              <span>Jupiter protocol fee</span>
+              <span>{jupFeeUsd}</span>
+            </div>
+            <div className="flex justify-between text-zinc-400">
+              <span>Vantic fee (0.5%)</span>
+              <span>${vanticFeeUsd}</span>
+            </div>
+          </div>
+
+          <p className="text-[10px] text-zinc-700 flex items-start gap-1">
             <Info size={10} className="mt-0.5 shrink-0" />
-            Prices are estimates. Final fill depends on orderbook at time of execution.
+            Estimates only. Final fill depends on orderbook at execution.
           </p>
         </div>
 
-        <div className="flex gap-2 pt-2">
-          <button className="flex-1 py-2.5 rounded-[10px] border border-white/10 text-zinc-400 text-sm font-semibold hover:text-white transition" onClick={onClose} disabled={confirming}>
+        {/* Actions */}
+        <div className="flex gap-2 px-6 pb-6">
+          <button
+            className="flex-1 py-2.5 rounded-[10px] border border-white/10 text-zinc-400 text-sm font-semibold hover:text-white transition"
+            onClick={onClose}
+            disabled={confirming}
+          >
             Cancel
           </button>
           <GlowButton onClick={onConfirm} disabled={confirming} size="sm" className="flex-1">
@@ -101,9 +136,10 @@ function PreviewModal({
 
 interface TradePanelProps {
   market: Market;
+  marketTitle?: string;
 }
 
-export function TradePanel({ market }: TradePanelProps) {
+export function TradePanel({ market, marketTitle }: TradePanelProps) {
   const { token, isV2 } = useV2Auth();
   const { signTransaction, connected } = useWallet();
 
@@ -240,11 +276,15 @@ export function TradePanel({ market }: TradePanelProps) {
               step="1"
               value={amountUsd}
               onChange={(e) => setAmountUsd(e.target.value)}
-              className="w-full bg-white/[0.04] border border-white/10 rounded-[10px] pl-7 pr-16 py-3 text-white text-sm font-semibold focus:outline-none focus:border-white/25 transition"
+              className="w-full bg-white/[0.04] border border-white/10 rounded-[10px] pl-7 pr-16 py-3 text-white text-sm font-semibold focus:outline-none focus:border-white/25 transition [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               placeholder="0.00"
               disabled={isDisabled}
             />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-500 font-semibold">USDC</span>
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/media/images/token_icons/usdc.png" alt="USDC" className="w-4 h-4 rounded-full" />
+              <span className="text-xs text-zinc-500 font-semibold">USDC</span>
+            </span>
           </div>
           <div className="flex gap-1.5">
             {["5", "10", "25", "50"].map((v) => (
@@ -259,13 +299,27 @@ export function TradePanel({ market }: TradePanelProps) {
           </div>
         </div>
 
-        {/* Odds line */}
-        {price != null && (
-          <div className="flex items-center justify-between text-xs text-zinc-500 px-1">
-            <span>Odds</span>
-            <span className="text-white font-semibold">{Math.round(price / 10_000)}% chance</span>
-          </div>
-        )}
+        {/* Inline payout estimate */}
+        {price != null && amountUsd && parseFloat(amountUsd) >= 1 && (() => {
+          const amt = parseFloat(amountUsd);
+          const priceCents = Math.round(price / 10_000);
+          if (priceCents <= 0) return null;
+          const payout = amt * (100 / priceCents);
+          const profit = payout - amt;
+          const roi    = (profit / amt) * 100;
+          return (
+            <div className="rounded-[10px] bg-white/[0.02] border border-white/[0.06] px-4 py-3 flex items-center justify-between">
+              <div>
+                <p className="text-[10px] text-zinc-600 uppercase tracking-wider mb-0.5">Potential payout</p>
+                <p className="text-sm font-bold text-white tabular-nums">${payout.toFixed(2)}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] text-zinc-600 uppercase tracking-wider mb-0.5">Return</p>
+                <p className="text-sm font-bold text-green-400 tabular-nums">+{roi.toFixed(0)}%</p>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* CTA */}
         <GlowButton
@@ -292,6 +346,7 @@ export function TradePanel({ market }: TradePanelProps) {
           onClose={() => setShowPreview(false)}
           preview={preview}
           side={side}
+          marketTitle={marketTitle ?? market.title}
           onConfirm={handleConfirm}
           confirming={confirming}
         />
