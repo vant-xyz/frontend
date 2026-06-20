@@ -14,6 +14,7 @@ export function Navigation({ onWaitlistOpen }: NavigationProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+  const [showTelegram, setShowTelegram] = useState(false);
   const [user, setUser] = useState<AuthResponse["user"] | null>(null);
 
   useEffect(() => {
@@ -100,36 +101,41 @@ export function Navigation({ onWaitlistOpen }: NavigationProps) {
           </div>
 
           {/* Desktop Navigation Links */}
-          <div className="hidden lg:flex items-center gap-8">
+          <div className="hidden lg:flex items-center gap-7">
             <a
               href="#how-it-works"
               className="text-sm text-zinc-400 hover:text-white transition-colors"
             >
               How It Works
             </a>
+            <a
+              href="https://x.com/vantictech"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-sm text-zinc-400 hover:text-white transition-colors"
+            >
+              <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true">
+                <path d="M9.294 6.928 14.357 1h-1.2L8.762 6.147 5.25 1H1l5.31 7.722L1 15.143h1.2l4.642-5.396 3.708 5.396H15zM7.38 8.98l-.538-.77L2.64 1.908h1.843l3.454 4.942.537.769 4.491 6.423h-1.843z" />
+              </svg>
+              X
+            </a>
+            <button
+              onClick={() => setShowTelegram(true)}
+              className="flex items-center gap-1.5 text-sm text-zinc-400 hover:text-white transition-colors"
+            >
+              <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true">
+                <path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0m3.9 5.4-1.37 6.43c-.1.45-.37.56-.75.35l-2.06-1.52-.99.96c-.11.11-.2.2-.41.2l.15-2.1 3.8-3.43c.16-.15-.04-.23-.25-.08L4.32 9.87l-2-.62c-.43-.14-.44-.43.09-.63l7.62-2.94c.36-.13.68.09.57.62z" />
+              </svg>
+              Telegram
+            </button>
           </div>
 
-          {/* Desktop Auth Button / User Menu */}
+          {/* Desktop CTA */}
           <div className="hidden lg:block">
-            {user ? (
-              <div className="flex items-center gap-4">
-                <span className="text-sm text-gray-400">
-                  {user.username || user.vant_id}
-                </span>
-                <Button
-                  onClick={handleLogout}
-                  variant="outline"
-                  className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white"
-                >
-                  Logout
-                </Button>
-              </div>
-            ) : (
-              <GlowButton href="/app" size="sm">
-                Launch App
-                <span className="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
-              </GlowButton>
-            )}
+            <GlowButton href="/app" size="sm">
+              Launch App
+              <span className="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
+            </GlowButton>
           </div>
 
           {/* Mobile Menu Button */}
@@ -170,28 +176,11 @@ export function Navigation({ onWaitlistOpen }: NavigationProps) {
                 </button>
               </div>
 
-              {user ? (
-                <div className="space-y-4">
-                  <div className="p-4 bg-gray-900/50 border border-gray-800 rounded-lg">
-                    <p className="text-sm text-gray-500 mb-1">Logged in as</p>
-                    <p className="text-white font-semibold">{user.username || user.vant_id}</p>
-                    <p className="text-xs text-gray-500">{user.email}</p>
-                  </div>
-                  <Button
-                    onClick={handleLogout}
-                    variant="outline"
-                    className="w-full border-red-600 text-red-600 hover:bg-red-600 hover:text-white"
-                  >
-                    Logout
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <GlowButton href="/app" size="sm" className="w-full">
-                    Launch App →
-                  </GlowButton>
-                </div>
-              )}
+              <div className="space-y-4">
+                <GlowButton href="/app" size="sm" className="w-full">
+                  Launch App →
+                </GlowButton>
+              </div>
 
               <div className="pt-4 border-t border-white/10">
                 <a
@@ -201,6 +190,26 @@ export function Navigation({ onWaitlistOpen }: NavigationProps) {
                 >
                   How It Works
                 </a>
+                <a
+                  href="https://x.com/vantictech"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 py-3 text-zinc-400 hover:text-white transition-colors"
+                >
+                  <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true">
+                    <path d="M9.294 6.928 14.357 1h-1.2L8.762 6.147 5.25 1H1l5.31 7.722L1 15.143h1.2l4.642-5.396 3.708 5.396H15zM7.38 8.98l-.538-.77L2.64 1.908h1.843l3.454 4.942.537.769 4.491 6.423h-1.843z" />
+                  </svg>
+                  X (Twitter)
+                </a>
+                <button
+                  onClick={() => { setIsMobileDrawerOpen(false); setShowTelegram(true); }}
+                  className="flex items-center gap-2 py-3 w-full text-left text-zinc-400 hover:text-white transition-colors"
+                >
+                  <svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor" aria-hidden="true">
+                    <path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0m3.9 5.4-1.37 6.43c-.1.45-.37.56-.75.35l-2.06-1.52-.99.96c-.11.11-.2.2-.41.2l.15-2.1 3.8-3.43c.16-.15-.04-.23-.25-.08L4.32 9.87l-2-.62c-.43-.14-.44-.43.09-.63l7.62-2.94c.36-.13.68.09.57.62z" />
+                  </svg>
+                  Telegram
+                </button>
               </div>
             </div>
           </div>
@@ -213,6 +222,25 @@ export function Navigation({ onWaitlistOpen }: NavigationProps) {
         onAuthSuccess={handleAuthSuccess}
       />
 
+      {showTelegram && (
+        <div
+          className="fixed inset-0 z-[10000] flex items-center justify-center p-6 bg-black/70 backdrop-blur-sm"
+          onClick={() => setShowTelegram(false)}
+        >
+          <div className="glass-card rounded-[16px] p-8 max-w-sm w-full text-center" onClick={(e) => e.stopPropagation()}>
+            <div className="w-12 h-12 mx-auto mb-5 rounded-[12px] bg-red-950/50 border border-red-900/30 flex items-center justify-center text-red-400">
+              <svg viewBox="0 0 16 16" width="22" height="22" fill="currentColor" aria-hidden="true">
+                <path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0m3.9 5.4-1.37 6.43c-.1.45-.37.56-.75.35l-2.06-1.52-.99.96c-.11.11-.2.2-.41.2l.15-2.1 3.8-3.43c.16-.15-.04-.23-.25-.08L4.32 9.87l-2-.62c-.43-.14-.44-.43.09-.63l7.62-2.94c.36-.13.68.09.57.62z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-white mb-2">Coming to Telegram soon</h3>
+            <p className="text-sm text-zinc-400 mb-6">Our Telegram community is on the way. Stay tuned.</p>
+            <GlowButton onClick={() => setShowTelegram(false)} size="sm" className="w-full">
+              Got it
+            </GlowButton>
+          </div>
+        </div>
+      )}
     </>
   );
 }

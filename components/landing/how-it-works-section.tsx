@@ -134,11 +134,11 @@ export function HowItWorksSection() {
       style={{ height: `${(n + 1) * 100}vh` }}
       className="relative bg-[#0a0404]"
     >
-      <div className="sticky top-0 h-screen w-full overflow-hidden flex items-center">
+      <div className="sticky top-0 h-screen w-full overflow-hidden flex items-start lg:items-center pt-28 pb-12 lg:py-0">
         {/* ambient glow */}
         <div className="pointer-events-none absolute top-1/2 left-[20%] -translate-y-1/2 w-[480px] h-[480px] rounded-full bg-red-900/10 blur-[120px]" />
 
-        <div className="relative z-10 w-full max-w-6xl mx-auto px-6 grid lg:grid-cols-[40%_60%] gap-10 lg:gap-16 items-center">
+        <div className="relative z-10 w-full max-w-6xl mx-auto px-6 grid lg:grid-cols-[40%_60%] gap-8 lg:gap-16 items-center">
 
           {/* LEFT — pinned heading */}
           <div
@@ -149,9 +149,6 @@ export function HowItWorksSection() {
               transform: headIn ? "translateY(0)" : "translateY(20px)",
             }}
           >
-            <span className="block text-red-600 text-[11px] font-bold uppercase tracking-[0.16em] mb-5">
-              Simple by design
-            </span>
             <h2 className="text-4xl lg:text-5xl font-bold text-white leading-tight mb-5">
               How It Works
             </h2>
@@ -186,7 +183,7 @@ export function HowItWorksSection() {
           </div>
 
           {/* RIGHT — stacked cards, cross-fade */}
-          <div className="relative h-[340px] sm:h-[300px]">
+          <div className="relative h-[300px] sm:h-[280px]">
             {steps.map((step, i) => {
               const active = i === activeCard;
               const past = i < activeCard;

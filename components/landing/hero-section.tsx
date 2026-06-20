@@ -38,35 +38,30 @@ export function HeroSection() {
           </span>
         </div>
 
-        {/* Headline — metallic shimmer */}
-        <h1 className="text-5xl sm:text-6xl lg:text-[5rem] font-bold leading-[1.06] tracking-tight mb-6">
-          <span className="inline-flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+        {/* Headline — metallic shimmer. clamp() keeps it to two lines on every screen */}
+        <h1 className="font-bold leading-[1.08] tracking-tight mb-6 text-[clamp(1.7rem,7vw,5rem)]">
+          <span className="flex flex-nowrap whitespace-nowrap items-center justify-center gap-x-[0.28em]">
             <span className="shimmer-metallic">Predict</span>
             <span className="shimmer-metallic">the</span>
-            <span className="inline-flex items-center gap-2">
-              <Image
-                src="/icons8-globe-96.png"
-                alt=""
-                width={64}
-                height={64}
-                className="w-10 h-10 sm:w-12 sm:h-12 lg:w-16 lg:h-16 inline-block"
-              />
-              <span className="shimmer-metallic">World.</span>
-            </span>
+            <Image
+              src="/icons8-globe-96.png"
+              alt=""
+              width={80}
+              height={80}
+              className="inline-block w-[0.92em] h-[0.92em]"
+            />
+            <span className="shimmer-metallic">World.</span>
           </span>
-          <br />
-          <span className="inline-flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+          <span className="flex flex-nowrap whitespace-nowrap items-center justify-center gap-x-[0.28em]">
             <span className="shimmer-metallic">Win in</span>
-            <span className="inline-flex items-center gap-2">
-              <Image
-                src="/icons8-realtime-96.png"
-                alt=""
-                width={64}
-                height={64}
-                className="w-10 h-10 sm:w-12 sm:h-12 lg:w-16 lg:h-16 inline-block"
-              />
-              <span className="shimmer-metallic">Real Time.</span>
-            </span>
+            <Image
+              src="/icons8-realtime-96.png"
+              alt=""
+              width={80}
+              height={80}
+              className="inline-block w-[0.92em] h-[0.92em]"
+            />
+            <span className="shimmer-metallic">Real Time.</span>
           </span>
         </h1>
 
@@ -76,15 +71,15 @@ export function HeroSection() {
           Non-custodial. Settled on-chain.
         </p>
 
-        {/* CTAs — squircle buttons */}
-        <div className="flex flex-col sm:flex-row items-center gap-4">
+        {/* CTAs — stay side by side on every screen */}
+        <div className="flex flex-row items-center justify-center gap-3 sm:gap-4">
           <GlowButton onClick={() => router.push("/app")}>
             Launch App
             <span className="inline-block transition-transform duration-200 group-hover:translate-x-1">→</span>
           </GlowButton>
           <a
             href="#how-it-works"
-            className="flex items-center gap-2 px-7 py-3.5 rounded-[12px] border border-white/10 bg-white/[0.03] backdrop-blur-sm text-zinc-400 hover:text-white hover:border-white/20 font-medium text-sm transition-all duration-200"
+            className="flex items-center gap-2 px-5 sm:px-7 py-3.5 rounded-[12px] border border-white/10 bg-white/[0.03] backdrop-blur-sm text-zinc-400 hover:text-white hover:border-white/20 font-medium text-sm whitespace-nowrap transition-all duration-200"
           >
             How it Works
           </a>
